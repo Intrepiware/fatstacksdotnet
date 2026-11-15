@@ -140,7 +140,11 @@ The database and service design must enforce same-book references and atomic pos
 An ordinary row constraint alone cannot enforce the sum across an entire journal entry.
 
 The default `decimal(10, 2)` stores up to 99,999,999.99 per positive debit/credit field.
-Reject excess input precision rather than letting implicit database rounding change it.
+Validate monetary range and currency precision at service input boundaries and before final
+values are persisted, before narrowing conversions. Reject excess nonzero fractional digits;
+accept trailing zeros that do not change the value. Internal decimal calculations may retain
+extra precision. Do not let implicit database rounding change a final value. Any intended
+rounding of calculated amounts needs an explicit, tested policy.
 Totals can exceed a single line's range: aggregation must use adequate decimal precision and
 must never downcast a whole-account balance into a single-line amount field.
 

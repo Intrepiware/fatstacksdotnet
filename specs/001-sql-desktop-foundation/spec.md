@@ -5,7 +5,7 @@
 **Created**: 2026-11-14
 
 **Status**: Draft — ready for planning
-**Governing constitution**: [Version 1.1.0](../../.specify/memory/constitution.md)
+**Governing constitution**: [Version 2.0.1](../../.specify/memory/constitution.md)
 **Decision history**: [Decisions ledger](decisions-ledger.md)
 
 **Input**: Establish Fat Stacks.NET on SQL Server, reuse the existing Windows UI with practical
@@ -134,6 +134,9 @@ edit and delete them, restart, and compare balances with known expected results.
   does not change stored accounting dates or the default book date (FR-019).
 - Values outside the supported monetary range or precision are rejected before any write;
   they are not silently rounded or truncated (FR-014).
+
+- Payee and description text containing apostrophes or SQL-like commands is saved as literal
+  text without executing commands or changing unrelated records (FR-028).
 
 ### User Story 4 - Reconcile Each Account Line (Priority: P1)
 
@@ -283,7 +286,11 @@ opening quantity and carrying amount and transfer part of that holding between a
   lines, account suggestions, and separate debit and credit fields.
 - **FR-014**: Every monetary line MUST contain nonnegative debit and credit amounts with exactly
   one positive side and the other zero. Invalid range, currency precision, or column precision
-  MUST be rejected explicitly. Account references MUST belong to the active book.
+  MUST be rejected explicitly at application-service input boundaries and before final values
+  are persisted, before conversion can lose precision or range. Value-preserving trailing
+  zeros MUST be accepted. Internal decimal calculations MAY retain extra precision; checks
+  after every assignment, custom money types, and duplicate SQL numeric parsing are not
+  required. Account references MUST belong to the active book.
 - **FR-015**: Saving an entry MUST require equal total debits and credits in the book currency.
   Creation and amendment MUST persist the whole balanced entry atomically. Opening monetary
   balances MUST be represented by balanced journal entries, not independent balance overrides.
@@ -326,6 +333,48 @@ opening quantity and carrying amount and transfer part of that holding between a
 - **FR-027**: The supplied UI and core source MUST receive a documented architecture/code review
   with source references, priorities, practical recommendations, and validation limits. The
   plan MUST address the phase-1 recommendations or record justified deferrals.
+
+- **FR-028**: Runtime database access MUST use EF Core query APIs or parameterized SQL commands,
+  including stored-procedure calls. User-supplied values MUST NOT be concatenated into SQL text.
+  Raw SQL issued through EF Core MUST also use parameters for user-supplied values. Normal
+  application access MUST use a non-administrator database identity with no schema-change
+  permissions. Schema initialization and migration MUST use separate explicit maintenance
+  privileges, not the normal runtime identity's permissions.
+
+- **FR-029**: Logs MUST NOT contain sensitive financial data, passwords, account numbers,
+  authentication tokens, or connection strings containing secrets. This prohibition applies
+  to application diagnostics, database command/parameter logging, and exception output.
+  Diagnostic identifiers and error categories MAY be logged only when they do not expose
+  sensitive values. EF Core sensitive-data logging MUST remain disabled.
+
+- **FR-030**: While the desktop application remains single-user, connecting to SQL Server
+  without TLS encryption, or with a self-signed or expired certificate, MUST show a visible
+  non-blocking warning identifying the condition. These conditions alone MUST NOT prevent
+  connection or require confirmation. Use TLS when available. Authentication failures and
+  other errors that prevent SQL access MUST still be reported; this policy does not guarantee
+  that an otherwise unusable connection can succeed.
+- **FR-031**: While the desktop application remains single-user, it MUST NOT implement or
+  require backup management, disk/database/field encryption, formal data-classification
+  infrastructure, encryption-key management, or an encrypted logging subsystem. Operators
+  MAY manage backups and storage protection independently. Saved-credential protection,
+  FR-029 log restrictions, and documentation of migration/recovery effects remain required.
+  Before multi-user access is introduced, these exceptions MUST receive a security review.
+
+- **FR-032**: Before activating a database, the application MUST compare its expected schema
+  version with the stored database schema version. A mismatch or missing/unreadable version
+  MUST produce a fatal connection error and leave the application disconnected. The connection
+  dialog MUST remain available. This check MUST NOT initialize, upgrade, or select another
+  database automatically. A lightweight exact-version comparison is sufficient; custom
+  manifests, object inventories, schema-lock protocols, and automatic migration recovery
+  are outside scope.
+
+- **FR-033**: Each stored procedure and SQL view MUST have one current SQL definition file
+  in the grate package. Git attributes MUST disable automatic content merging for these files
+  using `-merge`, while preserving readable text diffs. If both branches change the same file,
+  Git MUST leave a conflict requiring deliberate resolution, including non-overlapping edits.
+  Review the combined definition before accepting it. This does not detect separate files
+  that redefine the same object or replace grate ownership, immutable applied one-time
+  migrations, or consistency between current definitions and the migrated schema.
 
 ### Key Entities _(include if feature involves data)_
 

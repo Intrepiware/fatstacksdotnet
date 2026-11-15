@@ -1,5 +1,83 @@
 # Decisions Ledger: Fat Stacks.NET — SQL Desktop Foundation
 
+## 2026-11-15 16:00:41 -06:00: Clarify monetary validation boundaries
+
+**Files Updated:** [constitution.md](../../.specify/memory/constitution.md), [plan.md](plan.md), [quickstart.md](quickstart.md), [research.md](research.md), [data-model.md](data-model.md), [spec.md](spec.md), [requirements.md](checklists/requirements.md), [application-services.md](contracts/application-services.md), [accounting-model.md](accounting-model.md), [functional-requirements-safety-review.md](../../.workspace/functional-requirements-safety-review.md), [decisions-ledger.md](decisions-ledger.md).
+
+Clarify the constitution as version 2.0.1 and align FR-014 and the planning guidance.
+Validate monetary inputs and final persisted values before narrowing conversions. Permit extra
+precision in intermediate decimal calculations and value-preserving trailing zeros. Use typed
+decimal SQL parameters instead of a numeric-text parsing protocol. No per-assignment checks,
+custom money types, or duplicate SQL parsing are required. Keep independent security quantity
+scales, wider totals, explicit rounding policies, and range checks. Update C08 and the report's
+source fingerprint. This changes documentation only; implementation remains pending.
+
+---
+
+## 2026-11-15 15:51:12 -06:00: Require explicit procedure/view definition merges
+
+**Files Updated:** [spec.md](spec.md), [plan.md](plan.md), [quickstart.md](quickstart.md), [requirements.md](checklists/requirements.md), [research.md](research.md), [functional-requirements-safety-review.md](../../.workspace/functional-requirements-safety-review.md), [decisions-ledger.md](decisions-ledger.md).
+
+Add FR-033 requiring one current SQL definition per procedure/view and Git -merge attributes
+on their grate folders. Keep text diffs. Concurrent edits to one file require deliberate
+resolution even when lines do not overlap. This addresses C07 merge review for the solo project,
+without claiming to detect cross-file object redefinitions or replace grate ownership,
+immutable applied migrations, or consistent current definitions. Configuration and fixture
+validation remain implementation work; no Git attribute settings were changed here.
+
+---
+
+## 2026-11-15 15:45:42 -06:00: Keep schema compatibility to a fatal version comparison
+
+**Files Updated:** [spec.md](spec.md), [data-model.md](data-model.md), [plan.md](plan.md), [contracts/application-services.md](contracts/application-services.md), [research.md](research.md), [quickstart.md](quickstart.md), [checklists/requirements.md](checklists/requirements.md), [safety review](../../.workspace/functional-requirements-safety-review.md), [decisions-ledger.md](decisions-ledger.md).
+
+Add FR-032 for a lightweight exact schema-version comparison. A mismatch, missing version, or
+failed version read is fatal to that connection attempt, with the app disconnected and dialog
+available. Remove custom manifests, object inventories, schema-level locking, tightly coupled
+runner/book bootstrap, and automatic migration recovery. Keep grate ownership, normal migration
+history/checks, current definitions, safe explicit setup, and separate FR-017 journal recovery.
+
+---
+
+## 2026-11-15 15:39:09 -06:00: Adopt approved single-user security exceptions
+
+**Files Updated:** [constitution.md](../../.specify/memory/constitution.md), [plan.md](plan.md), [quickstart.md](quickstart.md), [research.md](research.md), [data-model.md](data-model.md), [spec.md](spec.md), [requirements.md](checklists/requirements.md), [application-services.md](contracts/application-services.md), [desktop-ui.md](contracts/desktop-ui.md), [functional-requirements-safety-review.md](../../.workspace/functional-requirements-safety-review.md), [decisions-ledger.md](decisions-ledger.md).
+
+Approve constitution 2.0.0 and FR-030/FR-031: warn without blocking for no TLS and self-signed
+or expired SQL certificates. Use TLS when available and preserve ordinary connection failures.
+Exclude application-required backup/encryption/classification/key-management/log-encryption
+infrastructure while the desktop app remains single-user. Keep saved-credential protection,
+FR-029, and migration/recovery documentation. Operator-managed backups/protection are optional.
+Review these exceptions before introducing multi-user access.
+
+---
+
+## 2026-11-15 15:36:30 -06:00: Prohibit sensitive values in logs
+
+**Files Updated:** [spec.md](spec.md), [plan.md](plan.md), [checklists/requirements.md](checklists/requirements.md), [decisions-ledger.md](decisions-ledger.md).
+
+Add FR-029 to prohibit sensitive financial data, account numbers, passwords, tokens, and
+secret-bearing connection strings in logs, SQL diagnostics, and exception output. Keep EF
+sensitive-data logging disabled. This makes existing constitution protections explicit.
+TLS-warning behavior and infrastructure exclusions are not adopted by this entry; their
+conflict with Principle IV requires a separate approved constitutional adjustment.
+
+---
+
+## 2026-11-15 14:53:23 -06:00: Require parameterized access and a restricted runtime identity
+
+**Files Updated:** [spec.md](spec.md), [plan.md](plan.md), [quickstart.md](quickstart.md), [checklists/requirements.md](checklists/requirements.md), [functional-requirements-safety-review.md](../../.workspace/functional-requirements-safety-review.md), [decisions-ledger.md](decisions-ledger.md).
+
+Promote report recommendation R02 to FR-028. Require EF query APIs or parameterized SQL,
+including parameter binding for raw SQL through EF. Prohibit concatenating user values into
+SQL text. Normal access uses a non-administrator identity without schema-change permissions;
+initialization and grate migrations use separate explicit maintenance privileges.
+
+Add literal-input acceptance and validation coverage. Move the report item into its required
+safeguards section. These are ordinary database practices, not a new recovery subsystem.
+
+---
+
 ## 2026-11-15 13:20:23 -06:00: Limit FR-017 to journal entries and lines; clarify atomic deletion
 
 **Files Updated:** [spec.md](spec.md), [contracts/application-services.md](contracts/application-services.md), [data-model.md](data-model.md), [research.md](research.md), [plan.md](plan.md), [contracts/desktop-ui.md](contracts/desktop-ui.md), [quickstart.md](quickstart.md), [accounting-model.md](accounting-model.md), [checklists/requirements.md](checklists/requirements.md), [decisions-ledger.md](decisions-ledger.md).

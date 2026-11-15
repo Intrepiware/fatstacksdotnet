@@ -45,8 +45,40 @@
 | FR-024–FR-026 | Stories 2 and 5; SC-003, SC-007; accounting-model catalog |
 | FR-027 | Completed static architecture review with R01–R14; plan disposition remains future work |
 
+| FR-028 | Story 3 literal-input acceptance; SQL parameterization review and runtime-role denial tests |
+
+| FR-029 | Synthetic sensitive-value logging checks, provider/EF configuration and exception review |
+
+| FR-030–FR-031 | Non-blocking transport warnings; ordinary connection errors; scope and credential/logging preservation |
+
+| FR-032 | Exact-version success; fatal mismatch/missing/unreadable version; no startup changes |
+
+| FR-033 | Git attribute review and disposable two-branch merge fixture; normal text diffs |
+
 ## Notes
 
+- The governing [constitution is version 2.0.1](../../../.specify/memory/constitution.md).
+  Its technology constraints are stated in the specification's Scope and Required Constraints.
+  They include Autofac property injection, hybrid EF Core/procedure access, one procedure-call
+  repository, grate ownership, database key conventions, date naming, decimal money, and UTC.
+  The functional requirements remain separate from implementation design and validation.
+- FR-001 and FR-005 distinguish local profile identity, logical Book.StableIdentifier, and the
+  local bigint BookId. Formats are defined in the data model; API and CLI delivery remain deferred.
+- FR-003 covers automatic opening of the last successfully activated profile, failed-switch
+  and test exclusion, cancellation, and missing-profile fallback without schema creation.
+- P07 and FR-009 preserve Payment/Deposit while stored lines and the editor use Debit/Credit.
+  FR-007 defines explicit account types and grouping. Type changes and specialized card/loan
+  workflows remain deferred.
+- Each book has one currency. Mismatches are rejected, currency locks after first entry,
+  and conversion is deferred. Phase 1 starts with new databases and excludes Beancount import.
+- Acceptance Criteria are separate from functional requirements and state observable outcomes.
+  The two-second/10,000-entry target is not a measured result.
+- Basic security openings/transfers, one book per database, and minimal setup are phase-1 scope.
+- Review covered all 33 functional requirements, 14 architecture findings, constitution 2.0.1,
+  current rationale, and the [decisions ledger](../decisions-ledger.md). No blocking requirement
+  clarification remains. The ledger contains change history; active documents state current rules.
+- This is a document and static-source review. It does not establish passing application,
+  database, Windows, UI, dependency-restore, or performance tests.
 - Identity follow-up: FR-001 and FR-005 now distinguish stable local profile IDs from database
   Book IDs. Story 1 covers identity stability and wrong-book rejection with explicit
   reassociation. Future API/CLI targeting is bounded separately; identifier formats and
@@ -66,6 +98,12 @@
   and group overrides. Specialized lending/card workflows and existing-account type changes
   remain deferred. The parity baseline and architecture recommendation were aligned.
 
+- FR-017 applies only to journal entries and their lines, including line reconciliation.
+  FR-018 requires the entry and all lines to be deleted in one atomic transaction.
+  Setup writes are outside the journal conflict and durable outcome-recovery protocol.
+
+- FR-014 checks monetary service inputs and final persisted values before narrowing. Internal
+  decimal precision and value-preserving trailing zeros are allowed; SQL numeric parsing is not required.
 - Review pass 1 identified the need to replace the initial multicurrency assumption with the
   owner's later single-currency-per-book instruction. The specification and model now reject
   mismatches, lock currency after first entry, and defer conversion.
