@@ -1,18 +1,16 @@
 <!--
 Sync Impact Report (temporary review material; remove before committing)
-Version change: 1.0.0 → 1.1.0 (MINOR: new technology and workflow requirements)
-Source: .workspace/project-preferences.md and owner's authorization to resume version increments
-Modified principles: None; existing principle titles and obligations retained
-Modified sections: Technology and Platform Constraints; Clear Document Writing; Governance
-Added section: Rule: Decisions Ledger and Current-State Documents
-Removed guidance: drafting exception that held the constitution at version 1.0.0
-Compatibility: no application schema exists; this amendment changes governance, not stored data
-Review: preferences mapped to requirements; UTC storage and Core independence preserved
-Follow-up: plan.md still states constitution version 1.0.0; refresh its compliance review
-Follow-up: move superseded-decision commentary in existing feature documents to a feature ledger
-Dependent templates read the constitution at runtime and were not changed.
-No unresolved constitution placeholders; ledger braces below are intentional template fields.
+Version change: 2.0.0 → 2.0.1 (PATCH: clarify monetary validation boundaries)
+Modified guidance: Technology Constraints, monetary range and precision validation
+Added guidance: validate service inputs and final persisted values; permit extra decimal
+precision in intermediate calculations and value-preserving trailing zeros
+No requirement for per-assignment checks, custom money types, or duplicate SQL numeric parsing
+Related feature documents and safety review aligned; no template source changes
+Compatibility: documentation only; no application or stored schema modified
+Deferred placeholders: None
 -->
+
+
 
 
 # Fat Stacks.NET Constitution
@@ -72,6 +70,37 @@ safe APIs. Sensitive data MUST be excluded from logs and error messages and prot
 transit and at rest according to its documented classification. Changes to stored data MUST
 document migration, recovery, and compatibility effects before release. Dependency security
 findings MUST be assessed, with fixes or explicitly accepted risks recorded before release.
+
+While this desktop application remains single-user, application services MAY enforce business
+validation through ordinary EF Core operations and transactions, together with database
+constraints and normal runtime permissions. The desktop-client trust rule does not require
+procedure-only writes, column-level permissions, or duplicate SQL validation for every
+operation. Atomicity alone is not a reason to require a stored procedure; EF Core transactions
+can provide atomic writes. Stored procedures MUST have a concrete reason consistent with the
+hybrid data-access rule. Additional permission schemes, duplicate validation, and recovery
+protocols MUST address a documented current requirement or risk. They MUST NOT be introduced
+solely to cover hypothetical future multi-user access. These choices MUST preserve the
+required accounting outcomes, parameterized access, and protection of credentials and data.
+
+While this desktop application remains single-user, the following explicit exceptions apply
+instead of mandatory transport/at-rest protection and formal data classification:
+
+- SQL connections without TLS, or with a self-signed or expired certificate, MUST produce a
+  visible non-blocking warning. These conditions alone MUST NOT prevent connection. Use TLS
+  when available. Authentication failures, unsupported protocol negotiation, and other errors
+  that prevent SQL access MUST still be reported. The warning policy is not a claim that an
+  unverified certificate authenticates the server or that plaintext protects credentials.
+- The application MUST NOT implement or require backup management, disk/database/field
+  encryption, formal data-classification infrastructure, encryption-key management, or an
+  encrypted logging subsystem. Operators MAY independently manage backups and storage protection.
+  Migration and recovery effects MUST still be documented without requiring those facilities.
+- Platform protection of saved credentials remains required. Passwords, account numbers,
+  sensitive financial data, tokens, and secret-bearing connection strings MUST NOT appear in
+  logs or diagnostic exception output. These protections are not waived by the exceptions.
+
+Before introducing multi-user access, the design MUST review trust boundaries, authorization,
+concurrency, and write enforcement for that deployment. The single-user allowance MUST NOT
+be carried forward without that review.
 
 ### V. Usable and Diagnosable Interfaces
 
@@ -170,7 +199,12 @@ tooling. Material dependency changes MUST be reviewed before adoption.
   use `decimal(10, 2)` by default. Exceptions MUST document the required range or precision and
   declare an explicit decimal precision and scale. Binary floating-point types MUST NOT be
   used for monetary amounts. Rounding rules MUST be explicit and tested. Out-of-range values
-  and precision loss MUST NOT be silently accepted.
+  and precision loss MUST NOT be silently accepted. Currency precision and range MUST be
+  validated at application-service input boundaries and before final monetary values are
+  persisted, before any conversion that could lose precision or range. Internal decimal
+  variables and intermediate calculations MAY retain additional precision. Trailing zeros
+  that do not change the value MUST NOT cause rejection. This rule does not require validation
+  after every assignment, a custom money type, or duplicate numeric parsing in SQL.
 - Feature plans MUST identify whether the interface is web, desktop, or both, and record the
   chosen framework and supported browsers or operating systems. This constitution does not
   mandate a particular UI framework or require both interfaces.
@@ -299,4 +333,4 @@ Exceptions MUST record the affected rule, rationale, scope, compensating measure
 and review or expiry condition. A maintainer MUST approve an exception before the affected
 change is merged. Repeated exceptions MUST trigger a review of the governing rule.
 
-**Version**: 1.1.0 | **Ratified**: 2026-11-14 | **Last Amended**: 2026-11-15
+**Version**: 2.0.1 | **Ratified**: 2026-11-14 | **Last Amended**: 2026-11-15
