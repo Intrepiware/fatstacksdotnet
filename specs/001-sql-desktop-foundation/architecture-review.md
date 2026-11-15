@@ -52,7 +52,9 @@ Tests for otherwise independent operations would need UI setup.
 **Recommendation**: Keep WPF. Add separate view models for the main window, connection manager,
 and journal editor. Use application services for journal and account operations. Keep SQL
 access in a separate infrastructure component. Keep view-specific behavior in view code.
-Examples include focus control and popup position. Add a generic repository hierarchy or
+Examples include focus control and popup position. Use Autofac property injection at the App
+composition boundary. Keep Core contracts free of Autofac types and service-location calls.
+Add a generic repository hierarchy or
 message bus only if a current need justifies it.
 
 **Verification**: Test journal validation and save failures without WPF. Use a small set of
@@ -128,7 +130,8 @@ silently overwrite changes, or leave partial entries.
 ### R05 — Move Reconciliation to Lines and Preserve All Three States (High)
 
 **Evidence**: `Core/TransactionDraft.cs:8` stores ReconciliationStatus on the entry.
-`NewTransactionWindow.xaml.cs:69` maps both Uncleared and Clearing to `!`.
+`NewTransactionWindow.xaml.cs:69` maps both Uncleared and the intermediate reconciliation state to `!`.
+The new application names that intermediate state Reconciling.
 `MainWindow.xaml:75` displays this flag. The register therefore cannot distinguish these states.
 
 **Recommendation**: Store a non-null value with three possible states on each line.
@@ -138,7 +141,7 @@ Keep statuses on unchanged line identities. Do not use the entry-level Flag as t
 for reconciliation status.
 
 **Verification**: Test every pair of states on a transfer after reopening the book.
-Clearing one account must not clear the other. Financial corrections must reset only the
+Marking one account Cleared must not mark the other Cleared. Financial corrections must reset only the
 affected reconciled lines.
 
 <!-- Resume Reading -->

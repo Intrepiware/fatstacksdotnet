@@ -74,7 +74,7 @@ available and preserve the type and class.
 
 ## Book Currency
 
-The owner's latest instruction selects the simplest model: one currency for each book.
+Use one currency for each book.
 USD is the default. Alternative books can select another supported currency, but all monetary
 lines within a book must use its selected currency. Reject foreign-currency input; never
 convert it automatically. Lock the currency after the first entry to avoid reinterpreting
@@ -99,19 +99,21 @@ supported-currency catalog rather than claiming every ISO currency works with tw
 | Connection profile | Stable profile ID, friendly name, connection string, protected credential content, expected Book ID | User configuration, outside the financial database |
 | Schema version | Installed schema compatibility | Repeatable initialization; no destructive automatic replacement |
 
-Actual keys, indexes, migration tooling, and the security-movement table/line representation
-are decisions for the plan. These notes describe the information and invariants they must retain.
+The data model defines bigint record keys, tinyint enum keys, single-column primary and foreign
+keys, separate UNIQUE constraints, indexes, and security fields on journal lines. The selected migration tool is grate, with its own script history and hashes.
+Application schema compatibility remains a separate concern. These notes describe the information and invariants they must retain.
 
 ### Connection and Book Identities
 
 A connection profile has its own stable ID in user-local configuration. Its friendly name
-and connection details may change without changing that ID. A Book ID belongs to the book
-and is stored in the financial database. These identities serve different purposes.
+and connection details may change without changing that ID. The logical book identity is Book.StableIdentifier, stored in the financial database.
+It is distinct from the local bigint BookId used for relationships. These identities serve different purposes.
 
 A profile records its expected Book ID after the first successful association. On later opens,
 verify the actual Book ID before activating the book. Reject a mismatch. Require explicit
 reassociation to target a different book; editing a connection string is not reassociation.
-Identifier formats are technical planning or implementation decisions.
+The data model defines bigint record IDs and the specific GUID uses for logical book identity,
+local profile identity, and operation correlation.
 
 Future scripts can use stable profile IDs instead of changeable friendly names. A future API
 will need its own host-configured connections and authorized Book ID resolution. Automated
@@ -159,12 +161,12 @@ movement so the presentation is unambiguous.
 
 ### Reconciliation
 
-Recommended persisted mapping, consistent with the owner's preference:
+Required persisted mapping:
 
 | Value | State | Meaning |
 |---|---|---|
-| 0 | Uncleared | Not yet marked as in the clearing process |
-| 1 | Clearing | In the clearing process; not yet confirmed cleared |
+| 0 | Uncleared | Not yet marked as in the reconciliation process |
+| 1 | Reconciling | In the reconciliation process; not yet confirmed cleared |
 | 2 | Cleared | Explicitly confirmed cleared |
 
 Use non-null `tinyint` with a default of 0 and a constraint limiting values to 0–2.
@@ -212,3 +214,16 @@ Beancount booking behavior. The owner may prune the catalog or expand these work
   with +0.234567 units of the same security.
 
 These examples are synthetic acceptance fixtures, not seed data for a real user's book.
+
+
+## Persistence Design
+
+The technical plan uses EF Core for reads and simple metadata updates. Stored procedures handle
+writes with complex accounting or history checks. One Infrastructure repository contains all
+application procedure calls. The operation matrix documents why guarded writes use procedures.
+Grate owns all database definitions and schema changes, including tables. EF mappings do not create or migrate the database. See the
+[operation matrix](contracts/application-services.md#persistence-operation-matrix).
+
+FR-017 conflict checks and durable outcome recovery apply only to journal entries and lines.
+Account, book, and security-definition setup retain ordinary validation and atomic writes,
+without expected-version checks, CommandReceipt records, or protected pending-operation files.
