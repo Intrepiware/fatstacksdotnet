@@ -5,12 +5,14 @@
 **Created**: 2026-11-14
 
 **Status**: Draft — ready for planning
+**Governing constitution**: [Version 1.1.0](../../.specify/memory/constitution.md)
+**Decision history**: [Decisions ledger](decisions-ledger.md)
 
 **Input**: Establish Fat Stacks.NET on SQL Server, reuse the existing Windows UI with practical
 feature and visual parity, save named database connections, use separate debit and credit
 columns, reconcile journal entry lines, support all five accounting classes and security
-holdings, and review the existing code. Subsequent scope decisions: start with new databases;
-defer Beancount import; use one currency per book and reject other currencies at line entry.
+holdings, and review the existing code. Start with new databases, defer Beancount import, and use one
+currency per book. Reject other currencies at line entry.
 
 ## User Scenarios & Testing _(mandatory)_
 
@@ -135,7 +137,7 @@ edit and delete them, restart, and compare balances with known expected results.
 
 ### User Story 4 - Reconcile Each Account Line (Priority: P1)
 
-As the owner, I want to mark individual account movements Uncleared, Clearing, or Cleared
+As the owner, I want to mark individual account movements Uncleared, Reconciling, or Cleared
 without changing the status of the other side of an entry.
 
 **Why this priority**: Transfers can clear in different accounts at different times.
@@ -145,7 +147,7 @@ for the same account. Change their statuses independently and reopen the book.
 
 **Acceptance Criteria**:
 
-- New lines start Uncleared. Each line can be changed to Clearing or Cleared and can be
+- New lines start Uncleared. Each line can be changed to Reconciling or Cleared and can be
   explicitly corrected back to either other state (FR-021).
 - Marking the bank line Cleared leaves the credit-card line Uncleared after refresh and restart
   (FR-021, FR-022).
@@ -242,12 +244,8 @@ opening quantity and carrying amount and transfer part of that holding between a
   selected empty database and one book within it. Initialization MUST set the book name,
   currency, and time zone. It MUST detect existing compatible, incompatible, or unrelated
   schemas and MUST NOT destroy or silently replace existing data.
-  Each initialized book MUST have a stable Book ID stored in its database. After the first
-  successful association, the profile MUST retain the expected Book ID in local configuration.
-  Every subsequent open MUST verify this identity before making financial records available.
-  A mismatch MUST reject activation and explain the discrepancy. Intentionally targeting a
-  different book MUST require explicit reassociation rather than silently replacing the
-  expected identity. Changing a profile's connection details alone MUST NOT authorize this.
+  Give each book a permanent logical identifier. When a saved connection profile first opens a book successfully, save that identifier in the user’s configuration. On later opens, verify that the profile still points to the same book before displaying financial records.
+  If the identifier differs, refuse to open the book and explain why. Allow the user to explicitly confirm that the profile should target the different book. Changing the connection string alone must not count as that confirmation.
 - **FR-006**: Configuration failures MUST be reported without claiming profiles were saved.
   A failed preferences write MUST NOT undo a successful accounting operation.
 - **FR-007**: Accounts MUST support Assets, Liabilities, Equity, Income, and Expenses.
@@ -292,12 +290,15 @@ opening quantity and carrying amount and transfer part of that holding between a
 - **FR-016**: The editor MUST retain drafts on failures and prevent duplicate submissions during
   a pending save. Continue MUST save and start another entry with the date retained for that
   session. Cancel MUST NOT save the current draft.
-- **FR-017**: Edits, deletes, and reconciliation updates MUST detect stale versions and report
-  conflicts without overwriting newer data. Failed operations MUST leave no partial effects.
-  Uncertain outcomes MUST be identified and verified before retrying.
+- **FR-017**: This requirement applies only to JournalEntry and JournalEntryLine operations.
+  Edits, deletes, and reconciliation updates to these records MUST detect stale versions and
+  report conflicts without overwriting newer data. Failed journal operations MUST leave no
+  partial effects. Uncertain outcomes of journal creates, edits, deletes, or line reconciliation
+  updates MUST be identified and verified before retrying. Account, book, security-definition,
+  and connection-profile operations are outside this requirement.
 - **FR-018**: Deleting an entry MUST require a confirmation showing its date, description, and
-  lines. Cancel MUST be the safe default. Successful deletion MUST remove all of its balance
-  effects atomically. The exact physical retention mechanism belongs in the implementation plan.
+  lines. Cancel MUST be the safe default. Successful deletion MUST remove the JournalEntry and all its
+  JournalEntryLine records, including all balance effects, in one atomic database transaction. The exact physical retention mechanism belongs in the implementation plan.
 - **FR-019**: Accounting dates MUST preserve date-only meaning. New-session dates and the
   register cutoff MUST use the configured book time zone. Operational timestamps MUST use UTC.
   An optional bank posting date MUST remain separate from the journal accounting date.
@@ -306,16 +307,14 @@ opening quantity and carrying amount and transfer part of that holding between a
   after the first saved entry. Separate books MAY use different supported currencies, but no
   exchange conversion or mixed-currency journal entry is included in phase 1.
 - **FR-021**: Each journal entry line MUST have exactly one reconciliation status: Uncleared,
-  Clearing, or Cleared. New lines MUST default to Uncleared. Explicit status changes MUST be
+  Reconciling, or Cleared. New lines MUST default to Uncleared. Explicit status changes MUST be
   independent of other lines and MUST NOT change financial values.
 - **FR-022**: The UI MUST expose line reconciliation and show a summary based only on the
   selected account's lines. When those statuses differ, the summary MUST indicate mixed
   statuses and expose the individual values; mixed is not a stored reconciliation state.
 - **FR-023**: Changing a reconciled line's account, money, currency, or security quantity MUST
   reset that line to Uncleared with a visible explanation. Unchanged lines MUST retain status.
-- **FR-024**: The model MUST distinguish accounting class, account type, UI group, monetary currency, and
-  security identity. The supported catalog MUST document all five accounting classes and
-  explain that securities are holdings, not an additional class.
+- **FR-024**: The application’s code and database MUST represent accounting class, account type, UI group, currency, and security as separate concepts. The documentation MUST list all five accounting classes and the supported account types. It MUST explain that securities are instruments held within accounts, not a sixth accounting class.
 - **FR-025**: Phase 1 MUST support security definitions, opening quantities with explicit book-
   currency carrying amounts, and same-security transfers between holding accounts in the
   same book. Fractional quantities MUST retain their declared precision independently of
@@ -332,7 +331,7 @@ opening quantity and carrying amount and transfer part of that holding between a
 
 | Entity            | Meaning and principal relationships                                                                                                               |
 | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ConnectionProfile | Stable profile ID, user-local friendly name, database connection string, protected credentials, and expected Book ID; not a financial record.                  |
+| ConnectionProfile | Stable profile ID, user-local friendly name, database connection string, protected credentials, and expected Book ID; not a financial record.     |
 | Book              | One set of accounts in one database, with stable identity, name, currency, and time zone.                                                         |
 | Account           | A stable record within a book, with a parent, name, selected account type, type-determined accounting class, display group, and open/close dates. |
 | JournalEntry      | One balanced accounting event with a stable identity, accounting date, optional bank posting date, payee, and description.                        |
@@ -340,6 +339,9 @@ opening quantity and carrying amount and transfer part of that holding between a
 | Currency          | The book's monetary unit and permitted fractional precision; USD is the default.                                                                  |
 | Security          | A named instrument with a symbol and quantity precision; its units are distinct from money.                                                       |
 | SecurityHolding   | An account/security position derived from recorded quantity movements and monetary carrying amounts; not an unrelated balance override.           |
+
+Book ID in user-facing requirements means the logical book identity, Book.StableIdentifier.
+It is separate from the database-local bigint BookId. Profiles pin the logical identity.
 
 Use `JournalEntry` and `JournalEntryLine` as the proposed domain names. Keep “transaction”
 in familiar UI labels where useful. Reserve “database transaction” for the atomic persistence
@@ -354,12 +356,25 @@ implement the schema or application.
 
 The owner requires .NET 10 and SQL Server, separate persisted debit/credit columns on journal
 entry lines, and a non-null three-state reconciliation representation. The proposed storage
-mapping is `tinyint`: 0 = Uncleared, 1 = Clearing, 2 = Cleared; a nullable Boolean is prohibited.
+mapping is `tinyint`: 0 = Uncleared, 1 = Reconciling, 2 = Cleared; a nullable Boolean is prohibited.
 The constitution requires service-layer `decimal`, default database money `decimal(10, 2)`,
 accounting dates as `DateOnly`/`date`, and UTC operational timestamps. These are supplied
 constraints, not implementation choices inferred by this specification. Detailed schema design
 and justified precision exceptions belong in the plan; [model notes](accounting-model.md)
 record the implications for review.
+
+The constitution also requires Autofac property injection and hybrid EF Core/stored-procedure
+access. All application procedure calls belong in one service or repository. Stored-procedure
+write paths need documented reasons. Grate owns all database definitions and schema changes;
+EF migrations and EF schema creation are prohibited. Application-owned primary keys default
+to bigint, small enum keys use tinyint, and primary/foreign keys use single columns. Combined
+uniqueness uses separate UNIQUE constraints. A uniqueidentifier needs a specific documented
+purpose. Date and timestamp column names omit Utc; persisted timestamps remain UTC. Grate
+internal history keeps its own conventions. The plan defines mappings and dependency lifetimes.
+
+Documents must follow the constitution's clear-writing and approximate ASD-STE100 guidance
+without losing meaning. Record changes in the feature decisions ledger. Active documents
+describe the current state and retain its rationale; change history belongs in the ledger.
 
 Scope excludes Beancount import/export and file editing, a web UI, automatic bank feeds,
 statement-matching workflows, loan amortization schedules, credit-card statement management,
@@ -380,8 +395,9 @@ It does not implement an API or command-line database operations.
   Desktop user-local profiles are not automatically available to the API host.
 - Future automated writes must require an explicit target. They must not default to the last
   connection used by the desktop application. Target selection does not replace authorization.
-- Exact identifier formats, command syntax, API routes, host configuration, and authorization
-  design are deferred until those interfaces are planned.
+- Phase-1 profile and book identifier formats are defined in the data model. Command syntax,
+  API routes, public API identifiers, host configuration, and authorization design are deferred
+  until those interfaces are planned.
 
 ## Success Criteria _(mandatory)_
 
@@ -409,8 +425,8 @@ It does not implement an API or command-line database operations.
 
 ## Assumptions
 
-- The owner confirmed new databases with no phase-1 Beancount migration.
-- The latest instruction replaces general multicurrency support with one currency per book.
+- Phase 1 starts with new databases and does not import Beancount data.
+- Each book uses one currency.
   USD is the default; alternative currencies with up to two fractional digits are the initial
   supported scope. Higher-precision currencies require a documented schema extension.
 - One database contains one book in phase 1. Multiple saved profiles provide access to multiple
@@ -423,8 +439,8 @@ It does not implement an API or command-line database operations.
   and formal period closing are deferred; edit and delete remain available for UI parity.
 - The prior application's 90-day register scope is retained; balances use full stored history.
   A configurable history-range selector is deferred.
-- The existing last-entered-date preference is narrowed to the active entry session so new
-  sessions honor the constitution's book-local “today” default.
+- Remember the last-entered date within the active entry session. New sessions default to
+  book-local today.
 - Minimal account/security setup is included because a fresh book cannot otherwise be used
   without manual database edits. Broad administration screens are outside scope.
 - The source review is static. Windows execution, screenshots, UI automation, database testing,
