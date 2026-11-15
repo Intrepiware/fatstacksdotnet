@@ -1,16 +1,19 @@
 <!--
 Sync Impact Report (temporary review material; remove before committing)
-Version change: 1.0.0 → 1.0.0 (work in progress; unchanged at owner's explicit request)
-Modified principles: None
-Modified section: Technology and Platform Constraints — accounting dates and timestamps
-Added guidance: DateOnly and SQL date; separate transaction and posting dates;
-preserve source dates; explicit timestamp-to-date policy; book time zone for manual defaults;
-optional occurrence timestamps with source context; UTC operational timestamps
-Added sections: None
-Removed sections: None
-Deferred placeholders or follow-up TODOs: None
-Dependent templates and application artifacts were not modified.
+Version change: 1.0.0 → 1.1.0 (MINOR: new technology and workflow requirements)
+Source: .workspace/project-preferences.md and owner's authorization to resume version increments
+Modified principles: None; existing principle titles and obligations retained
+Modified sections: Technology and Platform Constraints; Clear Document Writing; Governance
+Added section: Rule: Decisions Ledger and Current-State Documents
+Removed guidance: drafting exception that held the constitution at version 1.0.0
+Compatibility: no application schema exists; this amendment changes governance, not stored data
+Review: preferences mapped to requirements; UTC storage and Core independence preserved
+Follow-up: plan.md still states constitution version 1.0.0; refresh its compliance review
+Follow-up: move superseded-decision commentary in existing feature documents to a feature ledger
+Dependent templates read the constitution at runtime and were not changed.
+No unresolved constitution placeholders; ledger braces below are intentional template fields.
 -->
+
 
 # Fat Stacks.NET Constitution
 
@@ -123,6 +126,30 @@ tooling. Material dependency changes MUST be reviewed before adoption.
   Additional languages or runtimes MUST have a documented requirement and maintenance rationale.
 - SQL Server MUST be the application database. Database integration tests MUST verify relevant
   SQL Server behavior; substitutes alone MUST NOT establish database compatibility.
+- Autofac MUST provide property injection for service and view-model dependencies. Container
+  registration and resolution MUST remain at composition boundaries. Core business contracts
+  MUST NOT depend on Autofac. Mandatory dependencies MUST be supplied before a component starts
+  work. Plans MUST define lifetimes and disposal responsibilities.
+- Data access MUST use a hybrid EF Core and stored-procedure approach. Use EF Core for atomic
+  writes when ordinary EF operations and transactions meet the requirements. Use stored
+  procedures when EF would require awkward workarounds or complex machinery. Document the
+  reason for each stored-procedure write path. Do not contort EF to avoid a procedure.
+  All application stored-procedure calls MUST be contained in one service or repository.
+- grate MUST own all database definitions, deployment, and schema changes. This includes
+  tables, procedures, views, functions, types, indexes, and constraints. EF Core migrations
+  and EF schema creation MUST NOT be used. This is a project-wide decision.
+  Keep one current definition per object in the grate package so concurrent changes meet in
+  the same file. Review combined changes even when Git reports no conflict. Applied one-time
+  migration scripts MUST remain immutable. Table evolution MUST use new migration scripts;
+  current table definitions MUST remain consistent with the migrated schema.
+- Application-owned tables MUST default to bigint primary keys. Small enum tables, such as
+  AccountType and AccountClass, MUST use tinyint keys. A uniqueidentifier requires a documented
+  specific purpose, such as a StableIdentifier or PublicId; it MUST NOT be the default key type.
+  Primary and foreign keys MUST use single columns. Enforce combined uniqueness with separate
+  UNIQUE constraints. Third-party internal schemas, including grate history, retain their
+  own conventions.
+- Application-owned date and timestamp column names MUST NOT contain Utc. Use names such as
+  CreateDate and UpdateDate. This naming rule does not change the UTC storage requirement.
 - Transaction dates, bank posting dates, and journal accounting dates MUST use .NET
   `DateOnly` and SQL Server `date`. They represent calendar dates without a time zone.
   Bank-supplied dates MUST be preserved without UTC or user-time-zone conversion. Transaction
@@ -182,6 +209,9 @@ All project documents, including specifications, plans, and task lists, MUST use
 language and active verbs. Target a twelfth-grade reading level. Each sentence MUST express
 one idea or instruction. Explanations MUST remain brief, with clarity taking priority over
 brevity. Author-created shorthand MUST be defined unless its meaning is obvious.
+Target approximately 80% of ASD-STE100 as editorial guidance, not a measured compliance score.
+Documents MUST NOT claim formal ASD-STE100 compliance. Simplified wording MUST preserve the
+full meaning, including conditions, qualifications, and failure behavior.
 
 ### Rule: Focused Acceptance Criteria
 
@@ -209,6 +239,44 @@ state the behavior that must continue. Authors MUST NOT invent preservation requ
 populate this section. Both optional sections MUST follow the Clear Document Writing rule
 and MUST be omitted when inapplicable.
 
+### Rule: Decisions Ledger and Current-State Documents
+
+Changes to requirements, scope, design decisions, and acceptance conditions in specification
+or planning documents MUST be recorded in `specs/<feature>/decisions-ledger.md`. This applies
+regardless of who initiates the change. Each logical change MUST have one concise entry,
+even when it affects several files. State what changed and why. Do not repeat the updated
+documents or add filler. New entries MUST appear at the top, below the ledger title.
+
+Ledger timestamps MUST use the current date and time in the user's configured time zone,
+with the numeric UTC offset applicable at that instant. Use `YYYY-MM-DD HH:MM:SS ±HH:MM`,
+for example `2026-11-15 10:24:36 -06:00`. Account for daylight-saving time. Do not treat a
+fixed offset as a year-round time-zone rule. These are document timestamps; persisted
+application database timestamps remain subject to the UTC requirement.
+
+Use the following ledger form. Braced text is a template instruction or replacement field:
+
+```markdown
+# Decisions Ledger: {Project Name}
+
+## {YYYY-MM-DD HH:MM:SS ±HH:MM}: {Brief Change Description}
+
+**Files Updated:** {file1.md}, {file2.md}
+
+{Describe what changed and why in 1–3 concise paragraphs. Preserve readability. Do not add filler.}
+
+---
+```
+
+Specifications and planning documents MUST describe the present decided state. Keep obsolete
+decisions out of active specifications. History of changed or superseded decisions MUST appear
+only in the ledger. Do not add change-history asides such as “User revised decision on {date},”
+“amended on {date},” or “superseded by {decision}” to active documents.
+
+Keep the rationale for current decisions in research and planning documents, including
+research.md. This rule does not override Spec Kit instructions to document technical rationale.
+Required migration instructions, compatibility explanations, source findings, and verification
+evidence MUST remain available where needed; they are not change-history asides.
+
 ## Governance
 
 This constitution takes precedence over conflicting project conventions and workflow documents.
@@ -223,13 +291,12 @@ required follow-up work recorded.
 The constitution uses semantic versioning: MAJOR for incompatible principle removals or
 redefinitions, MINOR for new principles or materially expanded guidance, and PATCH for
 clarifications that do not change obligations. Amendments MUST update the version and last
-amended date while preserving the original ratification date. While this constitution remains
-work in progress, version 1.0.0 MUST remain unchanged as explicitly directed by the owner.
-Normal version increments resume when the owner ends that drafting exception.
+amended date while preserving the original ratification date. Technology choices recorded
+here remain binding unless changed through this amendment process.
 
 Specifications, plans, and change reviews MUST check compliance with applicable principles.
 Exceptions MUST record the affected rule, rationale, scope, compensating measures, approver,
 and review or expiry condition. A maintainer MUST approve an exception before the affected
 change is merged. Repeated exceptions MUST trigger a review of the governing rule.
 
-**Version**: 1.0.0 | **Ratified**: 2026-11-14 | **Last Amended**: 2026-11-14
+**Version**: 1.1.0 | **Ratified**: 2026-11-14 | **Last Amended**: 2026-11-15
