@@ -56,6 +56,7 @@ No constitution exception is requested. No additional safety proposal is needed 
 ```text
 specs/001-sql-desktop-foundation/
   plan.md
+  tasks.md
   research.md
   data-model.md
   quickstart.md
@@ -67,7 +68,7 @@ specs/001-sql-desktop-foundation/
   decisions-ledger.md
 ```
 
-`tasks.md` belongs to the next workflow. This command does not create implementation tasks.
+The [task list](tasks.md) defines the implementation order and acceptance checkpoints.
 
 ### Planned source layout
 
@@ -92,7 +93,7 @@ database/
 ```
 
 Core contains financial rules and narrow storage contracts. Infrastructure contains EF mappings,
-the journal procedure repository, configuration storage, and the grate maintenance adapter.
+the shared stored-procedure repository, configuration storage, and the grate maintenance adapter.
 Desktop contains WPF views, view models, and the Autofac composition root. These boundaries
 meet Principle I and review R01. They need no generic repository, mediator, or extra domain project.
 

@@ -1,5 +1,21 @@
 # Decisions Ledger: Fat Stacks.NET — SQL Desktop Foundation
 
+## 2026-11-16 02:16:19 +00:00: Generate implementation tasks
+
+**Files Updated:** [tasks.md](tasks.md), [plan.md](plan.md), [spec.md](spec.md).
+
+Create 68 dependency-ordered tasks across setup, shared foundation, the five user stories, and
+release validation. Include the required financial, SQL Server, and Windows checks, exact schema
+constraints, independent story checkpoints, and parallel work examples. Link the task list from
+the plan and mark the spec ready for implementation.
+
+Preserve the current scope: StoredProcedureRepository contains all procedure calls, EF handles
+reconciliation and metadata, and schema compatibility uses a stored integer with a hardcoded
+expected version. Securities remain required. The tasks add no journal outcome-verification
+protocol. This workflow generates documents; implementation checks remain unexecuted.
+
+---
+
 ## 2026-11-15 23:30:45 +00:00: Identify research decisions consistently
 
 **Files Updated:** [research.md](research.md).

@@ -4,7 +4,7 @@
 
 **Created**: 2026-11-14
 
-**Status**: Planned — ready for task generation
+**Status**: Tasked — ready for implementation
 **Governing constitution**: [Version 2.0.1](../../.specify/memory/constitution.md)
 **Decision history**: [Decisions ledger](decisions-ledger.md)
 
