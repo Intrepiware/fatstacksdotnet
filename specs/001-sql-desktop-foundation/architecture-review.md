@@ -120,12 +120,9 @@ transaction. Use stable entry and line IDs. Use version checks to detect conflic
 edits, deletes, and status changes. This approach is called optimistic concurrency.
 Validate the whole journal entry at the point where data is written.
 
-Define how to check an uncertain write outcome before retrying. Do not automatically repeat
-a write after a network error that could have occurred after commit.
-
-**Verification**: Test two editors with old versions, failures during writes, simultaneous
-line-status changes, and lost responses. These conditions must not create duplicates,
-silently overwrite changes, or leave partial entries.
+**Verification**: Test two editors with old versions, failures before commit, and simultaneous
+line-status changes. These conditions must not silently overwrite changes or leave partial
+entries. Repeated Save actions during a pending save must not submit duplicate writes.
 
 ### R05 — Move Reconciliation to Lines and Preserve All Three States (High)
 
@@ -251,8 +248,10 @@ File writes run synchronously during selection and rendering.
 protection for the current user. Keep atomic settings updates. Distinguish recoverable file
 corruption from a missing settings file on first use. Remove secrets and financial descriptions
 before logging information or showing errors. Use short, structured diagnostics.
-Avoid disk writes for every UI selection. Do not disable connection encryption or certificate
-validation to hide a connection error.
+Avoid disk writes for every UI selection. Use TLS when available. Under FR-030, show a visible
+non-blocking warning for plaintext transport or unverified certificate trust, including self-signed
+or expired certificates. Do not hide authentication failures or claim an unverified certificate
+authenticates the server.
 
 **Verification**: Check that logs and configuration contain no plaintext credentials.
 Unavailable credential protection and corrupt settings must produce recoverable errors.

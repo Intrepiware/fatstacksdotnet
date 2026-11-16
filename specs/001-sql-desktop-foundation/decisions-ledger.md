@@ -1,5 +1,62 @@
 # Decisions Ledger: Fat Stacks.NET — SQL Desktop Foundation
 
+## 2026-11-15 23:30:45 +00:00: Identify research decisions consistently
+
+**Files Updated:** [research.md](research.md).
+
+Assign D-001 through D-008 to the research decisions. Use D for decisions because R already
+identifies architecture-review findings. Keep decision IDs stable when wording or order changes,
+and give new decisions the next unused ID.
+
+---
+
+## 2026-11-15 23:28:16 +00:00: Name the shared stored-procedure repository
+
+**Files Updated:** [plan.md](plan.md), [research.md](research.md), [application-services.md](contracts/application-services.md).
+
+Rename JournalRepository to StoredProcedureRepository. The name reflects the constitution's
+requirement that one service or repository contain all application stored-procedure calls.
+Keep parameter binding, execution, and result mapping in this repository. Application services
+own business workflows.
+
+---
+
+## 2026-11-15 23:18:19 +00:00: Remove journal outcome verification
+
+**Files Updated:** [spec.md](spec.md), [plan.md](plan.md), [research.md](research.md), [data-model.md](data-model.md), [application-services.md](contracts/application-services.md), [desktop-ui.md](contracts/desktop-ui.md), [quickstart.md](quickstart.md), [accounting-model.md](accounting-model.md), [architecture-review.md](architecture-review.md).
+
+Remove the FR-017 sentence that requires uncertain journal outcomes to be identified and
+verified before retrying, as requested by the owner. Remove the planned JournalOperation table,
+operation IDs, receipts, local pending marker, verification service, retry protocol, restart
+blocking, and their validation scenarios. Align the related edge case, SC-004, and source-review
+recommendation so they do not restore the removed requirement.
+
+Keep stale-version detection, atomic journal changes, draft retention, and prevention of repeated
+submissions while a save is pending. Whole-entry saves and deletes still use procedures;
+reconciliation still uses an EF transaction. This changes planning documents only.
+
+---
+
+## 2026-11-15 22:27:39 +00:00: Plan the simpler single-user implementation
+
+**Files Updated:** [plan.md](plan.md), [research.md](research.md), [data-model.md](data-model.md), [quickstart.md](quickstart.md), [application-services.md](contracts/application-services.md), [desktop-ui.md](contracts/desktop-ui.md), [accounting-model.md](accounting-model.md), [architecture-review.md](architecture-review.md), [spec.md](spec.md).
+
+Regenerate the plan against constitution 2.0.1 and the updated functional requirements. Use
+three production projects, ordinary EF setup operations, grate deployment, and a simple exact
+schema-version check. Record a requirement or concrete current risk for each mechanism. Align
+the source review's transport advice with FR-030 and correct the spec's branch and planning status.
+
+Use procedures for journal saves, deletes, and register reads, following the owner's support
+for that boundary. Use EF for line reconciliation after the owner questioned the need for a
+procedure. Limit versions and outcome receipts to FR-017 journal operations. A receipt can record
+Applied or terminal NotApplied so a late command cannot run after negative verification. Keep
+holding-history checks for FR-025 and omit general recovery, permission, and schema frameworks.
+
+Add a runnable validation guide for the planned implementation and record the current evidence
+limits. No application, database, UI, or performance test ran during this planning workflow.
+
+---
+
 ## 2026-11-15 16:00:41 -06:00: Clarify monetary validation boundaries
 
 **Files Updated:** [constitution.md](../../.specify/memory/constitution.md), [plan.md](plan.md), [quickstart.md](quickstart.md), [research.md](research.md), [data-model.md](data-model.md), [spec.md](spec.md), [requirements.md](checklists/requirements.md), [application-services.md](contracts/application-services.md), [accounting-model.md](accounting-model.md), [functional-requirements-safety-review.md](../../.workspace/functional-requirements-safety-review.md), [decisions-ledger.md](decisions-ledger.md).

@@ -1,10 +1,10 @@
 # Feature Specification: Phase 1 — SQL Desktop Foundation
 
-**Feature Branch**: Not created; no branch hook is configured.
+**Feature Branch**: `001-sql-desktop-foundation`
 
 **Created**: 2026-11-14
 
-**Status**: Draft — ready for planning
+**Status**: Planned — ready for task generation
 **Governing constitution**: [Version 2.0.1](../../.specify/memory/constitution.md)
 **Decision history**: [Decisions ledger](decisions-ledger.md)
 
@@ -192,8 +192,8 @@ opening quantity and carrying amount and transfer part of that holding between a
 ### Edge Cases
 
 - Missing server, wrong credentials, insufficient permissions, unavailable database, and a
-  disconnect during save: show actionable, redacted errors and distinguish failed from
-  uncertain write outcomes. Never blindly retry an uncertain write.
+  disconnect during save: show actionable, redacted errors and retain the draft without
+  claiming an unconfirmed save succeeded.
 - Switching while search or refresh is pending: results from the previous book cannot appear
   in the new book or receive writes.
 - Duplicate profile names, corrupt configuration, or unavailable credential protection:
@@ -300,9 +300,8 @@ opening quantity and carrying amount and transfer part of that holding between a
 - **FR-017**: This requirement applies only to JournalEntry and JournalEntryLine operations.
   Edits, deletes, and reconciliation updates to these records MUST detect stale versions and
   report conflicts without overwriting newer data. Failed journal operations MUST leave no
-  partial effects. Uncertain outcomes of journal creates, edits, deletes, or line reconciliation
-  updates MUST be identified and verified before retrying. Account, book, security-definition,
-  and connection-profile operations are outside this requirement.
+  partial effects. Account, book, security-definition, and connection-profile operations are
+  outside this requirement.
 - **FR-018**: Deleting an entry MUST require a confirmation showing its date, description, and
   lines. Cancel MUST be the safe default. Successful deletion MUST remove the JournalEntry and all its
   JournalEntryLine records, including all balance effects, in one atomic database transaction. The exact physical retention mechanism belongs in the implementation plan.
@@ -459,7 +458,8 @@ It does not implement an API or command-line database operations.
 - **SC-003**: All reference cases for opening balances, expenses, income, liabilities, splits,
   edits, deletion, and security opening/transfers produce exact expected amounts and quantities.
 - **SC-004**: Every invalid or fault-injected write case leaves zero partial entries and zero
-  unintended duplicates; conflicts and uncertain outcomes are distinguishable to the user.
+  unintended duplicates from repeated submissions during a pending save; stale-version
+  conflicts are distinguishable from other failures.
 - **SC-005**: Every pair of different reconciliation states on a two-account entry survives
   refresh and restart independently, with no balance change caused by status-only updates.
 - **SC-006**: The owner can create a connection profile, open a prepared empty database,

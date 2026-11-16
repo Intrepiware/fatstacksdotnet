@@ -112,8 +112,8 @@ It is distinct from the local bigint BookId used for relationships. These identi
 A profile records its expected Book ID after the first successful association. On later opens,
 verify the actual Book ID before activating the book. Reject a mismatch. Require explicit
 reassociation to target a different book; editing a connection string is not reassociation.
-The data model defines bigint record IDs and the specific GUID uses for logical book identity,
-local profile identity, and operation correlation.
+The data model defines bigint record IDs and the GUID uses for logical book identity
+and local profile identity.
 
 Future scripts can use stable profile IDs instead of changeable friendly names. A future API
 will need its own host-configured connections and authorized Book ID resolution. Automated
@@ -222,12 +222,14 @@ These examples are synthetic acceptance fixtures, not seed data for a real user'
 
 ## Persistence Design
 
-The technical plan uses EF Core for reads and simple metadata updates. Stored procedures handle
-writes with complex accounting or history checks. One Infrastructure repository contains all
-application procedure calls. The operation matrix documents why guarded writes use procedures.
-Grate owns all database definitions and schema changes, including tables. EF mappings do not create or migrate the database. See the
-[operation matrix](contracts/application-services.md#persistence-operation-matrix).
+Use stored procedures for whole journal saves and deletes. Their transactions cover the complete
+entry, version checks, and affected security history. Use a procedure for full-history register
+balances before filtering. One Infrastructure repository contains all procedure calls.
 
-FR-017 conflict checks and durable outcome recovery apply only to journal entries and lines.
-Account, book, and security-definition setup retain ordinary validation and atomic writes,
-without expected-version checks, CommandReceipt records, or protected pending-operation files.
+Use ordinary EF Core operations for book, account, and security-definition setup. Use an EF
+transaction for line reconciliation and its version checks.
+The [operation matrix](contracts/application-services.md#persistence-operation-matrix) records
+the reason for each path. Grate owns every database definition and schema change.
+
+FR-017 stale-version checks and atomicity requirements apply only to journal entries and lines.
+See [data-model.md](data-model.md) for fields and constraints.
