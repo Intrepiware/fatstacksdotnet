@@ -14,6 +14,37 @@ namespace FatStacks.WindowsChecks;
 public sealed class WindowBehaviorTests
 {
     [STATestMethod]
+    public void RepeatedNewProfileClearsPasswordBoxAndAcceptsReplacementCredential()
+    {
+        var model = Model();
+        var window = new ConnectionWindow(model);
+        try
+        {
+            window.Show();
+            model.NewCommand.Execute(null);
+            model.Integrated = false;
+            var password = (PasswordBox)window.FindName("Password");
+            password.Password = "synthetic-old-password";
+            model.NewCommand.Execute(null);
+            Pump();
+            Assert.AreEqual("", password.Password);
+            Assert.IsNull(model.Selected);
+            model.FriendlyName = "New profile";
+            model.Server = "unused";
+            model.Database = "Test";
+            model.Integrated = false;
+            password.Password = "synthetic-replacement-password";
+            model.SaveCommand.Execute(null);
+            Pump();
+            Assert.AreEqual("Profile saved.", model.Status);
+            var saved = model.Profiles.Single();
+            Assert.AreEqual("synthetic-replacement-password", new Microsoft.Data.SqlClient.SqlConnectionStringBuilder(saved.Settings.ConnectionString).Password);
+            Assert.AreEqual("synthetic-replacement-password", password.Password);
+        }
+        finally { window.Close(); }
+    }
+
+    [STATestMethod]
     public void IntegratedAuthenticationDisablesSqlCredentialsInBothDialogs()
     {
         var model = Model();

@@ -8,6 +8,33 @@ namespace FatStacks.WindowsChecks;
 public sealed class ConnectionViewModelTests
 {
     [TestMethod]
+    public async Task RepeatedNewProfileClearsPasswordPresentationAndSavedCredential()
+    {
+        var (model, store, _) = await ModelAsync();
+        var displayedPassword = "";
+        // Match ConnectionWindow's explicit PasswordBox synchronization (no text binding).
+        model.PropertyChanged += (_, e) =>
+        {
+            if (e.PropertyName == nameof(ConnectionViewModel.Selected) && model.Selected is null)
+                displayedPassword = "";
+        };
+        model.NewCommand.Execute(null);
+        displayedPassword = "synthetic-old-password";
+        model.Password = displayedPassword;
+        model.NewCommand.Execute(null);
+        Assert.AreEqual("", displayedPassword);
+        Assert.IsNull(model.Selected);
+        model.FriendlyName = "New profile";
+        model.Server = "unused";
+        model.Database = "Test";
+        model.Integrated = false;
+        model.SaveCommand.Execute(null);
+        Assert.AreEqual("Profile saved.", model.Status);
+        var saved = store.State.Profiles.Single(x => x.FriendlyName == "New profile");
+        Assert.AreEqual("", new Microsoft.Data.SqlClient.SqlConnectionStringBuilder(saved.Settings.ConnectionString).Password);
+    }
+
+    [TestMethod]
     public async Task ManualOpenRemainsUsableWhenProfileWritesFail()
     {
         var (model, store, connections) = await ModelAsync();

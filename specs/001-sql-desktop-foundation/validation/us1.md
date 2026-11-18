@@ -189,3 +189,17 @@ script was executed locally with the same SQL Server image and a clean source ch
 26 SQL-suite cases passed, 13 prerequisites were skipped, and zero failed. The skipped cases
 are the separate runtime login and 12 dedicated transport cases. Hosted Actions rerun remains
 pending; these results do not establish interactive Windows acceptance.
+
+## PR review: repeated New profile password reset — 2026-11-18
+
+Review finding `discussion_r4612693725` identified a stale PasswordBox after pressing New
+while no saved profile was selected. The model cleared its password but emitted no Selected
+notification, so the dialog still showed the previous credential. New now notifies the dialog
+on every reset, including a null-to-null selection. No password is added to bindings or events.
+
+The focused model regression failed before the fix with the previous synthetic password still
+displayed. After the fix all nine linked connection-view-model cases passed on Linux, and
+all 28 service cases passed. An isolated solution build compiled the added WPF PasswordBox
+regression with zero warnings/errors. That test resets New twice, verifies the visible field
+is empty, then enters and saves a replacement credential. Actual WPF execution remains
+unverified on Linux; run WindowBehaviorTests on an interactive Windows desktop.

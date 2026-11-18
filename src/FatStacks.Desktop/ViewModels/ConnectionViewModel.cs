@@ -45,7 +45,16 @@ public sealed class ConnectionViewModel : ObservableObject
         TestCommand = new(() => RunAsync(TestAsync), () => Idle);
         OpenCommand = new(() => RunAsync(OpenAsync), () => Idle);
         RemoveCommand = new(() => RunAsync(RemoveAsync), () => Idle);
-        NewCommand = new(() => { Selected = null; FriendlyName = ""; Server = ""; Database = ""; UserName = ""; Password = ""; Integrated = true; TrustCertificate = false; OptionalEncryption = false; Status = "Enter a new connection."; return Task.CompletedTask; }, () => Idle);
+        NewCommand = new(() =>
+        {
+            // PasswordBox synchronization must also run when no saved profile was selected.
+            if (Selected is null) Changed(nameof(Selected));
+            else Selected = null;
+            FriendlyName = ""; Server = ""; Database = ""; UserName = ""; Password = "";
+            Integrated = true; TrustCertificate = false; OptionalEncryption = false;
+            Status = "Enter a new connection.";
+            return Task.CompletedTask;
+        }, () => Idle);
         commands = [SaveCommand, TestCommand, OpenCommand, RemoveCommand, NewCommand];
     }
     public async Task<bool> LoadAsync()
