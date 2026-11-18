@@ -15,24 +15,39 @@ jobs:
       - run: dotnet test --project tests/FatStacks.Tests/FatStacks.Tests.csproj --no-build
   sql-server:
     runs-on: ubuntu-latest
-    services:
-      sql:
-        image: mcr.microsoft.com/mssql/server:2022-latest
-        env:
-          ACCEPT_EULA: Y
-          MSSQL_SA_PASSWORD: ${{ secrets.FATSTACKS_CI_SQL_PASSWORD }}
-          SQLCMDPASSWORD: ${{ secrets.FATSTACKS_CI_SQL_PASSWORD }}
-        ports: [1433:1433]
-        options: >-
-          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -C -Q 'SELECT 1'"
-          --health-interval 10s --health-timeout 5s --health-retries 15
-    env:
-      FATSTACKS_MAINTENANCE_CONNECTION: Server=localhost,1433;Database=master;User ID=sa;Password=${{ secrets.FATSTACKS_CI_SQL_PASSWORD }};Encrypt=True;TrustServerCertificate=True
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
         with:
           global-json-file: global.json
+      - name: Start isolated SQL Server
+        shell: bash
+        run: |
+          set -euo pipefail
+          export MSSQL_SA_PASSWORD="Fs1!$(openssl rand -hex 32)"
+          export SQLCMDPASSWORD="$MSSQL_SA_PASSWORD"
+          echo "::add-mask::$MSSQL_SA_PASSWORD"
+          docker run --detach --name fatstacks-ci-sql \
+            --env ACCEPT_EULA=Y --env MSSQL_SA_PASSWORD --env SQLCMDPASSWORD \
+            --publish 127.0.0.1::1433 \
+            --health-cmd "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -C -Q 'SELECT 1'" \
+            --health-interval 2s --health-timeout 5s --health-retries 30 \
+            mcr.microsoft.com/mssql/server:2022-latest
+          for attempt in {1..60}; do
+            health=$(docker inspect --format '{{.State.Health.Status}}' fatstacks-ci-sql)
+            if [ "$health" = healthy ]; then
+              port=$(docker port fatstacks-ci-sql 1433/tcp | cut -d: -f2)
+              echo "FATSTACKS_MAINTENANCE_CONNECTION=Server=127.0.0.1,$port;Database=master;User ID=sa;Password=$MSSQL_SA_PASSWORD;Encrypt=True;TrustServerCertificate=True" >> "$GITHUB_ENV"
+              exit 0
+            fi
+            if [ "$health" = unhealthy ]; then break; fi
+            sleep 2
+          done
+          echo "::error::The isolated SQL Server did not become healthy."
+          exit 1
       - run: dotnet test --project tests/FatStacks.SqlTests/FatStacks.SqlTests.csproj
+      - name: Remove isolated SQL Server
+        if: always()
+        run: docker rm --force fatstacks-ci-sql || true
 # Windows UI Automation requires an interactive desktop. Run it on a configured interactive
 # Windows runner as described in docs/testing.md; a hosted build is not UI acceptance evidence.

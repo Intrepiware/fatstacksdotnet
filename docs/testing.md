@@ -91,7 +91,11 @@ that the full SQL suite failed 13 fixture opens with SQL category 0, including w
 host.docker.internal,1433 override; TCP reachability does not establish a usable SQL session.
 No live transport acceptance follows from that run. Windows execution remains unavailable on Linux.
 
-Configure the GitHub Actions secret FATSTACKS_CI_SQL_PASSWORD before running the SQL CI job.
+The SQL CI job generates a temporary password for its disposable SQL Server container, masks
+it in logs, waits for an authenticated health check, and supplies the same credential to the
+tests. It publishes SQL only on a random loopback port and removes the container after the run.
+No repository SQL password secret is required. Dedicated transport fixtures and a separate
+runtime login remain additional checks; missing fixtures are reported as skipped.
 
 ## Interactive Windows
 

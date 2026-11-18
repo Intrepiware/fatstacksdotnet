@@ -170,3 +170,22 @@ dotnet /tmp/fatstacks-t075-artifacts/bin/Harness/debug/Harness.dll
 The temporary harness is environment-local. The maintained tests live in WindowsChecks and
 run there on Windows. The final ordinary `dotnet build FatStacks.slnx --no-restore` also
 passed with zero warnings/errors; it does not depend on the temporary harness or audit override.
+
+## PR #1 pipeline correction — 2026-11-18
+
+Downloaded job archives under `.workspace/ph01-us01/unit-test-logs/` confirm the Windows
+format failure is ENDOFLINE and the SQL failures are login category 18456. The SQL test step
+received an empty password because its repository secret was unavailable. No financial or
+schema assertion was reached by those 13 failed cases.
+
+`.gitattributes` now enforces LF on checkout while preserving SQL definition merge attributes.
+A disposable Windows-style CRLF checkout reproduced 2,399 formatting errors before the fix;
+a fresh checkout with the attribute passes. Local full-solution formatting verification passes.
+
+The SQL workflow now generates and masks an ephemeral container password, waits for an
+authenticated health check, passes the same credential through GITHUB_ENV, and removes the
+container even if tests fail. It requires no repository password secret. The exact startup
+script was executed locally with the same SQL Server image and a clean source checkout:
+26 SQL-suite cases passed, 13 prerequisites were skipped, and zero failed. The skipped cases
+are the separate runtime login and 12 dedicated transport cases. Hosted Actions rerun remains
+pending; these results do not establish interactive Windows acceptance.
