@@ -11,6 +11,25 @@ namespace FatStacks.WindowsChecks;
 public sealed class ConnectionJourneyTests
 {
     [TestMethod]
+    public async Task ProfileAutomationSelectsContainerWhenNameBelongsToDisplayText()
+    {
+        using var desktop = new DesktopFixture();
+        var store = new ProfileStore(desktop.ProfilePath, new WindowsSecretProtector());
+        var first = new ConnectionProfile(Guid.NewGuid(), "First", new() { ConnectionString = "Server=unused;Database=First;Integrated Security=True" });
+        var second = new ConnectionProfile(Guid.NewGuid(), "Second", new() { ConnectionString = "Server=unused;Database=Second;Integrated Security=True" });
+        Assert.IsTrue((await store.SaveAsync(new(1, [first, second], null))).IsSuccess);
+        // No startup preference: inspect profile selection without opening a SQL connection.
+        await desktop.StartAsync();
+        foreach (var name in new[] { "Second", "First", "Second" })
+        {
+            await desktop.SelectProfileAsync(name);
+            await desktop.WaitValueAsync("FriendlyName", name);
+            await desktop.WaitValueAsync("Database", name);
+        }
+        Assert.IsNull((await store.LoadAsync()).Value!.LastSuccessfulProfileId);
+    }
+
+    [TestMethod]
     public async Task TestPreservesActiveBookAndStartupPreferenceAndActiveRemovalIsRejected()
     {
         await using var a = await SqlTests.Fixtures.BookDatabaseFixture.CreateAsync(); await a.InitializeAsync();

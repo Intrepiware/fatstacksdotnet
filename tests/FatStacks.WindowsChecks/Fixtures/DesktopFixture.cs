@@ -33,6 +33,16 @@ public sealed class DesktopFixture : IDisposable
         for (var i = 0; i < 150; i++) { if (Find(id)?.Current.Name.Contains(expected, StringComparison.Ordinal) == true) return; await Task.Delay(100); }
         Assert.Fail($"Desktop control {id} did not show the expected state.");
     }
+    public async Task WaitValueAsync(string id, string expected)
+    {
+        for (var i = 0; i < 150; i++)
+        {
+            var control = Find(id);
+            if (control is not null && ((ValuePattern)control.GetCurrentPattern(ValuePattern.Pattern)).Current.Value == expected) return;
+            await Task.Delay(100);
+        }
+        Assert.Fail($"Desktop control {id} did not show the expected value.");
+    }
     public async Task InvokeAsync(string id)
     {
         var control = await WaitAsync(id);
@@ -43,8 +53,17 @@ public sealed class DesktopFixture : IDisposable
     public async Task SelectProfileAsync(string name)
     {
         var list = await WaitAsync("Profiles");
-        var item = list.FindFirst(TreeScope.Descendants, new PropertyCondition(AutomationElement.NameProperty, name));
-        Assert.IsNotNull(item, "Saved profile not found."); ((SelectionItemPattern)item.GetCurrentPattern(SelectionItemPattern.Pattern)).Select();
+        var nameCondition = new PropertyCondition(AutomationElement.NameProperty, name);
+        var items = list.FindAll(TreeScope.Descendants, new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.ListItem));
+        foreach (AutomationElement item in items)
+        {
+            // DisplayMemberPath may put the friendly name on a Text child, not its selectable container.
+            if (item.Current.Name != name && item.FindFirst(TreeScope.Descendants, nameCondition) is null) continue;
+            Assert.IsTrue(item.TryGetCurrentPattern(SelectionItemPattern.Pattern, out var pattern), "Saved profile item does not support selection.");
+            ((SelectionItemPattern)pattern).Select();
+            return;
+        }
+        Assert.Fail("Selectable saved profile not found.");
     }
     public async Task SetAsync(string id, string value) => ((ValuePattern)(await WaitAsync(id)).GetCurrentPattern(ValuePattern.Pattern)).SetValue(value);
     public void Stop()

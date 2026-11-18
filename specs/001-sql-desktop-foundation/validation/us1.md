@@ -203,3 +203,43 @@ all 28 service cases passed. An isolated solution build compiled the added WPF P
 regression with zero warnings/errors. That test resets New twice, verifies the visible field
 is empty, then enters and saves a replacement credential. Actual WPF execution remains
 unverified on Linux; run WindowBehaviorTests on an interactive Windows desktop.
+
+## WindowsChecks profile selection — 2026-11-18
+
+The supplied `windowschecks-2026.11.18_05.54.txt` records an actual Windows run:
+22 total, 18 passed, four failed, none skipped. All four ConnectionJourneyTests stop in
+DesktopFixture.SelectProfileAsync with `InvalidOperationException: Unsupported Pattern`.
+Their later switch/restart/reassociation/preference assertions were not reached.
+
+The fixture searched all descendants by friendly name and requested SelectionItemPattern
+from the first match. WPF DisplayMemberPath can expose the matching name on a Text element,
+which cannot be selected. The helper now searches ListItem containers, matches either the
+container name or its descendant display text, and selects the container. No application
+behavior or database code changed.
+
+The follow-up `windowschecks-2026.11.18_05.58.txt` records 23 total, 22 passed,
+one failed, none skipped. All four original journeys now pass. The only failure is the
+new in-process UI Automation regression timing out while waiting for its worker task.
+Its generic timeout message mentioned closing, but no window-close operation failed.
+
+Moved `ProfileAutomationSelectsContainerWhenNameBelongsToDisplayText` into ConnectionJourneyTests
+and changed it to launch a separate desktop process using the existing fixture. It selects
+Second/First/Second and waits for the friendly-name and database fields to match each selected
+profile. No startup preference is set, so the synthetic profiles need no SQL connection.
+This avoids same-process UI Automation dispatch/reentrancy and the custom dispatcher-pump wait.
+The isolated solution build passed with zero warnings/errors, and changed-file whitespace
+verification passed. The replacement regression remains unexecuted on Linux and requires a
+Windows rerun:
+
+```powershell
+dotnet run --project tests/FatStacks.WindowsChecks/FatStacks.WindowsChecks.csproj
+```
+
+### Windows rerun confirmation — 2026-11-18
+
+The owner reports that all WindowsChecks now pass after moving the profile-selection
+regression to the separate-process fixture. This confirms the rerun on the owner's Windows
+environment, including the four previously failing connection journeys and the replacement
+profile-selection regression. The final run's detailed log and exact counts were not supplied.
+This is owner-reported execution evidence, not a run performed in the Linux sandbox.
+Dedicated SQL transport fixtures and remaining manual keyboard/focus checks are unchanged.
