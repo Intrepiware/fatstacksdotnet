@@ -1,5 +1,66 @@
 # Decisions Ledger: Fat Stacks.NET — SQL Desktop Foundation
 
+## 2026-11-17 12:06:01 +00:00: Use migrations as authoritative table definitions
+
+**Files Updated:** [constitution](../../.specify/memory/constitution.md), [spec.md](spec.md),
+[plan.md](plan.md), [research.md](research.md), [data-model.md](data-model.md), [tasks.md](tasks.md),
+[requirements checklist](checklists/requirements.md), [database guide](../../database/README.md).
+
+Amend the constitution from 2.0.1 to 3.0.0 at the owner's request. Remove the requirement to
+maintain separate current table definitions. One-time creation and alteration migrations are
+authoritative for tables. Applied migrations remain immutable. Repeatable SQL objects retain
+one current executable definition in the grate package.
+
+Remove database/tables and its ten review-only SQL files. Align active artifacts and future
+verification tasks with this rule. No migration scripts, stored database objects, application
+behavior, or schema-version values change. Existing databases need no migration for this cleanup.
+
+---
+
+## 2026-11-16 03:49:46 +00:00: Refine connection dialogs and fix the close path
+
+**Files Updated:** [desktop UI contract](contracts/desktop-ui.md), [US1 validation](validation/us1.md).
+
+Disable SQL credentials when Windows integrated credentials are selected. Make the shell TLS
+warning dismissible. Replace setup actions with Close after successful initialization; retain
+retry controls after failure. These changes implement the user's connection-screen feedback.
+
+Defer the final main-window Close until its original Closing event returns. A synchronous
+disconnect could otherwise call Close during that event. Stop startup completion from reopening
+a dialog after closing starts. Add Windows regression checks; record that their execution still
+requires Windows. Ignore generated grate output in the shared gitignore.
+
+---
+
+## 2026-11-16 03:30:30 +00:00: Deliver implementation through US1
+
+**Files Updated:** [tasks.md](tasks.md), [quickstart.md](quickstart.md), [US1 validation](validation/us1.md).
+
+Deliver the .NET solution, shared grate schema, profile storage, connection/setup services,
+session switching, WPF connection dialogs, and service/SQL/Windows test projects. Mark completed
+tasks through US1. Keep T018 open for the dedicated transport matrix and T027 open for Windows
+execution. Do not mark unexecuted checks as passing.
+
+Separate maintenance and runtime SQL credentials. Verify the runtime login can open a prepared
+book while SQL denies DDL. Inject a deployment error to verify schema/version rollback. Record
+actual checks, target-environment limitations, and the implementation self-review in validation.
+
+---
+
+## 2026-11-16 03:27:22 +00:00: Run maintenance scripts in the schema transaction
+
+**Files Updated:** [database package](../../database/README.md), [testing guide](../../docs/testing.md).
+
+Run grate permissions and afterMigration in the schema transaction. The first live SQL test
+waited because autonomous permission scripts needed locks held by the same migration. The
+setup and repeated-initialization test passes after this change. Publish version 1 from
+`database/afterMigration/999_SetSchemaVersion.sql` after all preceding scripts succeed.
+
+Read local maintenance credentials from the ignored `fatstacks_maintenance.udl`. Keep runtime
+credentials in a separate file. The maintenance login creates and owns isolated test databases.
+
+---
+
 ## 2026-11-16 02:16:19 +00:00: Generate implementation tasks
 
 **Files Updated:** [tasks.md](tasks.md), [plan.md](plan.md), [spec.md](spec.md).

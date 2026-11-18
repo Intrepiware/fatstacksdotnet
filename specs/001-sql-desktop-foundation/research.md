@@ -77,7 +77,9 @@ an opening entry could leave a later transfer with insufficient holdings (FR-025
 
 ## D-006: Schema and Local Configuration
 
-**Decision:** Grate owns definitions and deployment. Runtime activation compares one exact schema
+**Decision:** Grate owns definitions and deployment. One-time migrations are authoritative for
+table creation and evolution. Keep no separate table-definition copies. Procedures, views, and
+other repeatable objects keep current executable definitions. Runtime activation compares one exact schema
 version and checks the profile's expected Book identity. Use a separate maintenance identity.
 Store profiles in user-local JSON and protect secret content with Windows current-user DPAPI.
 
@@ -119,7 +121,7 @@ justified when a platform API meets the requirement.
 
 ## Evidence and Limits
 
-Inputs are constitution 2.0.1, the spec, model notes, UI parity matrix, and architecture review.
+Inputs are constitution 3.0.0, the spec, model notes, UI parity matrix, and architecture review.
 Source spot checks confirm the .NET targets and full-history-before-filtering register behavior
 in `.workspace/dotnet-beancount/src`. Delegated design research reviewed conflict handling and
 holding-history risks. No database, Windows UI, or performance test was run during planning.

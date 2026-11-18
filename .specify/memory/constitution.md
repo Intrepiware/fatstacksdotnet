@@ -1,17 +1,15 @@
 <!--
 Sync Impact Report (temporary review material; remove before committing)
-Version change: 2.0.0 → 2.0.1 (PATCH: clarify monetary validation boundaries)
-Modified guidance: Technology Constraints, monetary range and precision validation
-Added guidance: validate service inputs and final persisted values; permit extra decimal
-precision in intermediate calculations and value-preserving trailing zeros
-No requirement for per-assignment checks, custom money types, or duplicate SQL numeric parsing
-Related feature documents and safety review aligned; no template source changes
-Compatibility: documentation only; no application or stored schema modified
+Version change: 2.0.1 → 3.0.0 (MAJOR: remove the mandatory table-definition copies)
+Modified guidance: Technology and Platform Constraints, grate schema ownership
+Added sections: None
+Removed requirement: separate current table definitions alongside immutable migrations
+Tables use authoritative one-time creation/evolution migrations only.
+Repeatable SQL objects retain current executable definitions in the grate package.
+Compatibility: remove review-only files; no stored schema or migration script changes
+Related feature artifacts and database guidance aligned; template sources unchanged
 Deferred placeholders: None
 -->
-
-
-
 
 # Fat Stacks.NET Constitution
 
@@ -167,10 +165,12 @@ tooling. Material dependency changes MUST be reviewed before adoption.
 - grate MUST own all database definitions, deployment, and schema changes. This includes
   tables, procedures, views, functions, types, indexes, and constraints. EF Core migrations
   and EF schema creation MUST NOT be used. This is a project-wide decision.
-  Keep one current definition per object in the grate package so concurrent changes meet in
-  the same file. Review combined changes even when Git reports no conflict. Applied one-time
-  migration scripts MUST remain immutable. Table evolution MUST use new migration scripts;
-  current table definitions MUST remain consistent with the migrated schema.
+  Repeatable SQL objects, such as procedures, views, and functions, MUST each have one current
+  executable definition in the grate package. Review combined changes even when Git reports
+  no conflict. Table creation and evolution MUST use one-time migration scripts. Applied
+  migration scripts MUST remain immutable; table changes MUST use new migration scripts.
+  These migrations are the authoritative table definitions. Do not maintain separate table
+  definition copies or a review-only tables directory.
 - Application-owned tables MUST default to bigint primary keys. Small enum tables, such as
   AccountType and AccountClass, MUST use tinyint keys. A uniqueidentifier requires a documented
   specific purpose, such as a StableIdentifier or PublicId; it MUST NOT be the default key type.
@@ -333,4 +333,4 @@ Exceptions MUST record the affected rule, rationale, scope, compensating measure
 and review or expiry condition. A maintainer MUST approve an exception before the affected
 change is merged. Repeated exceptions MUST trigger a review of the governing rule.
 
-**Version**: 2.0.1 | **Ratified**: 2026-11-14 | **Last Amended**: 2026-11-15
+**Version**: 3.0.0 | **Ratified**: 2026-11-14 | **Last Amended**: 2026-11-17

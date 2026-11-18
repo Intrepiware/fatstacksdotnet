@@ -29,7 +29,7 @@ before adoption. These are implementation checks, not completed dependency verif
 
 ## Constitution Check
 
-The pre-design gate passes against constitution 2.0.1. The completed design also passes the
+The pre-design gate passes against constitution 3.0.0. The completed design also passes the
 following document checks. Runtime evidence remains pending.
 
 | Principle or constraint | Design evidence |
@@ -86,7 +86,6 @@ tests/
   FatStacks.WindowsChecks/
 database/
   up/
-  tables/
   sprocs/
   views/
   types/
@@ -178,7 +177,8 @@ Keep runtime activation disconnected until both version and book checks pass.
 
 An interrupted grate run needs an explicit maintenance rerun after inspection of grate history.
 Do not add automatic repair or an object-inventory protocol. Keep applied one-time scripts
-immutable. Add table changes as new migrations and maintain matching current definitions.
+immutable. Add table changes as new migrations. These scripts are authoritative for tables;
+do not keep separate table-definition copies. Repeatable objects retain executable definitions.
 
 Deliver a framework-dependent Windows x64 package. Users install the .NET 10 desktop runtime,
 extract the package, and start the executable. Updates replace application files while the app

@@ -1,0 +1,38 @@
+name: build-and-test
+on: [push, pull_request]
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - run: dotnet tool restore
+      - run: dotnet restore FatStacks.slnx
+      - run: dotnet build FatStacks.slnx --no-restore
+      - run: dotnet format FatStacks.slnx --verify-no-changes --no-restore
+      - run: dotnet test --project tests/FatStacks.Tests/FatStacks.Tests.csproj --no-build
+  sql-server:
+    runs-on: ubuntu-latest
+    services:
+      sql:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: Y
+          MSSQL_SA_PASSWORD: ${{ secrets.FATSTACKS_CI_SQL_PASSWORD }}
+          SQLCMDPASSWORD: ${{ secrets.FATSTACKS_CI_SQL_PASSWORD }}
+        ports: [1433:1433]
+        options: >-
+          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -C -Q 'SELECT 1'"
+          --health-interval 10s --health-timeout 5s --health-retries 15
+    env:
+      FATSTACKS_MAINTENANCE_CONNECTION: Server=localhost,1433;Database=master;User ID=sa;Password=${{ secrets.FATSTACKS_CI_SQL_PASSWORD }};Encrypt=True;TrustServerCertificate=True
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - run: dotnet test --project tests/FatStacks.SqlTests/FatStacks.SqlTests.csproj
+# Windows UI Automation requires an interactive desktop. Run it on a configured interactive
+# Windows runner as described in docs/testing.md; a hosted build is not UI acceptance evidence.

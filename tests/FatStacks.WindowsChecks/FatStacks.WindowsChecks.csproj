@@ -1,0 +1,5 @@
+<Project Sdk="MSTest.Sdk/4.5.3">
+  <PropertyGroup><TargetFramework>net10.0-windows</TargetFramework><UseWPF>true</UseWPF></PropertyGroup>
+  <ItemGroup><ProjectReference Include="../../src/FatStacks.Core/FatStacks.Core.csproj" /><ProjectReference Include="../../src/FatStacks.Infrastructure/FatStacks.Infrastructure.csproj" /><ProjectReference Include="../../src/FatStacks.Desktop/FatStacks.Desktop.csproj" /></ItemGroup>
+  <ItemGroup><Compile Include="../FatStacks.SqlTests/Fixtures/BookDatabaseFixture.cs" Link="Fixtures/BookDatabaseFixture.cs" /></ItemGroup>
+</Project>

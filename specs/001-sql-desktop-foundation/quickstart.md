@@ -1,7 +1,8 @@
 # Quickstart and Validation Guide
 
-**Status:** Planned implementation guide. The solution, scripts, and test projects named below
-will be created during implementation. These commands have not passed in this planning run.
+**Status:** Implementation is available through US1. See [US1 validation](validation/us1.md)
+for executed checks and remaining target-environment checks. Accounting workflows below remain
+planned for US2–US5.
 
 ## Prerequisites
 
@@ -16,7 +17,7 @@ command-line arguments, and test output. Use integrated authentication or protec
 
 ## Restore, Build, Test, and Run
 
-Run from the repository root in PowerShell after implementation:
+Run from the repository root in PowerShell:
 
 ```powershell
 dotnet tool restore

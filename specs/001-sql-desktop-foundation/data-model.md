@@ -173,9 +173,9 @@ The initial application expects version 1. Missing, unreadable, or unequal versi
 activation. This is independent of grate's own migration history.
 
 Keep one current definition per procedure/view in grate's standard sprocs/views folders.
-Use immutable scripts in up for table creation and evolution. Keep current table definitions in
-tables as review references; do not execute both representations on initialization. Include SQL
-types, constraints, and indexes in the deployment package. Use `text -merge` Git attributes on
+Use immutable scripts in up for table creation and evolution. These scripts are authoritative
+for tables; keep no separate table-definition copies. Include SQL types, constraints, and
+indexes in the deployment package. Use `text -merge` Git attributes on
 sprocs/views. Do not use EF EnsureCreated, EnsureDeleted, or migrations.
 
 ## Indexes and Numeric Boundaries

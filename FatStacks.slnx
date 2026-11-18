@@ -1,0 +1,4 @@
+<Solution>
+  <Folder Name="/src/"><Project Path="src/FatStacks.Core/FatStacks.Core.csproj" /><Project Path="src/FatStacks.Infrastructure/FatStacks.Infrastructure.csproj" /><Project Path="src/FatStacks.Desktop/FatStacks.Desktop.csproj" /></Folder>
+  <Folder Name="/tests/"><Project Path="tests/FatStacks.Tests/FatStacks.Tests.csproj" /><Project Path="tests/FatStacks.SqlTests/FatStacks.SqlTests.csproj" /><Project Path="tests/FatStacks.WindowsChecks/FatStacks.WindowsChecks.csproj" /></Folder>
+</Solution>
