@@ -1,0 +1,4 @@
+* text=auto eol=lf
+
+database/sprocs/** text -merge
+database/views/** text -merge

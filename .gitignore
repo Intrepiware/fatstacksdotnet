@@ -483,3 +483,11 @@ $RECYCLE.BIN/
 
 # Other
 .workspace
+# Local test credentials and generated artifacts
+/output/
+.env*
+secrets/
+TestResults/
+artifacts/
+
+/.credentials/

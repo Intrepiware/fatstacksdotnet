@@ -5,7 +5,7 @@
 **Created**: 2026-11-14
 
 **Status**: Tasked — ready for implementation
-**Governing constitution**: [Version 2.0.1](../../.specify/memory/constitution.md)
+**Governing constitution**: [Version 3.0.0](../../.specify/memory/constitution.md)
 **Decision history**: [Decisions ledger](decisions-ledger.md)
 
 **Input**: Establish Fat Stacks.NET on SQL Server, reuse the existing Windows UI with practical

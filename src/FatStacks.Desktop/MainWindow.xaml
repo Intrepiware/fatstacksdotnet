@@ -1,0 +1,18 @@
+<Window x:Class="FatStacks.Desktop.MainWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="Fat Stacks.NET" Width="1360" Height="860" MinWidth="960" MinHeight="600" FontFamily="Segoe UI" Background="White" AutomationProperties.AutomationId="MainWindow">
+ <DockPanel>
+  <Border DockPanel.Dock="Top" BorderBrush="#DFE6EC" BorderThickness="0,0,0,1" Padding="20,16"><Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+   <StackPanel><TextBlock Text="FAT STACKS.NET" FontSize="11" Foreground="#748498" FontWeight="SemiBold"/><TextBlock x:Name="BookTitle" Text="Connect to your book" FontSize="22" FontWeight="SemiBold" AutomationProperties.AutomationId="ActiveBook"/><TextBlock x:Name="BookIdentity" Foreground="#748498" AutomationProperties.AutomationId="BookIdentity"/></StackPanel>
+   <StackPanel Grid.Column="1" Orientation="Horizontal"><Button Content="Connections…" Click="ConnectionsClicked" AutomationProperties.AutomationId="Connections"/><Button x:Name="DisconnectButton" Content="Disconnect" Click="DisconnectClicked" IsEnabled="False" AutomationProperties.AutomationId="Disconnect"/></StackPanel>
+  </Grid></Border>
+  <StatusBar DockPanel.Dock="Bottom" Padding="12,6" Background="#F7F9FB"><TextBlock x:Name="Status" Text="Choose a saved database connection." AutomationProperties.AutomationId="MainStatus"/></StatusBar>
+  <Border DockPanel.Dock="Top" Background="#FFF1CF" Padding="12">
+   <Border.Style><Style TargetType="Border"><Style.Triggers><DataTrigger Binding="{Binding Text, ElementName=Warning}" Value=""><Setter Property="Visibility" Value="Collapsed"/></DataTrigger></Style.Triggers></Style></Border.Style>
+   <DockPanel><Button x:Name="DismissWarning" DockPanel.Dock="Right" Content="Dismiss" Click="DismissWarningClicked" AutomationProperties.AutomationId="DismissSessionWarning"/><TextBlock x:Name="Warning" TextWrapping="Wrap" VerticalAlignment="Center" AutomationProperties.AutomationId="SessionWarning"/></DockPanel>
+  </Border>
+  <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="290" MinWidth="210"/><ColumnDefinition Width="5"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+   <DockPanel Background="#F8FAFC"><TextBlock Text="ACCOUNTS" Margin="18,18" Foreground="#748498" FontWeight="SemiBold" DockPanel.Dock="Top"/><TextBlock Text="Account setup and the register arrive in US2." TextWrapping="Wrap" Margin="18,12"/></DockPanel>
+   <GridSplitter Grid.Column="1" Width="5" Background="#E4EAF0" HorizontalAlignment="Stretch"/>
+   <StackPanel Grid.Column="2" VerticalAlignment="Center" HorizontalAlignment="Center" Margin="30"><TextBlock Text="Your book starts here" FontSize="24" FontWeight="SemiBold"/><TextBlock Text="Connect to an initialized database to verify its identity and schema." TextWrapping="Wrap" Margin="0,12"/></StackPanel>
+  </Grid>
+ </DockPanel>
+</Window>

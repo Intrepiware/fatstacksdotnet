@@ -10,17 +10,20 @@ the last successful profile. Keep a busy indicator and Cancel available. Missing
 profiles lead to the connection dialog. No fallback database or automatic setup is allowed.
 
 The dialog supports named profiles, server/database names, integrated or SQL authentication,
-Test, Open, and explicit Initialize. Profile rename preserves its ID. Remove affects local
+Test, Open, and explicit Initialize. Selecting Windows integrated credentials disables the SQL
+username and password fields in both connection and maintenance dialogs. Profile rename preserves its ID. Remove affects local
 configuration only and requires an active profile to disconnect first. Reassociation to a
 new Book identity is explicit. Resolve unsaved edits with Save, Discard, or Cancel before switching.
 
 Show a visible non-blocking warning for plaintext SQL transport or unverified certificate trust,
 including self-signed/expired certificate cases. Use TLS when available. These warnings need no
-confirmation. Authentication and unusable protocol errors still fail the connection. Schema
+confirmation. The shell warning has a Dismiss button. Connection test warnings remain available
+in the connection dialog. Authentication and unusable protocol errors still fail the connection. Schema
 version failure is fatal to activation and leaves the dialog available (FR-030/032).
 
 Setup collects book name, currency (USD default, EUR or JPY alternatives), and Windows time zone.
-It requests separate maintenance credentials for schema work. Minimal account setup supports
+It requests separate maintenance credentials for schema work. After successful initialization,
+replace Initialize and Cancel with Close. A failed initialization retains the retry controls. Minimal account setup supports
 create, rename, group, parent selection, and close. Show the type-determined accounting class.
 Security setup collects name, symbol, and declared quantity precision.
 

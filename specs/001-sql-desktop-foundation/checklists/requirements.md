@@ -57,7 +57,7 @@
 
 ## Notes
 
-- The governing [constitution is version 2.0.1](../../../.specify/memory/constitution.md).
+- The governing [constitution is version 3.0.0](../../../.specify/memory/constitution.md).
   Its technology constraints are stated in the specification's Scope and Required Constraints.
   They include Autofac property injection, hybrid EF Core/procedure access, one procedure-call
   repository, grate ownership, database key conventions, date naming, decimal money, and UTC.
@@ -74,7 +74,7 @@
 - Acceptance Criteria are separate from functional requirements and state observable outcomes.
   The two-second/10,000-entry target is not a measured result.
 - Basic security openings/transfers, one book per database, and minimal setup are phase-1 scope.
-- Review covered all 33 functional requirements, 14 architecture findings, constitution 2.0.1,
+- Review covered all 33 functional requirements, 14 architecture findings, constitution 3.0.0,
   current rationale, and the [decisions ledger](../decisions-ledger.md). No blocking requirement
   clarification remains. The ledger contains change history; active documents state current rules.
 - This is a document and static-source review. It does not establish passing application,
