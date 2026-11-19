@@ -7,16 +7,16 @@
    <TextBlock Text="Database connections" FontSize="23" FontWeight="SemiBold" Margin="0,0,0,12"/>
    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"><StackPanel>
     <StackPanel IsEnabled="{Binding Idle}">
-     <Label Content="Friendly name" Target="{Binding ElementName=Friendly}"/><TextBox x:Name="Friendly" Text="{Binding FriendlyName,UpdateSourceTrigger=PropertyChanged}" Padding="6" AutomationProperties.AutomationId="FriendlyName"/>
-     <Label Content="Server (for example localhost,1433)" Target="{Binding ElementName=Server}"/><TextBox x:Name="Server" Text="{Binding Server,UpdateSourceTrigger=PropertyChanged}" Padding="6" AutomationProperties.AutomationId="Server"/>
-     <Label Content="Database" Target="{Binding ElementName=Database}"/><TextBox x:Name="Database" Text="{Binding Database,UpdateSourceTrigger=PropertyChanged}" Padding="6" AutomationProperties.AutomationId="Database"/>
+     <Label Content="Friendly name" Target="{Binding ElementName=Friendly}"/><TextBox x:Name="Friendly" Text="{Binding FriendlyName,UpdateSourceTrigger=PropertyChanged}" AutomationProperties.AutomationId="FriendlyName"/>
+     <Label Content="Server (for example localhost,1433)" Target="{Binding ElementName=Server}"/><TextBox x:Name="Server" Text="{Binding Server,UpdateSourceTrigger=PropertyChanged}" AutomationProperties.AutomationId="Server"/>
+     <Label Content="Database" Target="{Binding ElementName=Database}"/><TextBox x:Name="Database" Text="{Binding Database,UpdateSourceTrigger=PropertyChanged}" AutomationProperties.AutomationId="Database"/>
      <CheckBox x:Name="IntegratedCredentials" Content="Use Windows integrated credentials" IsChecked="{Binding Integrated}" Margin="0,12,0,4" AutomationProperties.AutomationId="Integrated"/>
     <StackPanel>
      <StackPanel.Style><Style TargetType="StackPanel"><Style.Triggers>
       <DataTrigger Binding="{Binding IsChecked, ElementName=IntegratedCredentials}" Value="True"><Setter Property="IsEnabled" Value="False"/></DataTrigger>
      </Style.Triggers></Style></StackPanel.Style>
-     <Label Content="SQL username" Target="{Binding ElementName=UserName}"/><TextBox x:Name="UserName" Text="{Binding UserName,UpdateSourceTrigger=PropertyChanged}" Padding="6" AutomationProperties.AutomationId="UserName"/>
-     <Label Content="SQL password" Target="{Binding ElementName=Password}"/><PasswordBox x:Name="Password" PasswordChanged="PasswordChanged" Padding="6" AutomationProperties.AutomationId="Password"/>
+     <Label Content="SQL username" Target="{Binding ElementName=UserName}"/><TextBox x:Name="UserName" Text="{Binding UserName,UpdateSourceTrigger=PropertyChanged}" AutomationProperties.AutomationId="UserName"/>
+     <Label Content="SQL password" Target="{Binding ElementName=Password}"/><PasswordBox x:Name="Password" PasswordChanged="PasswordChanged" AutomationProperties.AutomationId="Password"/>
     </StackPanel>
      <CheckBox Content="Permit an unverified server certificate" IsChecked="{Binding TrustCertificate}" Margin="0,12,0,4"/>
      <CheckBox Content="Allow unencrypted SQL transport if TLS is unavailable" IsChecked="{Binding OptionalEncryption}" Margin="0,4"/>
