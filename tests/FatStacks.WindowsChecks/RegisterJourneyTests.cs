@@ -11,6 +11,34 @@ namespace FatStacks.WindowsChecks;
 public sealed class RegisterJourneyTests
 {
     [TestMethod]
+    public async Task AccountSetupInitializesOpenDateAndBlocksSaveUntilAccountsLoad()
+    {
+        var (_, session) = await OpenAsync();
+        using var ownedSession = session;
+        var pending = new TaskCompletionSource<IReadOnlyList<AccountRecord>>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var accounts = new Accounts { PendingList = pending.Task };
+        var model = new AccountSetupViewModel { Accounts = accounts, Session = session };
+
+        var load = model.LoadAsync();
+        Assert.IsFalse(model.Idle);
+        var today = new FatStacks.Core.Calendar.BookCalendar(session.Book.TimeZoneId).Today;
+        Assert.AreEqual(today, DateOnly.FromDateTime(model.Open));
+        Assert.IsFalse(await model.SaveAsync());
+        Assert.IsNull(accounts.Saved);
+
+        accounts.PendingList = null;
+        pending.SetResult(await accounts.ListAsync());
+        await load;
+
+        Assert.IsTrue(model.Idle);
+        Assert.AreEqual(2, model.Records.Count);
+        model.Name = "New account";
+        Assert.IsTrue(await model.SaveAsync());
+        Assert.AreEqual(today, accounts.Saved?.OpenDate);
+        Assert.AreEqual(accounts.Saved?.AccountId, model.Selected?.AccountId);
+    }
+
+    [TestMethod]
     public async Task AccountCreationSearchClosedNavigationAndRefreshKeepStableIds()
     {
         var (sessions, session) = await OpenAsync();
@@ -328,7 +356,9 @@ public sealed class RegisterJourneyTests
             var index = records.FindIndex(account => account.AccountId == accountId);
             records[index] = records[index] with { GroupId = groupId };
         }
-        public Task<IReadOnlyList<AccountRecord>> ListAsync(CancellationToken ct = default) => Task.FromResult<IReadOnlyList<AccountRecord>>(records.ToArray());
+        public Task<IReadOnlyList<AccountRecord>>? PendingList { get; set; }
+        public Task<IReadOnlyList<AccountRecord>> ListAsync(CancellationToken ct = default) =>
+            PendingList?.WaitAsync(ct) ?? Task.FromResult<IReadOnlyList<AccountRecord>>(records.ToArray());
         public Task<OperationResult<AccountRecord>> SaveAsync(AccountRequest r, CancellationToken ct = default)
         { Saved = new(records.Count + 1, 1, r.ParentAccountId, r.Name, r.TypeId, r.GroupId ?? 1, r.OpenDate, r.CloseDate); records.Add(Saved); return Task.FromResult(OperationResult<AccountRecord>.Success(Saved)); }
     }

@@ -134,12 +134,26 @@ public sealed class AccountSetupViewModel : ObservableObject
     }
     public async Task LoadAsync()
     {
+        if (Busy) return;
+        Busy = true;
+        try
+        {
+            New();
+            await ReadAccountsAsync();
+            RebuildBrowser();
+        }
+        finally { Busy = false; }
+    }
+
+    private async Task ReadAccountsAsync()
+    {
         Records = await Accounts.ListAsync(Session.Reads.Token);
         Parents = [new(null, "(No parent)"), .. Records
             .Select(x => new ParentChoice(x.AccountId, AccountCatalog.Path(x, Records)))
             .OrderBy(x => x.Name, StringComparer.OrdinalIgnoreCase)
             .ThenBy(x => x.Id)];
-        Changed(nameof(Records)); Changed(nameof(Parents)); New(); RebuildBrowser();
+        Changed(nameof(Records));
+        Changed(nameof(Parents));
     }
     public async Task<bool> SaveAsync()
     {
@@ -150,7 +164,14 @@ public sealed class AccountSetupViewModel : ObservableObject
             var result = await Accounts.SaveAsync(new(Selected?.AccountId, ParentId, Name, Type.Id, GroupIndex == 0 ? null : (byte)GroupIndex, DateOnly.FromDateTime(Open), Close is { } date ? DateOnly.FromDateTime(date) : null));
             Status = result.Message;
             if (!result.IsSuccess) return false;
-            try { await LoadAsync(); Selected = Records.Single(x => x.AccountId == result.Value!.AccountId); Status = "Account saved."; }
+            try
+            {
+                await ReadAccountsAsync();
+                New();
+                RebuildBrowser();
+                Selected = Records.Single(x => x.AccountId == result.Value!.AccountId);
+                Status = "Account saved.";
+            }
             catch (Microsoft.Data.SqlClient.SqlException ex)
             {
                 DatabaseErrors.TraceFailure("AccountLoad", ex);
