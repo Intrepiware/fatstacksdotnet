@@ -1,8 +1,10 @@
 # Quickstart and Validation Guide
 
-**Status:** Implementation is available through US1. See [US1 validation](validation/us1.md)
-for executed checks and remaining target-environment checks. Accounting workflows below remain
-planned for US2–US5.
+**Status:** Connections and US2 account/register functionality are implemented. See
+[US1 validation](validation/us1.md), [US2 validation](validation/us2.md), and the
+[user-reported WindowsChecks pass](validation/windowschecks-2026-11-18.md).
+Use the [manual US1/US2 checklist](validation/manual-us2.md) for the current hands-on test pass.
+The journal, reconciliation, and security workflows below remain planned for US3–US5.
 
 ## Prerequisites
 

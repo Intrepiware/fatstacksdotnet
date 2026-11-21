@@ -45,6 +45,29 @@ public sealed class WindowBehaviorTests
     }
 
     [STATestMethod]
+    public void ConnectionsAccessKeysRunNewAndClose()
+    {
+        var model = Model();
+        var window = new ConnectionWindow(model);
+        try
+        {
+            window.Show();
+            Pump();
+            model.FriendlyName = "Unsaved name";
+            var scope = PresentationSource.FromVisual(window);
+            System.Windows.Input.AccessKeyManager.ProcessKey(scope, "N", false);
+            Pump();
+            Assert.AreEqual("Enter a new connection.", model.Status);
+            Assert.AreNotEqual("Unsaved name", model.FriendlyName);
+
+            System.Windows.Input.AccessKeyManager.ProcessKey(scope, "C", false);
+            Pump();
+            Assert.IsFalse(window.IsVisible);
+        }
+        finally { if (window.IsVisible) window.Close(); }
+    }
+
+    [STATestMethod]
     public void IntegratedAuthenticationDisablesSqlCredentialsInBothDialogs()
     {
         var model = Model();

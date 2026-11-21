@@ -1,0 +1,58 @@
+<Window x:Class="FatStacks.Desktop.Views.AccountSetupWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:vm="clr-namespace:FatStacks.Desktop.ViewModels" Title="Accounts" PreviewKeyDown="AccountSetupPreviewKeyDown" Width="880" Height="570" MinWidth="680" MinHeight="520" WindowStartupLocation="CenterOwner" AutomationProperties.AutomationId="AccountSetup">
+ <Window.Resources>
+  <ResourceDictionary>
+   <ResourceDictionary.MergedDictionaries><ResourceDictionary Source="/FatStacks.Desktop;component/Assets/AccountTypeIcons.xaml"/></ResourceDictionary.MergedDictionaries>
+   <BooleanToVisibilityConverter x:Key="BoolVisibility"/>
+   <DataTemplate x:Key="AccountRow">
+    <StackPanel Orientation="Horizontal" ToolTip="{Binding Path}">
+     <ContentControl Content="{Binding Account.TypeId}" ContentTemplate="{StaticResource AccountTypeIconTemplate}" ToolTip="{Binding TypeName}"/>
+     <TextBlock Text="{Binding Name}" VerticalAlignment="Center"/>
+    </StackPanel>
+   </DataTemplate>
+   <HierarchicalDataTemplate DataType="{x:Type vm:AccountBrowserItem}" ItemsSource="{Binding Children}">
+    <ContentControl Content="{Binding}" ContentTemplate="{StaticResource AccountRow}"/>
+   </HierarchicalDataTemplate>
+  </ResourceDictionary>
+ </Window.Resources>
+ <Grid Margin="20"><Grid.ColumnDefinitions><ColumnDefinition Width="320" MinWidth="220"/><ColumnDefinition Width="16"/><ColumnDefinition Width="*" MinWidth="280"/></Grid.ColumnDefinitions>
+  <DockPanel IsEnabled="{Binding Idle}">
+   <Button DockPanel.Dock="Bottom" Content="_New account" Click="NewClicked" Margin="0,10,0,0" AutomationProperties.AutomationId="NewAccount" ToolTip="New account (Alt+N)"/>
+   <StackPanel DockPanel.Dock="Top">
+    <Label Content="_Find accounts" Target="{Binding ElementName=AccountSearch}" Padding="0,0,0,4"/>
+    <TextBox x:Name="AccountSearch" Text="{Binding Search,UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Find accounts by name, path, or type" AutomationProperties.AutomationId="AccountSearch" ToolTip="Search names, paths, and account types (Ctrl+F or Alt+F)"/>
+    <StackPanel Orientation="Horizontal" Margin="0,10,0,10">
+     <RadioButton x:Name="TreeViewOption" Content="_Tree" GroupName="AccountView" IsChecked="{Binding IsTreeView,Mode=OneWay}" Click="AccountViewClicked" Margin="0,0,14,0" AutomationProperties.AutomationId="TreeAccountView"/>
+     <RadioButton Content="_Alphabetical" GroupName="AccountView" IsChecked="{Binding IsAlphabeticalView,Mode=OneWay}" Click="AccountViewClicked" AutomationProperties.AutomationId="AlphabeticalAccountView"/>
+    </StackPanel>
+    <TextBlock Text="{Binding VisibleAccounts.Count,StringFormat={}{0} matching accounts}" Foreground="#748498" Margin="0,0,0,6"/>
+   </StackPanel>
+   <Grid>
+    <ListBox ItemsSource="{Binding VisibleAccounts}" SelectedItem="{Binding SelectedBrowserItem}" ItemTemplate="{StaticResource AccountRow}" Visibility="{Binding IsAlphabeticalView,Converter={StaticResource BoolVisibility}}" AutomationProperties.AutomationId="AccountList" ScrollViewer.HorizontalScrollBarVisibility="Auto"/>
+    <TreeView ItemsSource="{Binding AccountTree}" SelectedItemChanged="TreeAccountChanged" Visibility="{Binding IsTreeView,Converter={StaticResource BoolVisibility}}" AutomationProperties.AutomationId="AccountHierarchy">
+     <TreeView.ItemContainerStyle>
+      <Style TargetType="TreeViewItem">
+       <Setter Property="IsExpanded" Value="True"/>
+       <Setter Property="IsSelected" Value="{Binding IsSelected,Mode=OneWay}"/>
+      </Style>
+     </TreeView.ItemContainerStyle>
+    </TreeView>
+   </Grid>
+  </DockPanel>
+  <GridSplitter Grid.Column="1" Width="6" HorizontalAlignment="Center" VerticalAlignment="Stretch"
+                ResizeDirection="Columns" ResizeBehavior="PreviousAndNext" Background="#E4EAF0"
+                AutomationProperties.Name="Resize account browser"/>
+  <DockPanel Grid.Column="2"><StackPanel DockPanel.Dock="Bottom"><TextBlock Text="{Binding Status}" TextWrapping="Wrap" Margin="0,8" AutomationProperties.AutomationId="AccountStatus"/><StackPanel Orientation="Horizontal" HorizontalAlignment="Right"><Button Content="_Save" ToolTip="Save account (Alt+S)" Click="SaveClicked" IsEnabled="{Binding Idle}" AutomationProperties.AutomationId="SaveAccount"/><Button Content="_Close" ToolTip="Close (Alt+C)" Click="CloseClicked" IsEnabled="{Binding Idle}"/></StackPanel></StackPanel>
+   <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel IsEnabled="{Binding Idle}">
+    <TextBlock Text="Account name"/><TextBox x:Name="AccountName" Text="{Binding Name,UpdateSourceTrigger=PropertyChanged}" Margin="0,4,0,12" AutomationProperties.AutomationId="AccountName"/>
+    <TextBlock Text="Type (fixed after creation)"/><ComboBox ItemsSource="{Binding Types}" SelectedItem="{Binding Type}" IsEnabled="{Binding CanChangeType}" Margin="0,4,0,8" AutomationProperties.AutomationId="AccountType">
+     <ComboBox.ItemTemplate><DataTemplate><StackPanel Orientation="Horizontal"><ContentControl Content="{Binding Id}" ContentTemplate="{StaticResource AccountTypeIconTemplate}"/><TextBlock Text="{Binding Name}" VerticalAlignment="Center"/></StackPanel></DataTemplate></ComboBox.ItemTemplate>
+    </ComboBox>
+    <TextBlock Text="{Binding ClassName,StringFormat=Accounting class: {0}}" Margin="0,0,0,12"/>
+    <TextBlock Text="Parent"/><ComboBox ItemsSource="{Binding Parents}" DisplayMemberPath="Name" SelectedValuePath="Id" SelectedValue="{Binding ParentId}" Margin="0,4,0,12" AutomationProperties.AutomationId="AccountParent"/>
+    <TextBlock Text="Display group override"/><ComboBox ItemsSource="{Binding Groups}" SelectedIndex="{Binding GroupIndex}" Margin="0,4,0,12" AutomationProperties.AutomationId="AccountGroup"/>
+    <TextBlock Text="Open date"/><DatePicker SelectedDate="{Binding Open}" Margin="0,4,0,12" AutomationProperties.AutomationId="AccountOpenDate"/>
+    <TextBlock Text="Close date (optional; history retained)"/><DatePicker SelectedDate="{Binding Close}" Margin="0,4,0,12" AutomationProperties.AutomationId="AccountCloseDate"/>
+   </StackPanel></ScrollViewer>
+  </DockPanel>
+ </Grid>
+</Window>

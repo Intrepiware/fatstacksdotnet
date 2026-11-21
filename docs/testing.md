@@ -113,12 +113,38 @@ and explicit reassociation. The source compiles on Linux; execution requires Win
 
 Manual US1 checks still include entering runtime/maintenance credentials, first-run initialization,
 startup cancellation, encrypted/plaintext/certificate warning visibility, keyboard focus, and
-profile-removal restrictions. Record steps/results in the US1 validation report. Later stories
-add account/register/editor coverage. A hosted Windows build without an interactive desktop
+profile-removal restrictions. Record steps/results in the US1 validation report. Account/register
+manual cases are listed in the current checklist below; editor workflows remain deferred.
+A hosted Windows build without an interactive desktop
 must not be reported as successful UI acceptance.
+
+## Current manual acceptance
+
+Use [the US1/US2 manual checklist](../specs/001-sql-desktop-foundation/validation/manual-us2.md).
+It separates appearance/scaling, keyboard and real account operations, shutdown/session checks,
+and history-dependent register cases. Record missing sample data as Blocked; the automated SQL
+fixtures are temporary and do not leave a book for manual browsing. The recorded 33-case
+WindowsChecks pass does not automatically complete these manual observations.
 
 ## Diagnostics
 
 Do not add raw provider exceptions, SQL parameter logging, or credential values to failing tests.
 Use safe failure categories. Check database configuration outside test output when authentication
 or network access fails. Keep unavailable target-environment checks marked unverified.
+
+## Sharing WindowsChecks results
+
+Paste the console output into the development conversation, or save it under
+`.workspace/ph01-us02/unit-test-logs/` and provide the filename. Keep the command,
+pass/fail/skip summary, and any failure details together. For example, from PowerShell
+at the repository root:
+
+```powershell
+New-Item -ItemType Directory -Force .workspace/ph01-us02/unit-test-logs | Out-Null
+$resultsPath = ".workspace/ph01-us02/unit-test-logs/windowschecks-$(Get-Date -Format 'yyyy.MM.dd_HH.mm').txt"
+dotnet test --project tests/FatStacks.WindowsChecks/FatStacks.WindowsChecks.csproj 2>&1 | Tee-Object -FilePath $resultsPath
+```
+
+The workspace folder holds raw local evidence. Reviewed US2 outcomes belong in
+`specs/001-sql-desktop-foundation/validation/us2.md`; results are unverified until the
+actual run output is reviewed.

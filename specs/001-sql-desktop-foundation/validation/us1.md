@@ -3,8 +3,18 @@
 ## Scope and status
 
 Setup, shared schema, and the US1 connection workflow are implemented. US2–US5 remain planned.
-T018 remains open for the full transport matrix. T027 remains open for Windows execution.
-Task checkboxes distinguish delivered implementation from these unexecuted checks.
+T018 remains open for the full transport matrix. The user has now supplied a successful
+WindowsChecks run: 33 passed, zero failed/skipped. See the current execution evidence below;
+earlier sections retain the historical Linux-runner limitations.
+
+## Current Windows execution evidence — 2026-11-18
+
+The user ran `dotnet test --project tests/FatStacks.WindowsChecks` on Windows x64 and supplied
+a full-suite pass: 33 succeeded, zero failed/skipped, 57s 170ms summary duration.
+[The exact output](windowschecks-2026-11-18.md) is recorded with user attribution.
+This supplies execution evidence for the suite's connection and window-behavior regressions;
+manual visual/focus review and the separate SQL transport matrix retain their existing status.
+The agent did not rerun these checks on Windows.
 
 ## Executed checks
 

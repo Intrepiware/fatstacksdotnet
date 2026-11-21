@@ -31,10 +31,11 @@ accounts can have the opposite balance without changing the class's debit/credit
 Security holdings, including stock, fund, ETF, and bond units, belong to asset accounts in the
 phase-1 scope. Detailed instrument valuation and trading behavior are deferred.
 
-Keep the source UI's groups **Banks**, **Credit Cards**, **Investments**, **Expenses**, and
-**Other** separate from class. **All** is a filter. Store explicit grouping rather than infer
-it from account names. Income and Equity remain reachable through Other/All. Renaming an
-account must not change its accounting class or display group.
+Store **Banks**, **Credit Cards**, **Investments**, **Expenses**, and **Other** as display
+groups independent of accounting class and account name. In the sidebar, Loan Payable accounts
+with the stored Other group appear in **Loans Payable**. The **Other** tab groups the remaining
+Other and Expenses accounts by type, including Income and Equity. Renaming an account preserves
+its accounting class and display group.
 
 ## Account Types and Phase-1 UI Behavior
 

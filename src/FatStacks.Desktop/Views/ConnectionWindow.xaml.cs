@@ -1,6 +1,9 @@
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
+using System.Windows.Input;
+using FatStacks.Core.Connections;
 using FatStacks.Desktop.ViewModels;
 namespace FatStacks.Desktop.Views;
 
@@ -10,9 +13,23 @@ public partial class ConnectionWindow : Window
     public ConnectionWindow(ConnectionViewModel model)
     {
         InitializeComponent(); this.model = model; DataContext = model;
+        var profiles = CollectionViewSource.GetDefaultView(model.Profiles);
+        if (profiles.SortDescriptions.Count == 0)
+            profiles.SortDescriptions.Add(new SortDescription(nameof(ConnectionProfile.FriendlyName), ListSortDirection.Ascending));
         model.Opened += Opened; model.PropertyChanged += ModelChanged;
         Closed += (_, _) => { model.Opened -= Opened; model.PropertyChanged -= ModelChanged; };
     }
+    private void ProfileDoubleClicked(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ChangedButton != MouseButton.Left ||
+            sender is not ListBoxItem { IsSelected: true, DataContext: ConnectionProfile profile } ||
+            profile.ProfileId != model.Selected?.ProfileId)
+            return;
+
+        e.Handled = true;
+        model.OpenCommand.Execute(null);
+    }
+
     private void ModelChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(ConnectionViewModel.Selected))

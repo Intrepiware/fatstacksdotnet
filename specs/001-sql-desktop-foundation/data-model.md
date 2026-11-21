@@ -22,9 +22,9 @@ Local profile IDs are GUIDs for stable targeting after a rename.
 | AccountType | AccountTypeId tinyint PK; unique Name; AccountClassId FK; DefaultDisplayGroupId FK |
 | Currency | CurrencyId tinyint PK; unique Code char(3); Name; FractionalDigits tinyint |
 
-Seed USD (2 digits), EUR (2), and JPY (0). Reject unsupported currencies. All is a UI filter,
-not a DisplayGroup record. Account type determines class through its foreign key; do not store
-a second editable class on Account.
+Seed USD (2 digits), EUR (2), and JPY (0). Reject unsupported currencies. The Loans Payable
+sidebar tab uses the Loan Payable account type and the stored Other display group. Account
+type determines class through its foreign key. Store the class on AccountType.
 
 | Account type | Class | Default group |
 |---|---|---|

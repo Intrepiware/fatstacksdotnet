@@ -1,5 +1,28 @@
 # Decisions Ledger: Fat Stacks.NET — SQL Desktop Foundation
 
+## 2026-11-21 02:21:44 +00:00: Use .NET trace for Phase 1 diagnostics
+
+**Files Updated:** [tasks.md](tasks.md).
+
+Send redacted account and register failure events through the app's existing .NET trace
+output in Phase 1. Defer the persistent rolling log file to Phase 2.
+
+---
+
+## 2026-11-21 02:12:23 +00:00: Approve the five-tab US2 sidebar
+
+**Files Updated:** [spec.md](spec.md), [ui-parity.md](ui-parity.md),
+[accounting-model.md](accounting-model.md), [data-model.md](data-model.md),
+[tasks.md](tasks.md), [manual US2](validation/manual-us2.md), [US2 validation](validation/us2.md).
+
+Approve Banks, Credit Cards, Investments, Loans Payable, and Other as the register tabs.
+Give Loan Payable accounts with the stored Other group a dedicated tab. Keep the remaining
+Other and Expenses accounts reachable through type sections in Other. The stored group and
+account type catalogs stay as documented. Retest tab order, routing, and group overrides
+in the revised M06.
+
+---
+
 ## 2026-11-17 12:06:01 +00:00: Use migrations as authoritative table definitions
 
 **Files Updated:** [constitution](../../.specify/memory/constitution.md), [spec.md](spec.md),
