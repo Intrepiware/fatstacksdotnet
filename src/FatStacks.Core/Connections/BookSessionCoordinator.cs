@@ -10,6 +10,7 @@ public sealed class BookSession(ConnectionProfile profile, BookInfo book) : IDis
     private readonly object gate = new();
     private readonly List<Task> writes = [];
     private bool closing;
+    private bool disposed;
     public IDisposable BeginWrite()
     {
         lock (gate)
@@ -24,7 +25,17 @@ public sealed class BookSession(ConnectionProfile profile, BookInfo book) : IDis
     {
         lock (gate) { closing = true; return Task.WhenAll(writes); }
     }
-    public void Dispose() { Reads.Cancel(); Reads.Dispose(); }
+    public void Dispose()
+    {
+        lock (gate)
+        {
+            if (disposed) return;
+            disposed = true;
+            closing = true;
+        }
+        Reads.Cancel();
+        Reads.Dispose();
+    }
     private sealed class WriteLease(TaskCompletionSource completion) : IDisposable
     { public void Dispose() => completion.TrySetResult(); }
 }

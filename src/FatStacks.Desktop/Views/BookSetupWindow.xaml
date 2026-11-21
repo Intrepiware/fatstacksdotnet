@@ -2,16 +2,16 @@
  <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel Margin="22">
   <TextBlock Text="Prepare the selected database" FontSize="22" FontWeight="SemiBold"/>
   <TextBlock Text="Use an existing empty SQL database. Schema maintenance requires a separate privileged identity. Existing compatible books remain unchanged." TextWrapping="Wrap" Margin="0,10"/>
-  <Label Content="Book name" Target="{Binding ElementName=BookName}"/><TextBox x:Name="BookName" Padding="6" AutomationProperties.AutomationId="BookName"/>
-  <Label Content="Book currency"/><ComboBox x:Name="Currency" SelectedIndex="0" Padding="6" AutomationProperties.AutomationId="BookCurrency"><ComboBoxItem Content="USD"/><ComboBoxItem Content="EUR"/><ComboBoxItem Content="JPY"/></ComboBox>
-  <Label Content="Book time zone"/><ComboBox x:Name="TimeZone" DisplayMemberPath="DisplayName" SelectedValuePath="Id" Padding="6" AutomationProperties.AutomationId="BookTimeZone"/>
+  <Label Content="Book name" Target="{Binding ElementName=BookName}"/><TextBox x:Name="BookName" AutomationProperties.AutomationId="BookName"/>
+  <Label Content="Book currency"/><ComboBox x:Name="Currency" SelectedIndex="0" AutomationProperties.AutomationId="BookCurrency"><ComboBoxItem Content="USD"/><ComboBoxItem Content="EUR"/><ComboBoxItem Content="JPY"/></ComboBox>
+  <Label Content="Book time zone"/><ComboBox x:Name="TimeZone" DisplayMemberPath="DisplayName" SelectedValuePath="Id" AutomationProperties.AutomationId="BookTimeZone"/>
   <CheckBox x:Name="Integrated" Content="Use Windows integrated maintenance credentials" Margin="0,14,0,6"/>
     <StackPanel>
      <StackPanel.Style><Style TargetType="StackPanel"><Style.Triggers>
       <DataTrigger Binding="{Binding IsChecked, ElementName=Integrated}" Value="True"><Setter Property="IsEnabled" Value="False"/></DataTrigger>
      </Style.Triggers></Style></StackPanel.Style>
-  <Label Content="Maintenance SQL username" Target="{Binding ElementName=MaintenanceUser}"/><TextBox x:Name="MaintenanceUser" Padding="6" AutomationProperties.AutomationId="MaintenanceUser"/>
-  <Label Content="Maintenance SQL password" Target="{Binding ElementName=MaintenancePassword}"/><PasswordBox x:Name="MaintenancePassword" Padding="6" AutomationProperties.AutomationId="MaintenancePassword"/>
+  <Label Content="Maintenance SQL username" Target="{Binding ElementName=MaintenanceUser}"/><TextBox x:Name="MaintenanceUser" AutomationProperties.AutomationId="MaintenanceUser"/>
+  <Label Content="Maintenance SQL password" Target="{Binding ElementName=MaintenancePassword}"/><PasswordBox x:Name="MaintenancePassword" AutomationProperties.AutomationId="MaintenancePassword"/>
     </StackPanel>
   <TextBlock x:Name="Feedback" TextWrapping="Wrap" Margin="0,10" AutomationProperties.AutomationId="SetupStatus"/>
   <StackPanel Orientation="Horizontal" HorizontalAlignment="Right"><Button x:Name="Initialize" Content="Initialize" Click="InitializeClicked" AutomationProperties.AutomationId="ConfirmInitialize"/><Button x:Name="CancelInitialize" Content="Cancel" Click="CancelClicked" AutomationProperties.AutomationId="CancelInitialize"/><Button x:Name="CloseSetup" Content="Close" Click="CloseClicked" Visibility="Collapsed" AutomationProperties.AutomationId="CloseSetup"/></StackPanel>

@@ -76,10 +76,12 @@ and known entries before and within the default 90-day window.
   (FR-007, FR-008).
 - Renaming an account preserves its history. Closing it hides it from new-entry choices while
   retaining its recorded balances and historical detail links (FR-008).
-- The Banks, Credit Cards, Investments, Expenses, Other, and All tabs organize the account tree.
+- The account tree uses Banks, Credit Cards, Investments, Loans Payable, and Other tabs in
+  that order. The Other tab groups accounts by type, including Expenses, Income, and Equity.
   A renamed account remains in its explicitly selected group (FR-007, FR-009).
 - Creating a Bank account selects Assets/Banks; Credit Card selects Liabilities/Credit Cards;
-  Loan Payable selects Liabilities/Other; and Loan Receivable selects Assets/Other. The account
+  Loan Payable selects Liabilities/Other and appears in Loans Payable; Loan Receivable
+  selects Assets/Other and appears in Other. The account
   setup shows the resulting class, and each remaining type follows the documented matrix
   (FR-007).
 - Overriding a loan account's display group changes its placement without changing its type,
@@ -253,7 +255,10 @@ opening quantity and carrying amount and transfer part of that holding between a
   A failed preferences write MUST NOT undo a successful accounting operation.
 - **FR-007**: Accounts MUST support Assets, Liabilities, Equity, Income, and Expenses.
   UI groups MUST be separate from these accounting classes. All classes MUST be reachable
-  through the existing group structure, with Income and Equity available under Other and All.
+  through the sidebar, with Income and Equity available under Other. The sidebar routes
+  stored Banks, Credit Cards, and Investments groups to their matching tabs. It routes
+  Loan Payable accounts in the stored Other group to Loans Payable. The Other tab shows
+  the remaining stored Other and Expenses accounts in sections by account type.
   At creation, users MUST select an account type: Bank, Cash, Credit Card, Loan Receivable,
   Loan Payable, Investment/Brokerage, Other Asset, Other Liability, Equity, Income, or Expense.
   The type MUST determine the accounting class and default UI group according to the

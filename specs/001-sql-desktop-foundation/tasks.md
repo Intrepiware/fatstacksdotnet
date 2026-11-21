@@ -26,19 +26,19 @@ Securities remain required by US5. Add no safeguards without a requirement or co
 
 **Purpose:** Establish the .NET 10 projects, required tools, and Windows build checks.
 
-- [X] T001 Create `FatStacks.slnx`, `src/FatStacks.Core/FatStacks.Core.csproj`, `src/FatStacks.Infrastructure/FatStacks.Infrastructure.csproj`, and `src/FatStacks.Desktop/FatStacks.Desktop.csproj`. Target Core/Infrastructure at `net10.0` and WPF at `net10.0-windows`. Keep references consistent with the three boundaries in D-001.
+- [x] T001 Create `FatStacks.slnx`, `src/FatStacks.Core/FatStacks.Core.csproj`, `src/FatStacks.Infrastructure/FatStacks.Infrastructure.csproj`, and `src/FatStacks.Desktop/FatStacks.Desktop.csproj`. Target Core/Infrastructure at `net10.0` and WPF at `net10.0-windows`. Keep references consistent with the three boundaries in D-001.
 
-- [X] T002 Pin a supported .NET 10 SDK patch in `global.json`. Enable nullable references and repository analyzer settings in `Directory.Build.props` and `.editorconfig`. Select the Microsoft.Testing.Platform runner used by quickstart commands.
+- [x] T002 Pin a supported .NET 10 SDK patch in `global.json`. Enable nullable references and repository analyzer settings in `Directory.Build.props` and `.editorconfig`. Select the Microsoft.Testing.Platform runner used by quickstart commands.
 
-- [X] T003 Pin EF Core 10 SQL Server, SqlClient, Autofac, grate, and MSTest versions in the project files and `.config/dotnet-tools.json`. Record purpose, license, transitive footprint, support, and security findings in `docs/dependencies.md` before adoption (D-008).
+- [x] T003 Pin EF Core 10 SQL Server, SqlClient, Autofac, grate, and MSTest versions in the project files and `.config/dotnet-tools.json`. Record purpose, license, transitive footprint, support, and security findings in `docs/dependencies.md` before adoption (D-008).
 
-- [X] T004 Create `tests/FatStacks.Tests/FatStacks.Tests.csproj`, `tests/FatStacks.SqlTests/FatStacks.SqlTests.csproj`, and `tests/FatStacks.WindowsChecks/FatStacks.WindowsChecks.csproj`. Configure MSTest and platform UI Automation references without adding a wrapper framework.
+- [x] T004 Create `tests/FatStacks.Tests/FatStacks.Tests.csproj`, `tests/FatStacks.SqlTests/FatStacks.SqlTests.csproj`, and `tests/FatStacks.WindowsChecks/FatStacks.WindowsChecks.csproj`. Configure MSTest and platform UI Automation references without adding a wrapper framework.
 
-- [X] T005 [P] Copy the required WPF resources, icons, and Fluent license from `.workspace/dotnet-beancount/src/BeancountViewer/` into `src/FatStacks.Desktop/Assets/` and `src/FatStacks.Desktop/App.xaml`. Retain the baseline styles and remove file-parser dependencies.
+- [x] T005 [P] Copy the required WPF resources, icons, and Fluent license from `.workspace/dotnet-beancount/src/BeancountViewer/` into `src/FatStacks.Desktop/Assets/` and `src/FatStacks.Desktop/App.xaml`. Retain the baseline styles and remove file-parser dependencies.
 
-- [X] T006 [P] Add a Windows restore/build/analyzer/service-test job in `.github/workflows/ci.yml`. Add a SQL Server test job using isolated test credentials, and document the interactive-session requirement for UI tests in `docs/testing.md`. Missing SQL/UI prerequisites must remain visible.
+- [x] T006 [P] Add a Windows restore/build/analyzer/service-test job in `.github/workflows/ci.yml`. Add a SQL Server test job using isolated test credentials, and document the interactive-session requirement for UI tests in `docs/testing.md`. Missing SQL/UI prerequisites must remain visible.
 
-- [X] T007 [P] Document Windows 11 x64, SQL Server 2022+, .NET desktop workload/runtime, restore/build/test/run commands, and external credential setup in `README.md` (Principle II; D-008).
+- [x] T007 [P] Document Windows 11 x64, SQL Server 2022+, .NET desktop workload/runtime, restore/build/test/run commands, and external credential setup in `README.md` (Principle II; D-008).
 
 **Checkpoint:** The empty solution restores, builds, and runs its test harnesses on compatible runners.
 
@@ -49,9 +49,9 @@ The schema tasks reproduce field constraints from the data model verbatim. They 
 single-column keys, bigint identity defaults except singleton rows, tinyint catalogs, date-only
 accounting dates, and UTC `CreateDate`/`UpdateDate` columns.
 
-- [X] T008 Create the grate package layout in `database/README.md`, `database/up/`, `database/sprocs/`, `database/views/`, and `database/types/`. Use one-time migrations as the authoritative table definitions; keep no separate copies. Keep applied scripts immutable. Configure `text -merge` for procedure/view definitions in `.gitattributes`. Add `database/permissions/RuntimeRole.sql` for a non-administrator runtime role with required table DML and procedure EXECUTE rights, but no DDL. Apply it explicitly with maintenance privileges after schema deployment. Do not use EF migrations or schema creation (FR-028/033; D-006).
+- [x] T008 Create the grate package layout in `database/README.md`, `database/up/`, `database/sprocs/`, `database/views/`, and `database/types/`. Use one-time migrations as the authoritative table definitions; keep no separate copies. Keep applied scripts immutable. Configure `text -merge` for procedure/view definitions in `.gitattributes`. Add `database/permissions/RuntimeRole.sql` for a non-administrator runtime role with required table DML and procedure EXECUTE rights, but no DDL. Apply it explicitly with maintenance privileges after schema deployment. Do not use EF migrations or schema creation (FR-028/033; D-006).
 
-- [X] T009 Create catalogs, Book, and SchemaVersion in `database/up/001_CreateBookAndCatalogs.sql`.
+- [x] T009 Create catalogs, Book, and SchemaVersion in `database/up/001_CreateBookAndCatalogs.sql`.
 
   Catalog constraints:
   “AccountClass | AccountClassId tinyint PK; unique Name; five rows: Assets, Liabilities, Equity, Income, Expenses”;
@@ -83,7 +83,7 @@ accounting dates, and UTC `CreateDate`/`UpdateDate` columns.
   “SchemaVersion has SchemaVersionId bigint PK, assigned 1 without IDENTITY, with CHECK value = 1.”;
   “Its Version is int NOT NULL.” Seed the five classes, five stored groups, eleven type mappings, USD (2), EUR (2), and JPY (0). Publish schema version 1 only at successful package completion; never seed a user Book in SQL. CurrencyLocked remains true after entries are deleted (FR-007/020/024/032).
 
-- [X] T010 Create Account in `database/up/002_CreateAccounts.sql`.
+- [x] T010 Create Account in `database/up/002_CreateAccounts.sql`.
 
   Field constraints:
   “AccountId | bigint PK”;
@@ -97,7 +97,7 @@ accounting dates, and UTC `CreateDate`/`UpdateDate` columns.
   “CHECK ParentAccountId differs from AccountId.”;
   “CHECK CloseDate is null or later than OpenDate.” Keep foreign keys restrictive (FR-008).
 
-- [X] T011 Create journal tables in `database/up/003_CreateJournal.sql`.
+- [x] T011 Create journal tables in `database/up/003_CreateJournal.sql`.
 
   Header constraints:
   “JournalEntryId | bigint PK; stable identity and equal-date ordering key”;
@@ -122,7 +122,7 @@ accounting dates, and UTC `CreateDate`/`UpdateDate` columns.
   “Version | rowversion”;
   “CreateDate, UpdateDate | UTC datetime2(7)”. Enforce “CHECK requires Debit > 0 and Credit = 0, or Credit > 0 and Debit = 0.” Preserve independent rowversions and restrictive foreign keys. Add the three indexes named in data-model.md; the security FK follows the next migration (FR-014/017/019/021).
 
-- [X] T012 Create Security and finish security-line constraints in `database/up/004_CreateSecurities.sql`.
+- [x] T012 Create Security and finish security-line constraints in `database/up/004_CreateSecurities.sql`.
 
   Fields:
   “SecurityId | bigint PK”;
@@ -132,11 +132,11 @@ accounting dates, and UTC `CreateDate`/`UpdateDate` columns.
   “QuantityPrecision | tinyint, CHECK 0 through 8”;
   “CreateDate, UpdateDate | UTC datetime2(7)”. Enforce “CHECK requires SecurityId and Quantity together, with nonzero Quantity.” Positive quantity accompanies a debit; negative quantity accompanies a credit. Apply these constraints through the one-time migration. Use the schema-version publication step in `database/afterMigration/999_SetSchemaVersion.sql` (FR-025).
 
-- [X] T013 Implement mapped entities, explicit SQL types/lengths, relationships, and rowversion concurrency tokens in `src/FatStacks.Infrastructure/Persistence/BookDbContext.cs` and `src/FatStacks.Infrastructure/Persistence/Entities/`. Match the preceding schema tasks exactly; use assigned singleton keys and one context per operation. Add sanitized failure-category mapping in `src/FatStacks.Infrastructure/Diagnostics/DatabaseErrors.cs`. Disable sensitive-data and private SQL parameter logging (FR-028/029).
+- [x] T013 Implement mapped entities, explicit SQL types/lengths, relationships, and rowversion concurrency tokens in `src/FatStacks.Infrastructure/Persistence/BookDbContext.cs` and `src/FatStacks.Infrastructure/Persistence/Entities/`. Match the preceding schema tasks exactly; use assigned singleton keys and one context per operation. Add sanitized failure-category mapping in `src/FatStacks.Infrastructure/Diagnostics/DatabaseErrors.cs`. Disable sensitive-data and private SQL parameter logging (FR-028/029).
 
-- [X] T014 Define UI-independent typed outcomes and operation contracts in `src/FatStacks.Core/Contracts/`. Add operation-scoped context/connection creation in `src/FatStacks.Infrastructure/Persistence/BookDatabase.cs` and the sole procedure-call class in `src/FatStacks.Infrastructure/Persistence/StoredProcedureRepository.cs`. Limit it to typed parameter binding, execution, and result mapping; keep workflows in services (D-001/002).
+- [x] T014 Define UI-independent typed outcomes and operation contracts in `src/FatStacks.Core/Contracts/`. Add operation-scoped context/connection creation in `src/FatStacks.Infrastructure/Persistence/BookDatabase.cs` and the sole procedure-call class in `src/FatStacks.Infrastructure/Persistence/StoredProcedureRepository.cs`. Limit it to typed parameter binding, execution, and result mapping; keep workflows in services (D-001/002).
 
-- [X] T015 Create isolated grate-deployed SQL fixtures in `tests/FatStacks.SqlTests/Fixtures/BookDatabaseFixture.cs` and Windows launch helpers in `tests/FatStacks.WindowsChecks/Fixtures/DesktopFixture.cs`. Separate synthetic fixtures from production configuration. Verify required constraints and runtime DDL denial in `tests/FatStacks.SqlTests/SchemaTests.cs`; record actual test outcomes.
+- [x] T015 Create isolated grate-deployed SQL fixtures in `tests/FatStacks.SqlTests/Fixtures/BookDatabaseFixture.cs` and Windows launch helpers in `tests/FatStacks.WindowsChecks/Fixtures/DesktopFixture.cs`. Separate synthetic fixtures from production configuration. Verify required constraints and runtime DDL denial in `tests/FatStacks.SqlTests/SchemaTests.cs`; record actual test outcomes.
 
 **Checkpoint:** Grate creates an empty compatible schema. EF maps it without creating it.
 SQL constraints and the test fixtures work on SQL Server. No story begins before this foundation passes.
@@ -151,29 +151,29 @@ schema changes, or fallback connection. The connection dialog remains available 
 
 ### Tests
 
-- [X] T016 [P] [US1] Write profile tests in `tests/FatStacks.Tests/Profiles/ProfileTests.cs`: stable GUIDs, case-insensitive unique nonempty names, rename/remove, corrupt configuration, unavailable credential protection, atomic replacement failure, and last-successful-profile behavior (FR-001/002/003/006).
+- [x] T016 [P] [US1] Write profile tests in `tests/FatStacks.Tests/Profiles/ProfileTests.cs`: stable GUIDs, case-insensitive unique nonempty names, rename/remove, corrupt configuration, unavailable credential protection, atomic replacement failure, and last-successful-profile behavior (FR-001/002/003/006).
 
-- [X] T017 [P] [US1] Write real SQL connection/setup tests in `tests/FatStacks.SqlTests/Connections/ConnectionTests.cs`: empty/repeated/unrelated/interrupted setup, separate maintenance privileges, stored-version equality, missing/unreadable/mismatched version, distinct Book IDs, and explicit reassociation (FR-005/028/032).
+- [x] T017 [P] [US1] Write real SQL connection/setup tests in `tests/FatStacks.SqlTests/Connections/ConnectionTests.cs`: empty/repeated/unrelated/interrupted setup, separate maintenance privileges, stored-version equality, missing/unreadable/mismatched version, distinct Book IDs, and explicit reassociation (FR-005/028/032).
 
 - [ ] T018 [P] [US1] Write session tests in `tests/FatStacks.Tests/Connections/SessionTests.cs` and transport cases in `tests/FatStacks.SqlTests/Connections/TransportTests.cs`. Cover delayed reads, write-target capture, switch cancellation/failure, startup cancellation, valid/no TLS, self-signed/expired certificates, and authentication failure (FR-003/004/030).
 
 ### Implementation
 
-- [X] T019 [US1] Implement local profile records and storage in `src/FatStacks.Infrastructure/Configuration/ProfileStore.cs` and `src/FatStacks.Core/Connections/ConnectionProfile.cs`. Preserve “ProfileId GUID”, “unique case-insensitive FriendlyName”, and “ExpectedBookIdentifier GUID” as optional. Store “FormatVersion, Profiles, and LastSuccessfulProfileId” under current-user local application data. Protect secret content with Windows current-user DPAPI and replace settings atomically (FR-001/002/006).
+- [x] T019 [US1] Implement local profile records and storage in `src/FatStacks.Infrastructure/Configuration/ProfileStore.cs` and `src/FatStacks.Core/Connections/ConnectionProfile.cs`. Preserve “ProfileId GUID”, “unique case-insensitive FriendlyName”, and “ExpectedBookIdentifier GUID” as optional. Store “FormatVersion, Profiles, and LastSuccessfulProfileId” under current-user local application data. Protect secret content with Windows current-user DPAPI and replace settings atomically (FR-001/002/006).
 
-- [X] T020 [US1] Implement EF book setup and explicit grate maintenance in `src/FatStacks.Infrastructure/Connections/DatabaseSetup.cs`. Collect name, currency, and valid Windows time zone; default USD. Use separate transient maintenance credentials. Reject unrelated/incompatible databases and preserve an existing compatible Book on repeated setup. Permit explicit completion when a compatible schema lacks its Book (FR-005/028).
+- [x] T020 [US1] Implement EF book setup and explicit grate maintenance in `src/FatStacks.Infrastructure/Connections/DatabaseSetup.cs`. Collect name, currency, and valid Windows time zone; default USD. Use separate transient maintenance credentials. Reject unrelated/incompatible databases and preserve an existing compatible Book on repeated setup. Permit explicit completion when a compatible schema lacks its Book (FR-005/028).
 
-- [X] T021 [US1] Implement `src/FatStacks.Infrastructure/Connections/ConnectionService.cs` and `src/FatStacks.Core/Connections/SchemaCompatibility.cs`. Hardcode expected schema version 1 and compare the stored integer before activation. Fatal version errors leave no active session. Verify expected logical Book identity and require explicit reassociation on mismatch. Keep Test separate from activation (FR-005/032; D-006).
+- [x] T021 [US1] Implement `src/FatStacks.Infrastructure/Connections/ConnectionService.cs` and `src/FatStacks.Core/Connections/SchemaCompatibility.cs`. Hardcode expected schema version 1 and compare the stored integer before activation. Fatal version errors leave no active session. Verify expected logical Book identity and require explicit reassociation on mismatch. Keep Test separate from activation (FR-005/032; D-006).
 
-- [X] T022 [US1] Implement SqlClient transport settings and warning results in `src/FatStacks.Infrastructure/Connections/SqlTransport.cs`. Use TLS when available; permit usable plaintext and self-signed/expired-certificate connections with visible non-blocking condition warnings. Preserve authentication/protocol failures; never log secrets (FR-029/030; D-007).
+- [x] T022 [US1] Implement SqlClient transport settings and warning results in `src/FatStacks.Infrastructure/Connections/SqlTransport.cs`. Use TLS when available; permit usable plaintext and self-signed/expired-certificate connections with visible non-blocking condition warnings. Preserve authentication/protocol failures; never log secrets (FR-029/030; D-007).
 
-- [X] T023 [US1] Implement `src/FatStacks.Core/Connections/BookSessionCoordinator.cs`: capture connection/book identity per operation, resolve unsaved edits and running writes before switching, cancel old reads, reject old-session results, clear prior UI data, and leave failed switches disconnected. Support save/discard/cancel callbacks without WPF types (FR-003/004).
+- [x] T023 [US1] Implement `src/FatStacks.Core/Connections/BookSessionCoordinator.cs`: capture connection/book identity per operation, resolve unsaved edits and running writes before switching, cancel old reads, reject old-session results, clear prior UI data, and leave failed switches disconnected. Support save/discard/cancel callbacks without WPF types (FR-003/004).
 
-- [X] T024 [US1] Configure Autofac property injection in `src/FatStacks.Desktop/App.xaml.cs`. Resolve only at composition boundaries, supply required properties before use, own a child scope per active book, and dispose operation contexts and obsolete session resources. Keep WPF updates on the dispatcher (Principles I/V; D-001).
+- [x] T024 [US1] Configure Autofac property injection in `src/FatStacks.Desktop/App.xaml.cs`. Resolve only at composition boundaries, supply required properties before use, own a child scope per active book, and dispose operation contexts and obsolete session resources. Keep WPF updates on the dispatcher (Principles I/V; D-001).
 
-- [X] T025 [US1] Build `src/FatStacks.Desktop/Views/ConnectionWindow.xaml`, `src/FatStacks.Desktop/ViewModels/ConnectionViewModel.cs`, and `src/FatStacks.Desktop/Views/BookSetupWindow.xaml`. Provide profile CRUD, integrated/SQL authentication, Test/Open/Initialize, explicit reassociation, progress/cancel, and non-blocking transport warnings. Show active profile and Book identity in `src/FatStacks.Desktop/MainWindow.xaml` (FR-001–006/030/032).
+- [x] T025 [US1] Build `src/FatStacks.Desktop/Views/ConnectionWindow.xaml`, `src/FatStacks.Desktop/ViewModels/ConnectionViewModel.cs`, and `src/FatStacks.Desktop/Views/BookSetupWindow.xaml`. Provide profile CRUD, integrated/SQL authentication, Test/Open/Initialize, explicit reassociation, progress/cancel, and non-blocking transport warnings. Show active profile and Book identity in `src/FatStacks.Desktop/MainWindow.xaml` (FR-001–006/030/032).
 
-- [X] T026 [US1] Wire last-successful-profile startup and cancellation in `src/FatStacks.Desktop/ViewModels/StartupViewModel.cs`. Test and failed switches must not replace the remembered ID. Report preference failures independently from a usable connection or committed accounting operation (FR-003/006).
+- [x] T026 [US1] Wire last-successful-profile startup and cancellation in `src/FatStacks.Desktop/ViewModels/StartupViewModel.cs`. Test and failed switches must not replace the remembered ID. Report preference failures independently from a usable connection or committed accounting operation (FR-003/006).
 
 - [ ] T027 [US1] Automate connect/switch/restart/reassociate in `tests/FatStacks.WindowsChecks/ConnectionJourneyTests.cs`. Execute the US1 tests and record SQL/Windows evidence separately in `specs/001-sql-desktop-foundation/validation/us1.md`. Keep unavailable-runner checks marked unverified (SC-001/006).
 
@@ -190,25 +190,30 @@ Fixture seeding is test-only and does not depend on the US3 procedure implementa
 
 ### Tests
 
-- [ ] T028 [P] [US2] Write account/type/calendar tests in `tests/FatStacks.Tests/Accounts/AccountTests.cs` and `tests/FatStacks.Tests/Calendar/BookCalendarTests.cs`. Cover all eleven type mappings, group overrides, stable rename identity, cycles, closure boundaries, daylight-saving transitions, and device-zone independence (FR-007/008/019/024).
+- [x] T028 [P] [US2] Write account/type/calendar tests in `tests/FatStacks.Tests/Accounts/AccountTests.cs` and `tests/FatStacks.Tests/Calendar/BookCalendarTests.cs`. Cover all eleven type mappings, group overrides, stable rename identity, cycles, closure boundaries, daylight-saving transitions, and device-zone independence (FR-007/008/019/024).
 
-- [ ] T029 [P] [US2] Write SQL register reference tests in `tests/FatStacks.SqlTests/Register/RegisterTests.cs`. Seed balanced synthetic records directly in a test transaction. Cover older opening balances, description/counter-account case-insensitive search, literal search metacharacters, equal dates, zero-net rows, split details, closed descendants, and aggregate values beyond one-line range (FR-009–012).
+- [x] T029 [P] [US2] Write SQL register reference tests in `tests/FatStacks.SqlTests/Register/RegisterTests.cs`. Seed balanced synthetic records directly in a test transaction. Cover older opening balances, description/counter-account case-insensitive search, literal search metacharacters, equal dates, zero-net rows, split details, closed descendants, and aggregate values beyond one-line range (FR-009–012).
 
 ### Implementation
 
-- [ ] T030 [US2] Implement EF account operations in `src/FatStacks.Infrastructure/Accounts/AccountService.cs` and requests in `src/FatStacks.Core/Accounts/AccountRequests.cs`. Preserve “nvarchar(200), trimmed and nonempty”; disallow colon separators, duplicate siblings, ancestor cycles, and cross-book parents. Keep type fixed, permit group overrides, retain closed history, and reject closure dates invalidating existing lines. Historical edits may keep existing closed references only before closure (FR-007/008).
+- [x] T030 [US2] Implement EF account operations in `src/FatStacks.Infrastructure/Accounts/AccountService.cs` and requests in `src/FatStacks.Core/Accounts/AccountRequests.cs`. Preserve “nvarchar(200), trimmed and nonempty”; disallow colon separators, duplicate siblings, ancestor cycles, and cross-book parents. Keep type fixed, permit group overrides, retain closed history, and reject closure dates invalidating existing lines. Historical edits may keep existing closed references only before closure (FR-007/008).
 
-- [ ] T031 [US2] Implement the book calendar and testable clock boundary in `src/FatStacks.Core/Calendar/BookCalendar.cs`. Supply book-local today and the inclusive today-minus-89-days cutoff; keep accounting/bank dates as DateOnly and operational timestamps UTC (FR-019).
+- [x] T031 [US2] Implement the book calendar and testable clock boundary in `src/FatStacks.Core/Calendar/BookCalendar.cs`. Supply book-local today and the inclusive today-minus-89-days cutoff; keep accounting/bank dates as DateOnly and operational timestamps UTC (FR-019).
 
-- [ ] T032 [US2] Implement `database/sprocs/ReadAccountRegister.sql`. Net selected-account lines per entry, calculate full-history running balances before date/search filters, and order by AccountingDate/JournalEntryId. Preserve zero-net rows and return decimal(28,2) monetary aggregates. Keep one current definition (FR-010/011/033; D-004).
+- [x] T032 [US2] Implement `database/sprocs/ReadAccountRegister.sql`. Net selected-account lines per entry, calculate full-history running balances before date/search filters, and order by AccountingDate/JournalEntryId. Preserve zero-net rows and return decimal(28,2) monetary aggregates. Keep one current definition (FR-010/011/033; D-004).
 
-- [ ] T033 [US2] Add the register procedure call to `src/FatStacks.Infrastructure/Persistence/StoredProcedureRepository.cs`. Implement EF batch balance and detail reads in `src/FatStacks.Infrastructure/Register/RegisterService.cs`. Include every line, closed-account links, and descendant contributions. Map positive net credits to Payment and net debits to Deposit; do not narrow totals (FR-009–012).
+- [x] T033 [US2] Add the register procedure call to `src/FatStacks.Infrastructure/Persistence/StoredProcedureRepository.cs`. Implement EF batch balance and detail reads in `src/FatStacks.Infrastructure/Register/RegisterService.cs`. Include every line, closed-account links, and descendant contributions. Map positive net credits to Payment and net debits to Deposit; do not narrow totals (FR-009–012).
 
-- [ ] T034 [US2] Build account setup in `src/FatStacks.Desktop/Views/AccountSetupWindow.xaml` and `src/FatStacks.Desktop/ViewModels/AccountSetupViewModel.cs`. Show the type-determined class, parent hierarchy, explicit group override, rename, and close operations. Income and Equity remain reachable under Other/All (FR-007/008/024).
+- [x] T034 [US2] Build account setup in `src/FatStacks.Desktop/Views/AccountSetupWindow.xaml` and `src/FatStacks.Desktop/ViewModels/AccountSetupViewModel.cs`. Show the type-determined class, parent hierarchy, explicit group override, rename, and close operations. Income and Equity remain reachable under Other (FR-007/008/024).
 
-- [ ] T035 [US2] Port the account tree, ordered tabs, register, search, and details into `src/FatStacks.Desktop/MainWindow.xaml` and `src/FatStacks.Desktop/ViewModels/MainWindowViewModel.cs`. Retain P01–P10, P18–P22 from ui-parity.md; show currency and credit/debit tooltips, cancel obsolete searches, and restore selection by identity. Use virtualization and asynchronous reads (FR-009–012).
+- [x] T035 [US2] Port the account tree, ordered tabs, register, search, and details into `src/FatStacks.Desktop/MainWindow.xaml` and `src/FatStacks.Desktop/ViewModels/MainWindowViewModel.cs`. Retain P01–P10, P18–P22 from ui-parity.md; show currency and credit/debit tooltips, cancel obsolete searches, and restore selection by identity. Use virtualization and asynchronous reads (FR-009–012).
 
 - [ ] T036 [US2] Automate account creation, register search, closed-account navigation, and refresh in `tests/FatStacks.WindowsChecks/RegisterJourneyTests.cs`. Run the US2 tests and record reference results plus visual comparisons in `specs/001-sql-desktop-foundation/validation/us2.md` (SC-002/003).
+
+- [x] T086 [US2] Fix the Accounts view toggle, preserve the selected account and unsaved draft during filtering and view changes, and sort parent choices by displayed path (M02/M15).
+- [x] T087 [US2] Collapse empty connection feedback, alphabetize saved profiles, open a saved profile on double-click, and focus the main register search with Ctrl+F (M05/M09).
+- [ ] T088 [US2] Record Windows retest outcomes for M27–M32 in `validation/us2.md` and verify the subsequent fixes in M33–M34.
+- [x] T089 [US2] Handle Ctrl+F in the active desktop window before focused controls process it, and add distinct Alt access keys for Connections actions (M32).
 
 **Checkpoint:** US2 can display a correct prepared book and create accounts. Journal-editor actions
 become available in US3; disabled actions must not imply an implemented capability.
@@ -355,15 +360,15 @@ extend a procedure must rerun earlier story tests.
 
 These examples describe optional scheduling. They do not require subagents or extra tooling.
 
-| Phase/story | Tasks that can run together | Prerequisite |
-|---|---|---|
-| Setup | T005, T006, T007 | Project files and test harnesses exist |
-| US1 | T016, T017, T018 | Foundation passes |
-| US2 | T028, T029 | US1 passes |
-| US3 | T037, T038, T039 | US2 passes |
-| US4 | T048, T049 | US3 passes |
-| US5 | T054, T055 | US3 passes; serialize shared edits with US4 |
-| Final | T063, T064, T065 | All stories pass; separate test sessions/databases |
+| Phase/story | Tasks that can run together | Prerequisite                                       |
+| ----------- | --------------------------- | -------------------------------------------------- |
+| Setup       | T005, T006, T007            | Project files and test harnesses exist             |
+| US1         | T016, T017, T018            | Foundation passes                                  |
+| US2         | T028, T029                  | US1 passes                                         |
+| US3         | T037, T038, T039            | US2 passes                                         |
+| US4         | T048, T049                  | US3 passes                                         |
+| US5         | T054, T055                  | US3 passes; serialize shared edits with US4        |
+| Final       | T063, T064, T065            | All stories pass; separate test sessions/databases |
 
 ## Implementation Strategy
 
@@ -378,20 +383,20 @@ These examples describe optional scheduling. They do not require subagents or ex
 
 ## Requirement Coverage
 
-| Requirement group | Primary phase |
-|---|---|
-| FR-001–006: profiles, session, initialization | US1 |
-| FR-007–012: account setup, parity, register/details | US2 |
-| FR-013–019: journal validation, atomicity, versions, editor | US3; calendar starts in US2 |
-| FR-020: one book currency and permanent lock | Foundation, US1 setup, US3 writes, US5 settings |
-| FR-021–023: line reconciliation and resets | US3 reset behavior; US4 workflow |
-| FR-024–026: separate concepts and basic securities | Foundation catalogs; US2 account types; US5 |
-| FR-027: architecture review and disposition | Plan's R01–R14 responses; final acceptance |
-| FR-028: parameterized access and privilege separation | Foundation, US1, US3, final acceptance |
-| FR-029/030: redaction and non-blocking TLS warnings | Foundation, US1, final diagnostics tests |
-| FR-031: single-user exclusions | Scope rules and final release tasks |
-| FR-032: exact integer schema compatibility | Foundation and US1 |
-| FR-033: definitions and deliberate merge resolution | Foundation and final merge validation |
+| Requirement group                                           | Primary phase                                   |
+| ----------------------------------------------------------- | ----------------------------------------------- |
+| FR-001–006: profiles, session, initialization               | US1                                             |
+| FR-007–012: account setup, parity, register/details         | US2                                             |
+| FR-013–019: journal validation, atomicity, versions, editor | US3; calendar starts in US2                     |
+| FR-020: one book currency and permanent lock                | Foundation, US1 setup, US3 writes, US5 settings |
+| FR-021–023: line reconciliation and resets                  | US3 reset behavior; US4 workflow                |
+| FR-024–026: separate concepts and basic securities          | Foundation catalogs; US2 account types; US5     |
+| FR-027: architecture review and disposition                 | Plan's R01–R14 responses; final acceptance      |
+| FR-028: parameterized access and privilege separation       | Foundation, US1, US3, final acceptance          |
+| FR-029/030: redaction and non-blocking TLS warnings         | Foundation, US1, final diagnostics tests        |
+| FR-031: single-user exclusions                              | Scope rules and final release tasks             |
+| FR-032: exact integer schema compatibility                  | Foundation and US1                              |
+| FR-033: definitions and deliberate merge resolution         | Foundation and final merge validation           |
 
 ## Task Counts and Generation Checks
 
@@ -399,7 +404,6 @@ These examples describe optional scheduling. They do not require subagents or ex
 
 Generation review checks task IDs, checkbox format, story labels, paths, dependency order,
 and requirement coverage. It does not execute the proposed application or tests.
-
 
 ## Phase 9: Convergence
 
@@ -413,11 +417,11 @@ journal, reconciliation, and security work. The two constitution corrections com
 Use ordinary validation, EF operations, transactions, and SQL constraints where they fit.
 Add no new safety subsystem.
 
-- [X] T069 CRITICAL — F01: Validate deserialized profile records in `src/FatStacks.Infrastructure/Configuration/ProfileStore.cs` before reading their fields. A configuration with `Profiles: [null]` currently causes an uncaught NullReferenceException. Return a redacted configuration failure, preserve the file, and prevent accidental replacement. Reset the unreadable state after a successful explicit recovery, including a subsequent missing-file load. Add focused malformed-record and recovery tests in `tests/FatStacks.Tests/Profiles/ProfileTests.cs`. Use ordinary null/shape checks per Constitution IV, FR-001/006, and the corrupt-configuration edge case (contradicts).
+- [x] T069 CRITICAL — F01: Validate deserialized profile records in `src/FatStacks.Infrastructure/Configuration/ProfileStore.cs` before reading their fields. A configuration with `Profiles: [null]` currently causes an uncaught NullReferenceException. Return a redacted configuration failure, preserve the file, and prevent accidental replacement. Reset the unreadable state after a successful explicit recovery, including a subsequent missing-file load. Add focused malformed-record and recovery tests in `tests/FatStacks.Tests/Profiles/ProfileTests.cs`. Use ordinary null/shape checks per Constitution IV, FR-001/006, and the corrupt-configuration edge case (contradicts).
 
-- [X] T070 CRITICAL — F02: Prefer TLS in `src/FatStacks.Infrastructure/Connections/SqlTransport.cs` even when the profile permits plaintext fallback. `ConnectionViewModel.Settings` currently selects Encrypt=Optional immediately when that option is checked. Attempt TLS first; allow the required fallback only when encryption is unavailable. Preserve non-blocking self-signed/expired-certificate handling and authentication failures. Add a regression case with fallback permitted and TLS available per Constitution IV, FR-030, plan: TLS warnings, and T022 (contradicts).
+- [x] T070 CRITICAL — F02: Prefer TLS in `src/FatStacks.Infrastructure/Connections/SqlTransport.cs` even when the profile permits plaintext fallback. `ConnectionViewModel.Settings` currently selects Encrypt=Optional immediately when that option is checked. Attempt TLS first; allow the required fallback only when encryption is unavailable. Preserve non-blocking self-signed/expired-certificate handling and authentication failures. Add a regression case with fallback permitted and TLS available per Constitution IV, FR-030, plan: TLS warnings, and T022 (contradicts).
 
-- [ ] T071 CRITICAL — F03: Complete the absent account operations and setup screen from T028, T030, and T034 in `src/FatStacks.Core/Accounts/`, `src/FatStacks.Infrastructure/Accounts/AccountService.cs`, and the Desktop account setup view/view model. Verify all eleven type mappings, group overrides, stable identity, hierarchy rules, closure boundaries, and retained history with service/SQL tests. Use the existing catalogs and ordinary EF operations per FR-007/008/024 and US2/AC1–5 (missing).
+- [x] T071 CRITICAL — F03: Complete the absent account operations and setup screen from T028, T030, and T034 in `src/FatStacks.Core/Accounts/`, `src/FatStacks.Infrastructure/Accounts/AccountService.cs`, and the Desktop account setup view/view model. Verify all eleven type mappings, group overrides, stable identity, hierarchy rules, closure boundaries, and retained history with service/SQL tests. Use the existing catalogs and ordinary EF operations per FR-007/008/024 and US2/AC1–5 (missing).
 
 - [ ] T072 CRITICAL — F04: Complete the absent calendar, register read procedure, register service, and account-tree/register/details UI from T028/029/031–036. Implement `BookCalendar`, `database/sprocs/ReadAccountRegister.sql`, `RegisterService`, the procedure binding in `StoredProcedureRepository`, and `MainWindowViewModel`. Verify full-history balances before filtering, book-local dates, Payment/Deposit mapping, deterministic order, closed descendants, complete details, and stable selection. Record reference and Windows results per FR-009–012/019, US2/AC6–10, and plan: register read procedure (missing).
 
@@ -425,7 +429,7 @@ Add no new safety subsystem.
 
 - [ ] T074 CRITICAL — F06: Complete the absent reconciliation implementation and tests from T048–053 after journal maintenance works. Add `ReconciliationService`, `ReconciliationSummary`, the register summary, and individual Desktop status controls. Update one line and its header in an ordinary EF transaction using loaded versions. Verify independent states, Mixed derived only from selected-account lines, unchanged finances, conflict rollback, and resets after financial edits per FR-017/021–023, US4/AC1–5, and plan: EF reconciliation transaction (missing).
 
-- [X] T075 HIGH — F07: Separate manual Open from incidental profile persistence in `src/FatStacks.Desktop/ViewModels/ConnectionViewModel.cs`. Its current early return after `SaveProfileAsync` prevents opening a usable saved profile when preferences cannot be written. Preserve accurate failure reporting for explicit Save, and report a failed remember/profile write independently from successful activation. Add a view-model regression with a readable profile store whose writes fail; verify active-book usability and the warning per FR-006, US1/AC13, and T026 (partial).
+- [x] T075 HIGH — F07: Separate manual Open from incidental profile persistence in `src/FatStacks.Desktop/ViewModels/ConnectionViewModel.cs`. Its current early return after `SaveProfileAsync` prevents opening a usable saved profile when preferences cannot be written. Preserve accurate failure reporting for explicit Save, and report a failed remember/profile write independently from successful activation. Add a view-model regression with a readable profile store whose writes fail; verify active-book usability and the warning per FR-006, US1/AC13, and T026 (partial).
 
 - [ ] T076 HIGH — F08: Complete the US1 behavioral checks omitted from T016/018 and execute T027 on Windows. Cover stable IDs after connection edits, active-profile removal rejection, Test preserving the startup preference, save/discard/cancel outcomes, identity pin retention after reload, and startup cancellation. Run `ConnectionJourneyTests` and `WindowBehaviorTests`, including main-window close with an active book and during startup. Record actual SQL, Windows, DPAPI, keyboard/focus, and close-regression results separately in `specs/001-sql-desktop-foundation/validation/us1.md`. Leave unavailable checks unverified per FR-001–006/032, US1/AC1–13, and SC-001/006 (partial).
 
@@ -445,4 +449,42 @@ Add no new safety subsystem.
 
 - [ ] T084 MEDIUM — F16: Complete the absent Windows publish script and release guidance from T067/068 in `scripts/Publish-Windows.ps1` and `docs/releases/phase-1.md`. Package the framework-dependent Windows x64 application, assets, licenses, and grate files. Verify the package on Windows and document its version, desktop runtime, settings location, closed-app updates, explicit schema compatibility/maintenance, and migration-specific recovery limits. Update verified README/quickstart guidance per plan: migration, installation, and recovery, FR-031/032, and T067/068 (missing).
 
-- [X] T085 MEDIUM — F17: Refresh the shell's displayed friendly name after the active profile is renamed. `MainWindow.Render` currently reads the immutable name captured when the session opened, while profile Save only updates configuration. Preserve the active connection, profile ID, and logical book identity; update only the displayed profile metadata. Add a Windows/view-model check that renames an active profile, closes Connections, and verifies the new name without reconnecting per FR-001/003, US1/AC6/10/11, and T025 (partial).
+- [x] T085 MEDIUM — F17: Refresh the shell's displayed friendly name after the active profile is renamed. `MainWindow.Render` currently reads the immutable name captured when the session opened, while profile Save only updates configuration. Preserve the active connection, profile ID, and logical book identity; update only the displayed profile metadata. Add a Windows/view-model check that renames an active profile, closes Connections, and verifies the new name without reconnecting per FR-001/003, US1/AC6/10/11, and T025 (partial).
+
+## Phase 10: Convergence
+
+- [x] T090 [US2] F18. Record the approved five-tab sidebar in the spec, accounting model, data model, parity baseline, and validation steps. Preserve stored display groups and document the Loans Payable and Other routing. Retest the revised M06 under T094 (FR-007/009/024, US2/AC3–5, T035/P03–P04).
+- [X] T091 [US2] CRITICAL — F19 (contradicts). Use the desktop app's existing .NET `Trace.TraceError` pattern for handled failures.
+  - Cover account load and save, register refresh and search, and entry detail load.
+  - Include a fixed operation name and a safe error category in each event. Keep the existing UI messages. Omit events for routine cancellation.
+  - Verify that failure events reach a trace listener. Check that the events contain no raw exception text, search terms, financial data, credentials, or connection strings.
+  - Defer the persistent rolling log file to Phase 2.
+  - References — Constitution V, FR-029, and the plan's redacted diagnostics decision.
+- [X] T092 [US2] HIGH — F20 (partial). Update search in `database/sprocs/ReadAccountRegister.sql`.
+  - Match the search term against the description or each counter-account path separately. Keep the joined names for display.
+  - Add a SQL regression test for a term that spans two joined names. Verify that this term does not match across names.
+  - Verify that literal search matching and full-history balances still work.
+  - References — FR-011, US2/AC7, P08, T029, and T032.
+- [X] T093 [US2] HIGH — F21 (partial). Preserve transaction selection by stable entry ID during overlapping refreshes in `MainWindowViewModel.cs`.
+  - Add a regression test with a delayed read. Select an entry and start two overlapping refreshes.
+  - Verify that the latest result restores the selection if the entry still exists.
+  - Verify that changing the account or book does not restore an obsolete selection.
+  - References — FR-012, US2/AC10, P10, T035, and T072.
+- [ ] T094 [US2] HIGH — F22 (partial). Complete US2 validation on Windows.
+  - Update `validation/us2.md` with the checked outcomes for M33 and M34. Keep the M32 failure in the test history.
+  - Use the Windows UI with a populated synthetic book. Check register search, closed-account links, and refresh.
+  - Record the manual results for M21 through M26 when journal entry creation is available.
+  - Run the revised M06. Record the outstanding US2 comparisons for appearance, keyboard operation, scaling, and accessibility in the parity evidence. Record approved departures there where applicable.
+  - Automate keyboard regression checks on Windows where practical. Record repeatable manual steps for the remaining checks.
+  - References — Constitution III, SC-002, SC-003, T036, T072, and T088.
+- [X] T095 [US2] MEDIUM — F23 (partial). Complete the register performance checks from T065 and T083.
+  - Use the shared fixture with 100 accounts and 10,000 entries on the agreed Windows machine.
+  - Measure 20 runs for each operation. Measure account selection, search, and refresh.
+  - Record the hardware and SQL Server placement in `validation/performance.md`. For each operation, record how many runs finish within two seconds.
+  - References — SC-008 and the plan's performance validation.
+
+
+## Phase 11: Convergence
+
+- [X] T096 [US2] HIGH - F24 (partial). Preserve the selected account when Reload finds it in a different sidebar tab after a display-group change. Select the destination tab and restore the selected transaction if it still appears in the register. Add a regression that moves the selected account between tabs and verifies both stable IDs after refresh. Follow FR-007, FR-012, US2/AC5, US2/AC10, P10, and T035.
+- [ ] T097 [US2] HIGH - F25 (partial). Reconcile the remaining Windows evidence under T036, T072, and T094. Record the revised M06 pass and link the successful benchmark run in `validation/us2.md`. Record results for the populated-book Windows register automation and outstanding visual, keyboard, scaling, and accessibility comparisons. Record M21 through M26 when journal entry creation is available. Keep the deferred checks visible until they run. Follow Constitution III, SC-002, and SC-003.

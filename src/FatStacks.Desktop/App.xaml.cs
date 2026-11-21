@@ -1,12 +1,12 @@
 using System.IO;
 using System.Windows;
 using Autofac;
+using FatStacks.Desktop.Composition;
 using FatStacks.Core.Connections;
 using FatStacks.Core.Contracts;
 using FatStacks.Desktop.ViewModels;
 using FatStacks.Infrastructure.Configuration;
 using FatStacks.Infrastructure.Connections;
-using FatStacks.Infrastructure.Persistence;
 namespace FatStacks.Desktop;
 
 public partial class App : Application
@@ -38,14 +38,11 @@ public partial class App : Application
         sessions.SessionChanged += (_, _) =>
         {
             bookScope?.Dispose(); bookScope = null;
-            if (sessions.Active is { } active) bookScope = container.BeginLifetimeScope(b =>
-            {
-                b.RegisterInstance(active.Profile.Settings);
-                b.RegisterType<BookDatabase>().InstancePerLifetimeScope();
-                b.RegisterType<StoredProcedureRepository>().PropertiesAutowired().InstancePerLifetimeScope();
-            });
+            if (sessions.Active is { } active)
+                bookScope = container.BeginLifetimeScope(b => b.RegisterModule(new BookScopeModule(active)));
         };
         MainWindow = container.Resolve<MainWindow>(); MainWindow.Show();
     }
+    internal T? ResolveBook<T>() where T : class => bookScope?.Resolve<T>();
     protected override void OnExit(ExitEventArgs e) { bookScope?.Dispose(); container?.Dispose(); base.OnExit(e); }
 }

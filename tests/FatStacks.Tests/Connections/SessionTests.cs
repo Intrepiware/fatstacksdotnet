@@ -89,6 +89,20 @@ public sealed class SessionTests
         else Assert.AreSame(first, session.Active);
     }
 
+    [TestMethod]
+    public void SessionCleanupCanRepeatWithoutCancellingDisposedResources()
+    {
+        var session = new BookSession(Profile("A"), new(Guid.NewGuid(), "Synthetic", "USD", "UTC"));
+        var reads = session.Reads.Token;
+        var cancellations = 0;
+        using var registration = reads.Register(() => cancellations++);
+        session.Dispose();
+        session.Dispose();
+        Assert.IsTrue(reads.IsCancellationRequested);
+        Assert.AreEqual(1, cancellations);
+        Assert.Throws<InvalidOperationException>(() => session.BeginWrite());
+    }
+
     private sealed class FakeConnection : IBookConnectionService
     {
         public bool Fail { get; set; }
