@@ -162,7 +162,8 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
             await ReadRegisterAsync(null, "RegisterRefresh");
         }
         catch (OperationCanceledException) { }
-        catch (Exception ex) when (ex is Microsoft.Data.SqlClient.SqlException or InvalidOperationException) {
+        catch (Exception ex) when (ex is Microsoft.Data.SqlClient.SqlException or InvalidOperationException)
+        {
             if (IsCurrent && !read.IsCancellationRequested)
             {
                 DatabaseErrors.TraceFailure("RegisterRefresh", ex);
@@ -286,7 +287,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         UpdateRegisterRows([], null);
         var today = new BookCalendar(Session.Book.TimeZoneId).Today;
         registerToday = today;
-        if (accountId is not {} id)
+        if (accountId is not { } id)
         {
             searchRead = null; pendingEntryId = null; Balance = 0; AccountTitle = "Transaction register";
             AccountPath = "Select an account to view its transactions"; ReadState = RegisterReadState.Idle;
@@ -305,7 +306,8 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
             Status = $"{Rows.Count:N0} transactions shown";
         }
         catch (OperationCanceledException) { }
-        catch (Exception ex) when (ex is Microsoft.Data.SqlClient.SqlException or InvalidOperationException or ArgumentOutOfRangeException) {
+        catch (Exception ex) when (ex is Microsoft.Data.SqlClient.SqlException or InvalidOperationException or ArgumentOutOfRangeException)
+        {
             if (IsCurrent && !read.IsCancellationRequested)
             {
                 DatabaseErrors.TraceFailure(operation, ex);
@@ -332,7 +334,8 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
             foreach (var line in lines) Details.Add(line);
         }
         catch (OperationCanceledException) { }
-        catch (Exception ex) when (ex is Microsoft.Data.SqlClient.SqlException or InvalidOperationException) {
+        catch (Exception ex) when (ex is Microsoft.Data.SqlClient.SqlException or InvalidOperationException)
+        {
             if (IsCurrent && !read.IsCancellationRequested)
             {
                 DatabaseErrors.TraceFailure("EntryDetailLoad", ex);

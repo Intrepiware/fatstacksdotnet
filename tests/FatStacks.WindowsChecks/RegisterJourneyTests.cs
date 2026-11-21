@@ -212,11 +212,11 @@ public sealed class RegisterJourneyTests
     [TestMethod]
     public async Task AccountBrowserSortsFiltersHierarchyAndPreservesDraftAcrossViews()
     {
-        var (_,session)=await OpenAsync();var accounts=new Accounts();
-        await accounts.SaveAsync(new(null,null,"alpha",1,null,new(2020,1,1),null));
-        await accounts.SaveAsync(new(null,null,"A card",3,null,new(2020,1,1),null));
-        var model=new AccountSetupViewModel {Accounts=accounts,Session=session};await model.LoadAsync();
-        CollectionAssert.AreEqual(new[] {"A card","alpha","Bank","Closed counter"},model.VisibleAccounts.Select(x=>x.Account.Name).ToArray());
+        var (_, session) = await OpenAsync(); var accounts = new Accounts();
+        await accounts.SaveAsync(new(null, null, "alpha", 1, null, new(2020, 1, 1), null));
+        await accounts.SaveAsync(new(null, null, "A card", 3, null, new(2020, 1, 1), null));
+        var model = new AccountSetupViewModel { Accounts = accounts, Session = session }; await model.LoadAsync();
+        CollectionAssert.AreEqual(new[] { "A card", "alpha", "Bank", "Closed counter" }, model.VisibleAccounts.Select(x => x.Account.Name).ToArray());
         Assert.IsTrue(model.IsTreeView);
         CollectionAssert.AreEqual(
             new[] { "(No parent)", "A card", "alpha", "Bank", "Bank:Closed counter" },
@@ -229,10 +229,10 @@ public sealed class RegisterJourneyTests
             new[] { "alpha", "Bank", "A card" },
             model.AccountTree.Select(x => x.Account.Name).ToArray());
         Assert.AreEqual("Equity", model.AccountTree[1].Children.Single().TypeName);
-        model.Search="  EQUITY  ";
-        Assert.AreEqual(1,model.VisibleAccounts.Count);Assert.AreEqual(2L,model.VisibleAccounts[0].Account.AccountId);
-        Assert.AreEqual("Bank",model.AccountTree.Single().Account.Name);
-        model.SelectedBrowserItem=model.VisibleAccounts.Single();model.Name="Unsaved rename";
+        model.Search = "  EQUITY  ";
+        Assert.AreEqual(1, model.VisibleAccounts.Count); Assert.AreEqual(2L, model.VisibleAccounts[0].Account.AccountId);
+        Assert.AreEqual("Bank", model.AccountTree.Single().Account.Name);
+        model.SelectedBrowserItem = model.VisibleAccounts.Single(); model.Name = "Unsaved rename";
         var staleTreeItem = model.AccountTree.Single();
         model.IsAlphabeticalView = true;
         model.Search = "A card";
@@ -241,16 +241,16 @@ public sealed class RegisterJourneyTests
         Assert.AreEqual(2L, model.Selected!.AccountId);
         Assert.AreEqual("Unsaved rename", model.Name);
         model.Search = "EQUITY";
-        model.IsTreeView=true;
-        Assert.IsFalse(model.IsAlphabeticalView);Assert.IsTrue(model.AccountTree.Single().Children.Single().IsSelected);
-        model.Search="nothing matches";
-        Assert.AreEqual(0,model.VisibleAccounts.Count);Assert.AreEqual(0,model.AccountTree.Count);
-        Assert.AreEqual(2L,model.Selected!.AccountId);Assert.AreEqual("Unsaved rename",model.Name);
-        model.SelectedBrowserItem=null; // WPF clears the list selection when filtering hides an item.
-        model.IsAlphabeticalView=true;model.Search="bank:closed";
-        Assert.IsFalse(model.IsTreeView);Assert.AreEqual(2L,model.SelectedBrowserItem!.Account.AccountId);
-        Assert.AreEqual("Unsaved rename",model.Name);
-        model.Search="";Assert.AreEqual(4,model.VisibleAccounts.Count);
+        model.IsTreeView = true;
+        Assert.IsFalse(model.IsAlphabeticalView); Assert.IsTrue(model.AccountTree.Single().Children.Single().IsSelected);
+        model.Search = "nothing matches";
+        Assert.AreEqual(0, model.VisibleAccounts.Count); Assert.AreEqual(0, model.AccountTree.Count);
+        Assert.AreEqual(2L, model.Selected!.AccountId); Assert.AreEqual("Unsaved rename", model.Name);
+        model.SelectedBrowserItem = null; // WPF clears the list selection when filtering hides an item.
+        model.IsAlphabeticalView = true; model.Search = "bank:closed";
+        Assert.IsFalse(model.IsTreeView); Assert.AreEqual(2L, model.SelectedBrowserItem!.Account.AccountId);
+        Assert.AreEqual("Unsaved rename", model.Name);
+        model.Search = ""; Assert.AreEqual(4, model.VisibleAccounts.Count);
         session.Dispose();
     }
     [TestMethod]
@@ -294,17 +294,17 @@ public sealed class RegisterJourneyTests
     [TestMethod]
     public async Task RegisterEmptyStateDistinguishesLoadingNoMatchesAndReadFailure()
     {
-        var (sessions,session)=await OpenAsync();var register=new Register();
-        using var model=new MainWindowViewModel {Accounts=new Accounts(),Register=register,Session=session,Sessions=sessions};
+        var (sessions, session) = await OpenAsync(); var register = new Register();
+        using var model = new MainWindowViewModel { Accounts = new Accounts(), Register = register, Session = session, Sessions = sessions };
         await model.RefreshAsync();
-        register.Pending=new(TaskCreationOptions.RunContinuationsAsynchronously);
-        var loading=model.ReadAsync();
-        Assert.AreEqual(RegisterReadState.Loading,model.ReadState);Assert.AreEqual("Loading transactions…",model.EmptyTitle);
-        register.Pending.SetResult(new(975,[]));await loading;register.Pending=null;
-        Assert.AreEqual(RegisterReadState.Loaded,model.ReadState);Assert.AreEqual("No transactions to show",model.EmptyTitle);
-        Assert.IsTrue(model.EmptyDescription.Contains("No matching transactions from",StringComparison.Ordinal));
-        register.Fail=true;await model.ReadAsync();
-        Assert.AreEqual(RegisterReadState.Failed,model.ReadState);Assert.AreEqual("Unable to load transactions",model.EmptyTitle);
+        register.Pending = new(TaskCreationOptions.RunContinuationsAsynchronously);
+        var loading = model.ReadAsync();
+        Assert.AreEqual(RegisterReadState.Loading, model.ReadState); Assert.AreEqual("Loading transactions…", model.EmptyTitle);
+        register.Pending.SetResult(new(975, [])); await loading; register.Pending = null;
+        Assert.AreEqual(RegisterReadState.Loaded, model.ReadState); Assert.AreEqual("No transactions to show", model.EmptyTitle);
+        Assert.IsTrue(model.EmptyDescription.Contains("No matching transactions from", StringComparison.Ordinal));
+        register.Fail = true; await model.ReadAsync();
+        Assert.AreEqual(RegisterReadState.Failed, model.ReadState); Assert.AreEqual("Unable to load transactions", model.EmptyTitle);
         session.Dispose();
     }
     internal static async Task<(BookSessionCoordinator, BookSession)> OpenAsync()
@@ -337,7 +337,7 @@ public sealed class RegisterJourneyTests
         public TaskCompletionSource<RegisterResult>? Pending, Delayed;
         public bool Fail;
         public Task<RegisterResult> ReadAsync(long id, DateOnly today, string search, CancellationToken ct = default)
-        { if(Fail) throw new InvalidOperationException("Synthetic read failure"); if (Pending is { } pending) { Delayed = pending; return pending.Task; } return Task.FromResult(new RegisterResult(975, [new(10, new(2026, 11, 17), "Synthetic", "Counter", 25, null, 975, "Uncleared")])); }
+        { if (Fail) throw new InvalidOperationException("Synthetic read failure"); if (Pending is { } pending) { Delayed = pending; return pending.Task; } return Task.FromResult(new RegisterResult(975, [new(10, new(2026, 11, 17), "Synthetic", "Counter", 25, null, 975, "Uncleared")])); }
         public Task<IReadOnlyList<EntryLine>> DetailsAsync(long entry, CancellationToken ct = default) => Task.FromResult<IReadOnlyList<EntryLine>>([new(1, 1, "Bank", 0, 25, 0, null, null), new(2, 2, "Closed counter", 25, 0, 0, null, null)]);
         public Task<IReadOnlyDictionary<long, decimal>> BalancesAsync(DateOnly today, CancellationToken ct = default) => Task.FromResult<IReadOnlyDictionary<long, decimal>>(new Dictionary<long, decimal> { { 1, 975 }, { 2, 25 } });
     }

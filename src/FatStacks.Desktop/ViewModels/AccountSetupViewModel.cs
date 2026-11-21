@@ -86,13 +86,13 @@ public sealed class AccountSetupViewModel : ObservableObject
         foreach (var match in VisibleAccounts)
         {
             var parent = match.Account.ParentAccountId;
-            while (parent is {} id && included.Add(id)) parent = byId[id].Account.ParentAccountId;
+            while (parent is { } id && included.Add(id)) parent = byId[id].Account.ParentAccountId;
         }
         var roots = new List<AccountBrowserItem>();
         foreach (var item in items.Where(x => included.Contains(x.Account.AccountId)))
         {
             item.IsSelected = item.Account.AccountId == Selected?.AccountId;
-            if (item.Account.ParentAccountId is {} id && byId.TryGetValue(id, out var parent)) parent.Children.Add(item);
+            if (item.Account.ParentAccountId is { } id && byId.TryGetValue(id, out var parent)) parent.Children.Add(item);
             else roots.Add(item);
         }
         // A branch belongs to its root's type so mixed-type descendants stay with their parent.

@@ -36,28 +36,28 @@ public sealed class AccountSetupWindowTests
     [STATestMethod]
     public void SearchAndTreeToggleUseTheSameAccountSelection()
     {
-        var (_,session)=RegisterJourneyTests.OpenAsync().GetAwaiter().GetResult();
-        var model=new AccountSetupViewModel {Accounts=new RegisterJourneyTests.Accounts(),Session=session};
-        var window=new AccountSetupWindow(model);
+        var (_, session) = RegisterJourneyTests.OpenAsync().GetAwaiter().GetResult();
+        var model = new AccountSetupViewModel { Accounts = new RegisterJourneyTests.Accounts(), Session = session };
+        var window = new AccountSetupWindow(model);
         try
         {
-            window.Show();Pump();
-            Assert.IsTrue(Find<TreeView>(window,"AccountHierarchy").IsVisible);
-            System.Windows.Input.AccessKeyManager.ProcessKey(PresentationSource.FromVisual(window),"A",false);Pump();
-            System.Windows.Input.AccessKeyManager.ProcessKey(PresentationSource.FromVisual(window),"F",false);Pump();
-            Assert.IsTrue(Find<TextBox>(window,"AccountSearch").IsKeyboardFocused);
-            Find<TextBox>(window,"AccountSearch").Text="closed";Pump();
-            var list=Find<ListBox>(window,"AccountList");Assert.AreEqual(1,list.Items.Count);list.SelectedIndex=0;Pump();
-            model.Name="Draft";
-            System.Windows.Input.AccessKeyManager.ProcessKey(PresentationSource.FromVisual(window),"T",false);Pump();
-            var tree=Find<TreeView>(window,"AccountHierarchy");Assert.IsTrue(tree.IsVisible);Assert.AreEqual(1,tree.Items.Count);
-            Assert.AreEqual(2L,((AccountBrowserItem)tree.SelectedItem).Account.AccountId);
-            System.Windows.Input.AccessKeyManager.ProcessKey(PresentationSource.FromVisual(window),"A",false);Pump();
-            Assert.IsTrue(list.IsVisible);Assert.AreEqual(2L,((AccountBrowserItem)list.SelectedItem).Account.AccountId);Assert.AreEqual("Draft",model.Name);
-            System.Windows.Input.AccessKeyManager.ProcessKey(PresentationSource.FromVisual(window),"C",false);Pump();
+            window.Show(); Pump();
+            Assert.IsTrue(Find<TreeView>(window, "AccountHierarchy").IsVisible);
+            System.Windows.Input.AccessKeyManager.ProcessKey(PresentationSource.FromVisual(window), "A", false); Pump();
+            System.Windows.Input.AccessKeyManager.ProcessKey(PresentationSource.FromVisual(window), "F", false); Pump();
+            Assert.IsTrue(Find<TextBox>(window, "AccountSearch").IsKeyboardFocused);
+            Find<TextBox>(window, "AccountSearch").Text = "closed"; Pump();
+            var list = Find<ListBox>(window, "AccountList"); Assert.AreEqual(1, list.Items.Count); list.SelectedIndex = 0; Pump();
+            model.Name = "Draft";
+            System.Windows.Input.AccessKeyManager.ProcessKey(PresentationSource.FromVisual(window), "T", false); Pump();
+            var tree = Find<TreeView>(window, "AccountHierarchy"); Assert.IsTrue(tree.IsVisible); Assert.AreEqual(1, tree.Items.Count);
+            Assert.AreEqual(2L, ((AccountBrowserItem)tree.SelectedItem).Account.AccountId);
+            System.Windows.Input.AccessKeyManager.ProcessKey(PresentationSource.FromVisual(window), "A", false); Pump();
+            Assert.IsTrue(list.IsVisible); Assert.AreEqual(2L, ((AccountBrowserItem)list.SelectedItem).Account.AccountId); Assert.AreEqual("Draft", model.Name);
+            System.Windows.Input.AccessKeyManager.ProcessKey(PresentationSource.FromVisual(window), "C", false); Pump();
             Assert.IsFalse(window.IsVisible);
         }
-        finally {if(window.IsVisible)window.Close();session.Dispose();}
+        finally { if (window.IsVisible) window.Close(); session.Dispose(); }
     }
     private static void Pump() => Dispatcher.CurrentDispatcher.Invoke(DispatcherPriority.ApplicationIdle, new Action(() => { }));
     private static T Find<T>(Window window, string id) where T : DependencyObject
