@@ -1,6 +1,7 @@
 using FatStacks.Core.Accounts;
 using FatStacks.Core.Calendar;
 using FatStacks.Core.Connections;
+using FatStacks.Infrastructure.Diagnostics;
 namespace FatStacks.Desktop.ViewModels;
 
 public sealed record ParentChoice(long? Id, string Name);
@@ -19,7 +20,12 @@ public sealed class AccountSetupViewModel : ObservableObject
 {
     public required IAccountService Accounts { private get; init; }
     public required BookSession Session { private get; init; }
-    public IReadOnlyList<AccountType> Types => AccountCatalog.Types;
+    // Presentation order is independent of the stored account type IDs.
+    private static readonly byte[] TypeDisplayOrder = [1, 2, 3, 6, 5, 4, 7, 8, 9, 10, 11];
+
+    public IReadOnlyList<AccountType> Types { get; } = Array.AsReadOnly(TypeDisplayOrder
+        .Select(id => AccountCatalog.Types.Single(type => type.Id == id))
+        .ToArray());
     public IReadOnlyList<string> Groups => ["Default from type", .. AccountCatalog.Groups.Take(5)];
     public IReadOnlyList<AccountRecord> Records { get; private set; } = [];
     public IReadOnlyList<ParentChoice> Parents { get; private set; } = [];
@@ -31,14 +37,24 @@ public sealed class AccountSetupViewModel : ObservableObject
     public bool IsTreeView
     {
         get => isTreeView;
-        set { if (Set(ref isTreeView, value)) Changed(nameof(IsAlphabeticalView)); }
+        set => UpdateBrowser(() =>
+        {
+            if (Set(ref isTreeView, value)) Changed(nameof(IsAlphabeticalView));
+        });
     }
     public bool IsAlphabeticalView { get => !IsTreeView; set => IsTreeView = !value; }
+    private bool updatingBrowser;
     public AccountBrowserItem? SelectedBrowserItem
     {
         get => VisibleAccounts.FirstOrDefault(x => x.Account.AccountId == Selected?.AccountId);
-        set { if (value is not null) Selected = value.Account; }
+        set { if (value is not null && VisibleAccounts.Contains(value)) SelectBrowserItem(value); }
     }
+    public void SelectBrowserItem(AccountBrowserItem item)
+    {
+        if (!updatingBrowser && BrowserItems().Contains(item))
+            Selected = item.Account;
+    }
+
     private AccountRecord? selected;
     public AccountRecord? Selected
     {
@@ -46,8 +62,11 @@ public sealed class AccountSetupViewModel : ObservableObject
         set
         {
             if (!Set(ref selected, value)) return;
-            foreach (var item in BrowserItems()) item.IsSelected = item.Account.AccountId == value?.AccountId;
-            Changed(nameof(SelectedBrowserItem));
+            UpdateBrowser(() =>
+            {
+                foreach (var item in BrowserItems()) item.IsSelected = item.Account.AccountId == value?.AccountId;
+                Changed(nameof(SelectedBrowserItem));
+            });
             Edit(value);
         }
     }
@@ -57,7 +76,8 @@ public sealed class AccountSetupViewModel : ObservableObject
     {
         var items = Records.Select(x => new AccountBrowserItem(x, AccountCatalog.Path(x, Records)))
             .OrderBy(x => x.Account.Name, StringComparer.OrdinalIgnoreCase)
-            .ThenBy(x => x.Path, StringComparer.OrdinalIgnoreCase).ToArray();
+            .ThenBy(x => x.Path, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(x => x.Account.AccountId).ToArray();
         var query = Search.Trim();
         VisibleAccounts = items.Where(x => query.Length == 0 || x.Path.Contains(query, StringComparison.OrdinalIgnoreCase)
             || x.TypeName.Contains(query, StringComparison.OrdinalIgnoreCase)).ToArray();
@@ -75,8 +95,23 @@ public sealed class AccountSetupViewModel : ObservableObject
             if (item.Account.ParentAccountId is {} id && byId.TryGetValue(id, out var parent)) parent.Children.Add(item);
             else roots.Add(item);
         }
-        AccountTree = roots;
-        Changed(nameof(VisibleAccounts)); Changed(nameof(AccountTree)); Changed(nameof(SelectedBrowserItem));
+        // A branch belongs to its root's type so mixed-type descendants stay with their parent.
+        var rootsByType = roots.ToLookup(item => item.Account.TypeId);
+        AccountTree = Types.SelectMany(type => rootsByType[type.Id]).ToArray();
+        UpdateBrowser(() =>
+        {
+            Changed(nameof(VisibleAccounts));
+            Changed(nameof(AccountTree));
+            Changed(nameof(SelectedBrowserItem));
+        });
+    }
+
+    private void UpdateBrowser(Action update)
+    {
+        // WPF can raise selection events while applying a new item source or highlight.
+        updatingBrowser = true;
+        try { update(); }
+        finally { updatingBrowser = false; }
     }
 
     private string name = ""; public string Name { get => name; set => Set(ref name, value); }
@@ -99,7 +134,11 @@ public sealed class AccountSetupViewModel : ObservableObject
     }
     public async Task LoadAsync()
     {
-        Records = await Accounts.ListAsync(Session.Reads.Token); Parents = [new(null, "(No parent)"), .. Records.Select(x => new ParentChoice(x.AccountId, AccountCatalog.Path(x, Records)))];
+        Records = await Accounts.ListAsync(Session.Reads.Token);
+        Parents = [new(null, "(No parent)"), .. Records
+            .Select(x => new ParentChoice(x.AccountId, AccountCatalog.Path(x, Records)))
+            .OrderBy(x => x.Name, StringComparer.OrdinalIgnoreCase)
+            .ThenBy(x => x.Id)];
         Changed(nameof(Records)); Changed(nameof(Parents)); New(); RebuildBrowser();
     }
     public async Task<bool> SaveAsync()
@@ -112,11 +151,20 @@ public sealed class AccountSetupViewModel : ObservableObject
             Status = result.Message;
             if (!result.IsSuccess) return false;
             try { await LoadAsync(); Selected = Records.Single(x => x.AccountId == result.Value!.AccountId); Status = "Account saved."; }
-            catch (Microsoft.Data.SqlClient.SqlException) { Status = "Account saved, but the account list could not be refreshed. Reopen Accounts to retry."; }
+            catch (Microsoft.Data.SqlClient.SqlException ex)
+            {
+                DatabaseErrors.TraceFailure("AccountLoad", ex);
+                Status = "Account saved, but the account list could not be refreshed. Reopen Accounts to retry.";
+            }
             return true;
         }
         catch (OperationCanceledException) { Status = "Account load cancelled."; return false; }
-        catch (InvalidOperationException) { Status = "The book is disconnecting."; return false; }
+        catch (InvalidOperationException ex)
+        {
+            if (!Session.Reads.IsCancellationRequested) DatabaseErrors.TraceFailure("AccountSave", ex);
+            Status = "The book is disconnecting.";
+            return false;
+        }
         finally { Busy = false; }
     }
 }

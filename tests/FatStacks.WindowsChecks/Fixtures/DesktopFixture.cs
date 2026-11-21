@@ -30,8 +30,14 @@ public sealed class DesktopFixture : IDisposable
     }
     public async Task WaitTextAsync(string id, string expected)
     {
-        for (var i = 0; i < 150; i++) { if (Find(id)?.Current.Name.Contains(expected, StringComparison.Ordinal) == true) return; await Task.Delay(100); }
-        Assert.Fail($"Desktop control {id} did not show the expected state.");
+        string? actual = null;
+        for (var i = 0; i < 150; i++)
+        {
+            actual = Find(id)?.Current.Name;
+            if (actual?.Contains(expected, StringComparison.Ordinal) == true) return;
+            await Task.Delay(100);
+        }
+        Assert.Fail($"Desktop control {id} expected '{expected}', last observed '{actual ?? "<not found>"}'.");
     }
     public async Task WaitValueAsync(string id, string expected)
     {

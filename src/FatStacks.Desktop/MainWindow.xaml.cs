@@ -19,8 +19,21 @@ public partial class MainWindow : Window
     {
         InitializeComponent(); Loaded += LoadedAsync; Closed += (_, _) => { if (Sessions is not null) Sessions.SessionChanged -= SessionChanged; };
         CommandBindings.Add(new(ApplicationCommands.Open, (_, _) => ShowConnections()));
-        PreviewKeyDown += async (_, e) => { if (e.Key == Key.F5) { e.Handled = true; if (register is { } model) await model.RefreshAsync(); } };
+        PreviewKeyDown += MainWindowPreviewKeyDown;
         InputBindings.Add(new KeyBinding(ApplicationCommands.Open, new KeyGesture(Key.O, ModifierKeys.Control)));
+    }
+    private async void MainWindowPreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        if (e.Key == Key.F && Keyboard.Modifiers == ModifierKeys.Control)
+        {
+            e.Handled = true;
+            RegisterSearch.Focus();
+        }
+        else if (e.Key == Key.F5)
+        {
+            e.Handled = true;
+            if (register is { } model) await model.RefreshAsync();
+        }
     }
     private async void LoadedAsync(object sender, RoutedEventArgs e)
     {
@@ -67,9 +80,12 @@ public partial class MainWindow : Window
     private async void RefreshClicked(object sender, RoutedEventArgs e) { if (register is { } model) await model.RefreshAsync(); }
     private async void AccountChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
     {
-        if (register is not { } model) return;
-        if (e.NewValue is AccountNode node) await model.SelectAccountAsync(node.Account.AccountId);
-        else if (e.NewValue is AccountGroup) await model.ClearAccountSelectionAsync();
+        if (register is { } model) await model.SelectTreeItemAsync(e.NewValue);
+    }
+    private void RegisterSelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+    {
+        if (ReferenceEquals(e.OriginalSource, sender) && sender is System.Windows.Controls.DataGrid grid)
+            register?.SelectRegisterRow(grid.SelectedItem as FatStacks.Core.Register.RegisterRow);
     }
     private async void DetailAccountClicked(object sender, RoutedEventArgs e) { if (register is { } model && sender is System.Windows.Documents.Hyperlink { Tag: long id }) await model.SelectAccountAsync(id, model.Selected?.EntryId); }
     private async void AccountsClicked(object sender, RoutedEventArgs e)

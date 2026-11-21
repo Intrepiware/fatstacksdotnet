@@ -77,6 +77,11 @@ public sealed class RegisterTests
             var filtered = await service.ReadAsync(bank, new(2026, 11, 18), search);
             Assert.AreEqual(1, filtered.Rows.Count); Assert.AreEqual(all.Rows[0].Balance, filtered.Rows[0].Balance); Assert.AreEqual(all.CurrentBalance, filtered.CurrentBalance);
         }
+        const string joinedNames = "Counter[%_], Parent:Closed child";
+        Assert.AreEqual(joinedNames, all.Rows[0].CounterAccounts);
+        var crossAccountMatch = await service.ReadAsync(bank, new(2026, 11, 18), joinedNames);
+        Assert.AreEqual(0, crossAccountMatch.Rows.Count);
+        Assert.AreEqual(all.CurrentBalance, crossAccountMatch.CurrentBalance);
         Assert.AreEqual(0, (await service.ReadAsync(bank, new(2026, 11, 18), "absent")).Rows.Count);
         var details = await service.DetailsAsync(first); Assert.AreEqual(3, details.Count); Assert.IsTrue(details.Any(x => x.AccountId == closed));
         var totals = await service.BalancesAsync(new(2026, 11, 18)); Assert.AreEqual(199999979.98m, totals[bank]); Assert.AreEqual(5m, totals[closed]);

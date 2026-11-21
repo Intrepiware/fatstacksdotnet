@@ -1,5 +1,6 @@
 using FatStacks.Core.Accounts;
 using FatStacks.Core.Contracts;
+using FatStacks.Infrastructure.Diagnostics;
 using FatStacks.Infrastructure.Persistence;
 using FatStacks.Infrastructure.Persistence.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -39,6 +40,9 @@ public sealed class AccountService : IAccountService
         }
         catch (OperationCanceledException) { return OperationResult<AccountRecord>.Fail("Account save cancelled.", Outcome.Cancelled); }
         catch (Exception ex) when (ex is DbUpdateException or Microsoft.Data.SqlClient.SqlException)
-        { return OperationResult<AccountRecord>.Fail("Account could not be saved. Reload and check its name, parent, and dates."); }
+        {
+            DatabaseErrors.TraceFailure("AccountSave", ex);
+            return OperationResult<AccountRecord>.Fail("Account could not be saved. Reload and check its name, parent, and dates.");
+        }
     }
 }
