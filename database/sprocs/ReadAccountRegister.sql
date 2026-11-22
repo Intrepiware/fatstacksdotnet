@@ -6,7 +6,7 @@ AS
 BEGIN
     SET NOCOUNT ON;
     -- Widen before SUM: individual line precision must not limit an aggregate.
-    SELECT e.JournalEntryId, e.AccountingDate, e.Description,
+    SELECT e.JournalEntryId, e.AccountingDate, e.Description, e.Payee,
            CAST(SUM(CAST(l.Debit AS decimal(28,2))-CAST(l.Credit AS decimal(28,2))) AS decimal(28,2)) AS Movement,
            CASE WHEN MIN(l.ReconciliationStatus)<>MAX(l.ReconciliationStatus) THEN 'Mixed'
                 WHEN MIN(l.ReconciliationStatus)=2 THEN 'Cleared'
@@ -14,7 +14,7 @@ BEGIN
     INTO #Movements
     FROM dbo.JournalEntry e JOIN dbo.JournalEntryLine l ON l.JournalEntryId=e.JournalEntryId
     WHERE e.BookId=1 AND l.AccountId=@AccountId AND e.AccountingDate<=@Today
-    GROUP BY e.JournalEntryId,e.AccountingDate,e.Description;
+    GROUP BY e.JournalEntryId,e.AccountingDate,e.Description,e.Payee;
 
     SELECT CAST(COALESCE(SUM(Movement),0) AS decimal(28,2)) AS CurrentBalance FROM #Movements;
 
@@ -46,7 +46,7 @@ BEGIN
     )
     SELECT r.JournalEntryId,r.AccountingDate,r.Description,COALESCE(c.Names,N'') AS CounterAccounts,
            CAST(CASE WHEN r.Movement<0 THEN -r.Movement END AS decimal(28,2)) AS Payment,
-           CAST(CASE WHEN r.Movement>0 THEN r.Movement END AS decimal(28,2)) AS Deposit,r.Balance,r.Status
+           CAST(CASE WHEN r.Movement>0 THEN r.Movement END AS decimal(28,2)) AS Deposit,r.Balance,r.Status,r.Payee
     FROM Running r
     LEFT JOIN CounterLabels c ON c.JournalEntryId=r.JournalEntryId
     WHERE r.AccountingDate>=@Cutoff

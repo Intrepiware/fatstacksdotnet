@@ -7,6 +7,7 @@ public static class DatabaseErrors
 {
     public static void TraceFailure(string operation, Exception error)
     {
+        if (error is OperationCanceledException) return;
         var cause = error is DbUpdateException { InnerException: SqlException sql } ? sql : error;
         var category = cause switch
         {

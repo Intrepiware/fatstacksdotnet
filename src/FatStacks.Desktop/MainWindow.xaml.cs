@@ -2,6 +2,9 @@ using System.ComponentModel;
 using System.Windows;
 using System.Windows.Input;
 using FatStacks.Core.Connections;
+using FatStacks.Core.Calendar;
+using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using FatStacks.Desktop.ViewModels;
 using FatStacks.Desktop.Views;
 namespace FatStacks.Desktop;
@@ -15,6 +18,7 @@ public partial class MainWindow : Window
     private CancellationTokenSource? startup;
     private bool closingRequested;
     private bool shuttingDown;
+    private bool journalActionBusy;
     public MainWindow()
     {
         InitializeComponent(); Loaded += LoadedAsync; Closed += (_, _) => { if (Sessions is not null) Sessions.SessionChanged -= SessionChanged; };
@@ -29,11 +33,51 @@ public partial class MainWindow : Window
             e.Handled = true;
             RegisterSearch.Focus();
         }
+        else if (Keyboard.Modifiers == ModifierKeys.None && e.Key is Key.N or Key.E or Key.Delete && !IsTyping())
+        {
+            e.Handled = true;
+            if (e.Key == Key.Delete) await DeleteJournalAsync(); else await ShowJournalAsync(e.Key == Key.E);
+        }
         else if (e.Key == Key.F5)
         {
             e.Handled = true;
             if (register is { } model) await model.RefreshAsync();
         }
+    }
+    private static bool IsTyping() => Keyboard.FocusedElement is TextBoxBase or PasswordBox or ComboBox;
+    private async Task ShowJournalAsync(bool edit)
+    {
+        if (journalActionBusy || register is not { IsCurrent: true } current || Application.Current is not App app) return;
+        journalActionBusy = true;
+        try
+        {
+            var entry = edit ? await current.LoadSelectedEntryAsync() : null;
+            if (edit && entry is null || !current.IsCurrent) return;
+            if (app.ResolveBook<JournalEditorViewModel>() is not { } editor) return;
+            editor.Initialize(entry, current.AccountRecords, current.Currency, new BookCalendar(Sessions.Active!.Book.TimeZoneId).Today, current.AccountId);
+            new JournalEditorWindow(editor) { Owner = this }.ShowDialog();
+            if (editor.LastSaved is { } saved) await current.JournalSavedAsync(saved);
+        }
+        finally { journalActionBusy = false; }
+    }
+    private async Task DeleteJournalAsync()
+    {
+        if (journalActionBusy || register is not { IsCurrent: true } current) return;
+        journalActionBusy = true;
+        try
+        {
+            var entry = await current.LoadSelectedEntryAsync(); if (entry is null || !current.IsCurrent) return;
+            new DeleteEntryWindow(entry, current.AccountRecords, current.DeleteEntryAsync) { Owner = this }.ShowDialog();
+        }
+        finally { journalActionBusy = false; }
+    }
+    private async void NewJournalClicked(object sender, RoutedEventArgs e) => await ShowJournalAsync(false);
+    private async void EditJournalClicked(object sender, RoutedEventArgs e) => await ShowJournalAsync(true);
+    private async void DeleteJournalClicked(object sender, RoutedEventArgs e) => await DeleteJournalAsync();
+    private async void RegisterDoubleClicked(object sender, MouseButtonEventArgs e)
+    {
+        if (e.OriginalSource is DependencyObject source && ItemsControl.ContainerFromElement((ItemsControl)sender, source) is DataGridRow)
+            await ShowJournalAsync(true);
     }
     private async void LoadedAsync(object sender, RoutedEventArgs e)
     {
@@ -99,6 +143,7 @@ public partial class MainWindow : Window
         BookTitle.Text = current is null ? "Connect to your book" : $"{Connections.ActiveProfileFriendlyName} — {current.Book.Name}";
         BookIdentity.Text = current is null ? "" : $"Book {current.Book.StableIdentifier:D} · {current.Book.CurrencyCode} · {current.Book.TimeZoneId}";
         Title = current is null ? "Fat Stacks.NET" : $"{current.Book.Name} — Fat Stacks.NET";
+        NewJournalButton.IsEnabled = current is not null; EditJournalButton.IsEnabled = current is not null; DeleteJournalButton.IsEnabled = current is not null;
         AccountSetupButton.IsEnabled = current is not null; ReloadButton.IsEnabled = current is not null;
         DisconnectButton.IsEnabled = current is not null; Status.Text = current is null ? "Disconnected. Choose a connection." : "Book connected.";
         if (current is null) Warning.Text = "";

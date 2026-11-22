@@ -4,7 +4,7 @@
 [US1 validation](validation/us1.md), [US2 validation](validation/us2.md), and the
 [user-reported WindowsChecks pass](validation/windowschecks-2026-11-18.md).
 Use the [manual US1/US2 checklist](validation/manual-us2.md) for the current hands-on test pass.
-The journal, reconciliation, and security workflows below remain planned for US3–US5.
+Monetary journal maintenance is implemented; see [US3 validation](validation/us3.md) for SQL and portable results and pending Windows checks. Reconciliation and security workflows remain planned for US4–US5.
 
 ## Prerequisites
 

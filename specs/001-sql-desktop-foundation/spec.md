@@ -126,6 +126,10 @@ edit and delete them, restart, and compare balances with known expected results.
 - A user can add and remove split lines, select accounts through keyboard suggestions, and
   save using Ctrl+Enter. Continue saves one entry and clears it for the next while retaining
   the entered date within that entry session (FR-013, FR-016).
+- In the journal editor, pressing Tab from Description focuses the first posting account
+  input. Further Tab presses follow Account, Debit, Credit, then the next posting row;
+  Shift+Tab reverses that order. Adding/removing postings and saving remain keyboard
+  accessible, and noninteractive layout/error areas do not interrupt data entry (FR-013).
 - A failed save preserves the draft. A repeated Save action during a pending save creates no
   duplicate entry (FR-016, FR-017).
 - Editing an existing entry preserves its identity and unaffected line statuses. A conflicting
@@ -134,6 +138,9 @@ edit and delete them, restart, and compare balances with known expected results.
   Confirming removes the whole entry's effects; cancelling changes nothing (FR-018).
 - A new entry session defaults to today in the book time zone. Changing the device time zone
   does not change stored accounting dates or the default book date (FR-019).
+- In either journal date field, `-` subtracts one day, `+` adds one day, and `T` sets the
+  current book-local date. Month/year/leap-day boundaries work; shortcuts change only the
+  focused date field. A blank field uses book-local today as the starting date (FR-019).
 - Values outside the supported monetary range or precision are rejected before any write;
   they are not silently rounded or truncated (FR-014).
 
@@ -269,7 +276,8 @@ opening quantity and carrying amount and transfer part of that holding between a
   Accounts MUST have stable identity, unique paths within a book, no hierarchy cycles, and a
   defined accounting class. Closed accounts MUST retain history and be excluded from new-line
   selection. Historical edits MAY retain an already referenced closed account when the entry
-  date precedes its closure; they MUST NOT add new references to it.
+  date precedes its closure; they MUST NOT add new references to it. During account creation,
+  users MUST be able to select an account type by typing the first few characters of its name.
 - **FR-009**: Phase 1 MUST retain the source UI capabilities and design elements marked Retain
   or Adapt in [the parity baseline](ui-parity.md). Each material departure MUST be documented
   with its reason and verification consequence before acceptance.
@@ -277,6 +285,12 @@ opening quantity and carrying amount and transfer part of that holding between a
   account appear as positive Payments and net debits as positive Deposits. Zero net movements
   leave both blank. Tooltips MUST explain this mapping. Entry details and the editor MUST
   retain explicit Debit/Credit fields; persisted accounting values MUST NOT change.
+  Register rows and the selected-entry summary MUST display the payee followed by the
+  description in italic text when provided. Either field MUST display independently when
+  the other is empty, with no empty separator.
+  Ctrl+W MUST close the active application window, including dialogs, while text fields have
+  focus. It MUST follow normal window-close behavior, preserve pending-write protections,
+  and leave an owner window open when closing its dialog.
 - **FR-010**: The default register MUST show the selected account's entries from today minus
   89 days through today in the book time zone. Current and running balances MUST include all
   earlier applicable journal activity. Tree totals MUST include descendants without losing
@@ -288,7 +302,13 @@ opening quantity and carrying amount and transfer part of that holding between a
   historical closed accounts. Refresh MUST preserve valid selection by stable identity.
 - **FR-013**: Users MUST be able to create and edit balanced entries with an accounting date,
   payee, description, and two or more lines. The editor MUST support adding/removing split
-  lines, account suggestions, and separate debit and credit fields.
+  lines, account suggestions, and separate debit and credit fields. Focusing a posting account
+  input MUST select all its text so typing starts a replacement search. Leaving an amount
+  input MUST format valid values with two decimal places without rounding away invalid
+  excess precision or replacing invalid draft text. Keyboard navigation MUST
+  move directly from Description to the first posting account input, then through each row
+  in Account, Debit, Credit order. Shift+Tab MUST reverse the sequence. Users MUST be able
+  to complete entry creation, split-line changes, and saving without a mouse.
 - **FR-014**: Every monetary line MUST contain nonnegative debit and credit amounts with exactly
   one positive side and the other zero. Invalid range, currency precision, or column precision
   MUST be rejected explicitly at application-service input boundaries and before final values
@@ -301,7 +321,9 @@ opening quantity and carrying amount and transfer part of that holding between a
   balances MUST be represented by balanced journal entries, not independent balance overrides.
 - **FR-016**: The editor MUST retain drafts on failures and prevent duplicate submissions during
   a pending save. Continue MUST save and start another entry with the date retained for that
-  session. Cancel MUST NOT save the current draft.
+  session and return keyboard focus to the accounting-date input after a successful save.
+  A newly opened creation dialog MUST default to book-local today; editing an entry retains
+  its stored date. Cancel MUST NOT save the current draft.
 - **FR-017**: This requirement applies only to JournalEntry and JournalEntryLine operations.
   Edits, deletes, and reconciliation updates to these records MUST detect stale versions and
   report conflicts without overwriting newer data. Failed journal operations MUST leave no
@@ -313,6 +335,10 @@ opening quantity and carrying amount and transfer part of that holding between a
 - **FR-019**: Accounting dates MUST preserve date-only meaning. New-session dates and the
   register cutoff MUST use the configured book time zone. Operational timestamps MUST use UTC.
   An optional bank posting date MUST remain separate from the journal accounting date.
+  Journal accounting-date and bank-posting-date inputs MUST support `-` for the previous
+  day, `+` for the next day, and case-insensitive `T` for current book-local today. Day steps
+  MUST use the displayed date, or book-local today when blank. Date limits MUST not crash the
+  editor; invalid date text MUST remain until corrected or replaced with `T`.
 - **FR-020**: Each book MUST have exactly one currency, defaulting to USD at setup. All monetary
   lines MUST use that currency; mismatches MUST produce an error. The currency MUST be locked
   after the first saved entry. Separate books MAY use different supported currencies, but no

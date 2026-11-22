@@ -233,6 +233,117 @@ public sealed class WindowBehaviorTests
         finally { if (!closed) { window.Close(); Pump(); } }
     }
 
+    [STATestMethod]
+    public void CloseShortcutCommandClosesOnlyItsWindowFromTextInput()
+    {
+        WindowShortcuts.Register();
+        var owner = new Window();
+        var input = new TextBox { Text = "Unsaved draft" };
+        var dialog = new Window { Content = input };
+        try
+        {
+            owner.Show(); dialog.Owner = owner; dialog.Show(); input.Focus(); Pump();
+            System.Windows.Input.ApplicationCommands.Close.Execute(null, input);
+            Pump();
+            Assert.IsFalse(dialog.IsVisible);
+            Assert.IsTrue(owner.IsVisible);
+        }
+        finally { if (dialog.IsVisible) dialog.Close(); owner.Close(); }
+    }
+
+    [STATestMethod]
+    public void JournalCloseShortcutRespectsPendingSaveAndDoesNotSubmitAgain()
+    {
+        WindowShortcuts.Register();
+        var service = new JournalEditorViewModelTests.FakeJournal();
+        var model = JournalEditorViewModelTests.Editor(service);
+        var window = new JournalEditorWindow(model);
+        try
+        {
+            window.Show(); Pump();
+            var pending = model.SaveAsync(false);
+            System.Windows.Input.ApplicationCommands.Close.Execute(null, (TextBox)window.FindName("DescriptionInput"));
+            Pump();
+            Assert.IsTrue(window.IsVisible);
+            Assert.AreEqual(1, service.Calls);
+            service.Complete(Outcome.Failed);
+            PumpUntil(() => pending.IsCompleted);
+            Assert.IsFalse(model.ShouldClose);
+            System.Windows.Input.ApplicationCommands.Close.Execute(null, window);
+            Pump();
+            Assert.IsFalse(window.IsVisible);
+            Assert.AreEqual(1, service.Calls);
+        }
+        finally { if (window.IsVisible) window.Close(); }
+    }
+
+    [STATestMethod]
+    public void MainWindowCloseShortcutUsesNormalDisconnect()
+    {
+        WindowShortcuts.Register();
+        var model = Model();
+        var profile = new ConnectionProfile(Guid.NewGuid(), "Test", new() { ConnectionString = "Server=unused;Database=Test;Integrated Security=True" });
+        model.Sessions.SwitchAsync(profile, () => Task.FromResult(UnsavedDecision.Discard), () => Task.FromResult(true)).GetAwaiter().GetResult();
+        var store = new MemoryStore(); store.SaveAsync(new(1, [profile], profile.ProfileId)).GetAwaiter().GetResult();
+        var window = new MainWindow { Connections = model, Startup = new() { Store = store, Sessions = model.Sessions }, Sessions = model.Sessions };
+        try
+        {
+            window.Show(); Pump();
+            System.Windows.Input.ApplicationCommands.Close.Execute(null, window);
+            PumpUntil(() => !window.IsVisible);
+            Assert.IsNull(model.Sessions.Active);
+        }
+        finally { if (window.IsVisible) { window.Close(); Pump(); } }
+    }
+
+    [STATestMethod]
+    public void RegisterSummaryRendersReadOnlyPayeeAndDescriptionWithoutWritingBack()
+    {
+        var model = Model();
+        var shell = new MainWindow { Connections = model, Startup = new() { Store = new MemoryStore(), Sessions = model.Sessions }, Sessions = model.Sessions };
+        var template = (DataTemplate)shell.FindResource("EntrySummaryTemplate");
+        var text = (TextBlock)template.LoadContent();
+        var host = new Window { Content = text };
+        try
+        {
+            var row = new FatStacks.Core.Register.RegisterRow(1, new(2026, 11, 21), "Weekly groceries", "Expenses:Groceries", 25, null, 75, "Uncleared", "Synthetic Store");
+            text.DataContext = row; host.Show(); Pump();
+            var runs = text.Inlines.OfType<System.Windows.Documents.Run>().ToArray();
+            foreach (var run in runs)
+                Assert.AreEqual(System.Windows.Data.BindingMode.OneWay, System.Windows.Data.BindingOperations.GetBinding(run, System.Windows.Documents.Run.TextProperty)!.Mode);
+            Assert.AreEqual("Synthetic Store — Weekly groceries", text.Text);
+            Assert.AreEqual(FontStyles.Normal, runs[0].FontStyle);
+            Assert.AreEqual(FontStyles.Italic, runs[2].FontStyle);
+            Assert.AreEqual(row.SummaryText, text.ToolTip);
+            text.DataContext = row with { Description = "" }; Pump(); Assert.AreEqual("Synthetic Store", text.Text);
+            text.DataContext = row with { Payee = null }; Pump(); Assert.AreEqual("Weekly groceries", text.Text);
+        }
+        finally { host.Close(); shell.Close(); Pump(); }
+    }
+
+    [STATestMethod]
+    [DataRow(false)]
+    [DataRow(true)]
+    public void DeleteFailureTraceIsSanitizedAndCancellationIsNotLogged(bool cancelled)
+    {
+        const string secret = "PRIVATE_DELETE_DESCRIPTION_PASSWORD_CONNECTION";
+        var entry = new FatStacks.Core.Journal.JournalRequest(1, 1, new byte[8], new(2026, 11, 21), null, secret, secret, 0,
+            [new(1, new byte[8], 1, 1, 25, 0, "USD"), new(2, new byte[8], 2, 2, 0, 25, "USD")], [new(1, new byte[8]), new(2, new byte[8])]);
+        var window = new DeleteEntryWindow(entry, JournalEditorViewModelTests.Accounts, _ => Task.FromException<OperationResult<bool>>(cancelled ? new OperationCanceledException(secret) : new InvalidOperationException(secret)));
+        using var output = new System.IO.StringWriter(); using var listener = new System.Diagnostics.TextWriterTraceListener(output);
+        System.Diagnostics.Trace.Listeners.Add(listener);
+        try
+        {
+            window.Show(); Pump();
+            ((StackPanel)window.FindName("Actions")).Children.OfType<Button>().Single(x => System.Windows.Automation.AutomationProperties.GetAutomationId(x) == "ConfirmDelete").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+            Pump(); listener.Flush(); Assert.IsTrue(window.IsVisible);
+            if (cancelled) Assert.AreEqual("", output.ToString());
+            else StringAssert.Contains(output.ToString(), "operation=JournalDelete category=InvalidOperation");
+            Assert.IsFalse(output.ToString().Contains(secret, StringComparison.Ordinal));
+        }
+        finally { window.Close(); System.Diagnostics.Trace.Listeners.Remove(listener); }
+    }
+
     private static void PumpUntil(Func<bool> condition)
     {
         var timeout = System.Diagnostics.Stopwatch.StartNew();

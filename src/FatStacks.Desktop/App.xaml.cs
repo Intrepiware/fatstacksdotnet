@@ -16,6 +16,7 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        WindowShortcuts.Register();
         DispatcherUnhandledException += (_, args) =>
         {
             // Log only an error category, never exception text, values, or SQL details.

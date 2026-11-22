@@ -9,6 +9,42 @@ namespace FatStacks.SqlTests.Register;
 public sealed class RegisterTests
 {
     [TestMethod]
+    public async Task RegisterReturnsPayeeWithOptionalDescriptionWithoutChangingBalances()
+    {
+        await using var fixture = await BookDatabaseFixture.CreateAsync(); await fixture.InitializeAsync();
+        await fixture.ExecuteAsync("""
+            INSERT dbo.Account(BookId,Name,AccountTypeId,DisplayGroupId,OpenDate)
+            VALUES(1,N'Bank',1,1,'19000101'),(1,N'Equity',9,5,'19000101');
+            DECLARE @cases TABLE(Payee nvarchar(200),Description nvarchar(1000));
+            INSERT @cases VALUES(N'American Express: Opening Balance',N''),(N'O''Brien [%_]',N'Groceries'),(NULL,N'Description only');
+            DECLARE @payee nvarchar(200),@description nvarchar(1000),@entry bigint;
+            DECLARE seedRows CURSOR LOCAL FAST_FORWARD FOR SELECT Payee,Description FROM @cases;
+            OPEN seedRows; FETCH NEXT FROM seedRows INTO @payee,@description;
+            WHILE @@FETCH_STATUS=0
+            BEGIN
+                INSERT dbo.JournalEntry(BookId,AccountingDate,Payee,Description,EntryKind)
+                VALUES(1,'20261121',@payee,@description,0);
+                SET @entry=SCOPE_IDENTITY();
+                INSERT dbo.JournalEntryLine(JournalEntryId,AccountId,LineOrder,Debit,Credit)
+                SELECT @entry,AccountId,CASE WHEN Name=N'Bank' THEN 1 ELSE 2 END,
+                       CASE WHEN Name=N'Bank' THEN 25 ELSE 0 END,CASE WHEN Name=N'Bank' THEN 0 ELSE 25 END
+                FROM dbo.Account;
+                FETCH NEXT FROM seedRows INTO @payee,@description;
+            END;
+            CLOSE seedRows; DEALLOCATE seedRows;
+            """);
+        var service = new RegisterService { Database = new(fixture.Settings), Procedures = new() { Database = new(fixture.Settings) } };
+        var result = await service.ReadAsync(1, new(2026, 11, 21), "");
+        Assert.HasCount(3, result.Rows); Assert.AreEqual(75m, result.CurrentBalance);
+        var opening = result.Rows.Single(x => x.Payee == "American Express: Opening Balance");
+        Assert.AreEqual("", opening.Description); Assert.AreEqual(opening.Payee, opening.SummaryText);
+        var groceries = result.Rows.Single(x => x.Payee == "O'Brien [%_]");
+        Assert.AreEqual("O'Brien [%_] — Groceries", groceries.SummaryText);
+        Assert.AreEqual("Description only", result.Rows.Single(x => x.Payee is null).SummaryText);
+        var filtered = await service.ReadAsync(1, new(2026, 11, 21), "groceries");
+        Assert.HasCount(1, filtered.Rows); Assert.AreEqual(groceries.Balance, filtered.Rows[0].Balance); Assert.AreEqual(75m, filtered.CurrentBalance);
+    }
+    [TestMethod]
     public async Task WindowIncludesCutoffAndTodayWithOlderBalanceAndExcludesFuture()
     {
         await using var fixture = await BookDatabaseFixture.CreateAsync(); await fixture.InitializeAsync();

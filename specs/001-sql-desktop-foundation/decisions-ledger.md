@@ -1,5 +1,101 @@
 # Decisions Ledger: Fat Stacks.NET — SQL Desktop Foundation
 
+## 2026-11-22 02:39:41 +00:00: Complete US3 precision, diagnostics, and eligibility corrections
+
+**Files Updated:** [tasks.md](tasks.md), [US3 validation](validation/us3.md),
+[US3 parity evidence](validation/ui-parity.md), journal Core/editor/picker and diagnostic code,
+reset-notice presentation, and portable/SQL/Windows regression sources.
+
+Check source amount precision before decimal conversion on every save path. Complete safe
+journal failure tracing, resolve historical closed references against the stored original entry,
+and keep account choices eligible for each line/date. Identify reset postings with visible line
+orders and account paths. Production SQL and dependencies are unchanged.
+
+Record the clean cross-build, 99 portable passes, and 13 isolated SQL passes separately from
+Windows acceptance. The Linux WindowsChecks host cannot start; keep target-run and rendered
+notice evidence open under T105/T106 and the overlapping US3 validation tasks.
+
+---
+
+## 2026-11-22 02:01:53 +00:00: Improve account and journal keyboard entry
+
+**Files Updated:** [spec.md](spec.md), [desktop UI contract](contracts/desktop-ui.md),
+[ui-parity.md](ui-parity.md), [tasks.md](tasks.md), [US3 validation](validation/us3.md),
+Desktop Accounts/journal views, posting view model, and related tests.
+
+Enable account-Type name-prefix selection, return successful Continue to the Date input while
+retaining the saved date, select posting account text on focus, and format amounts to two
+places on focus loss. Preserve blank/invalid amounts and nonzero excess precision. Fresh
+creation dialogs use book-local today; edits retain stored dates. Record Windows validation
+separately from portable tests and cross-build results.
+
+---
+
+## 2026-11-21 23:35:01 +00:00: Show payees with optional italic descriptions in the register
+
+**Files Updated:** [spec.md](spec.md), [desktop UI contract](contracts/desktop-ui.md),
+[service contract](contracts/application-services.md), [ui-parity.md](ui-parity.md),
+[tasks.md](tasks.md), [US3 validation](validation/us3.md), [database guide](../../database/README.md),
+register SQL/model/mapping, Desktop summary template, and register/journal tests.
+
+Display the payee first and the description in italic text when supplied, using a separator
+only when both fields are present. Apply the same summary to the selected-entry details header.
+Return Payee from the read procedure and document its explicit deployment to existing books.
+Keep the existing dense register, search scope, ordering, and full-history financial calculations.
+
+---
+
+## 2026-11-21 22:46:17 +00:00: Add journal date keyboard shortcuts
+
+**Files Updated:** [spec.md](spec.md), [desktop UI contract](contracts/desktop-ui.md),
+[tasks.md](tasks.md), [US3 validation](validation/us3.md), Desktop journal editor and book scope,
+and journal editor tests.
+
+Support minus/plus day stepping and case-insensitive T for current book-local today in both
+journal date inputs. Read today from the book calendar on each use, retain independent dates,
+and handle blank/invalid inputs and date limits. Record portable and Windows checks separately.
+
+---
+
+## 2026-11-21 22:38:38 +00:00: Apply journal keyboard and presentation fixes
+
+**Files Updated:** Desktop journal editor view/view model and window tests,
+[desktop UI contract](contracts/desktop-ui.md), [tasks.md](tasks.md),
+[US3 validation](validation/us3.md).
+
+Apply the specified Description-to-posting focus order and reverse navigation. Keep layout
+containers out of Tab navigation and add Ctrl+Shift+Delete for focused posting removal with
+a two-line minimum. Make the Remove posting glyph readable and show the validation scrollbar
+only when needed. Keep reconciliation read-only for US3. Cross-build and portable validation
+are separate from pending interactive Windows verification.
+
+---
+
+## 2026-11-21 22:35:36 +00:00: Close active application windows with Ctrl+W
+
+**Files Updated:** [spec.md](spec.md), [desktop UI contract](contracts/desktop-ui.md),
+[ui-parity.md](ui-parity.md), [US3 validation](validation/us3.md), Desktop App/WindowShortcuts,
+and Windows window-behavior tests.
+
+Add Ctrl+W across application windows, including the journal editor and focused text fields.
+Use normal window closing so existing pending-write, cancellation, and disconnect behavior
+remains in effect. Closing a dialog leaves its owner open and does not save the draft.
+
+---
+
+## 2026-11-21 22:33:36 +00:00: Specify journal editor keyboard order
+
+**Files Updated:** [spec.md](spec.md), [desktop UI contract](contracts/desktop-ui.md),
+[ui-parity.md](ui-parity.md), [tasks.md](tasks.md), [US3 validation](validation/us3.md).
+
+Require Tab from Description to enter the first posting account input, followed by Account,
+Debit, Credit across posting rows, with reverse Shift+Tab navigation. Preserve keyboard access
+to split changes and saving. Track implementation and Windows focus verification in T098.
+Record the owner's screenshot review and the two observed presentation defects separately from
+executed acceptance evidence. Reconciliation editing remains US4.
+
+---
+
 ## 2026-11-21 02:21:44 +00:00: Use .NET trace for Phase 1 diagnostics
 
 **Files Updated:** [tasks.md](tasks.md).

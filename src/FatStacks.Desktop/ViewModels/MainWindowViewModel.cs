@@ -3,6 +3,8 @@ using FatStacks.Core.Accounts;
 using FatStacks.Core.Calendar;
 using FatStacks.Core.Connections;
 using FatStacks.Core.Register;
+using FatStacks.Core.Journal;
+using FatStacks.Core.Contracts;
 using FatStacks.Infrastructure.Diagnostics;
 namespace FatStacks.Desktop.ViewModels;
 
@@ -23,6 +25,27 @@ public sealed class AccountNode(AccountRecord account, string path, decimal bala
 }
 public sealed class MainWindowViewModel : ObservableObject, IDisposable
 {
+    public IJournalService Journal { private get; init; } = null!;
+    public IReadOnlyList<AccountRecord> AccountRecords => accounts;
+    public async Task<JournalRequest?> LoadSelectedEntryAsync()
+    {
+        if (!IsCurrent || Selected is null) return null;
+        try { return await Journal.LoadAsync(Selected.EntryId, Session.Reads.Token); }
+        catch (Exception ex) when (ex is not OutOfMemoryException) { DatabaseErrors.TraceFailure("JournalLoad", ex); Status = "Entry could not be loaded. Refresh and retry."; return null; }
+    }
+    public async Task<OperationResult<bool>> DeleteEntryAsync(DeleteJournalRequest request)
+    {
+        if (!IsCurrent) return OperationResult<bool>.Fail("The book is no longer active.");
+        var result = await Journal.DeleteAsync(request);
+        if (result.IsSuccess && IsCurrent) { var keep = Rows.FirstOrDefault(x => x.EntryId != request.EntryId)?.EntryId; await RefreshAsync(); await ReadAsync(keep); }
+        return result;
+    }
+    public async Task JournalSavedAsync(JournalSaveResult saved)
+    {
+        if (!IsCurrent) return;
+        await RefreshAsync(); await ReadAsync(saved.Entry.EntryId);
+        if (saved.ResetLineIds.Count > 0) Status = JournalSaveNotice.Describe(saved, accounts);
+    }
     public required IAccountService Accounts { private get; init; }
     public required IRegisterService Register { private get; init; }
     public required BookSession Session { private get; init; }

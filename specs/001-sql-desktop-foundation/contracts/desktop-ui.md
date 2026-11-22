@@ -25,7 +25,15 @@ Setup collects book name, currency (USD default, EUR or JPY alternatives), and W
 It requests separate maintenance credentials for schema work. After successful initialization,
 replace Initialize and Cancel with Close. A failed initialization retains the retry controls. Minimal account setup supports
 create, rename, group, parent selection, and close. Show the type-determined accounting class.
-Security setup collects name, symbol, and declared quantity precision.
+The account Type selector supports typing a name prefix while creating an account; its type
+remains fixed after creation. Security setup collects name, symbol, and declared quantity precision.
+
+## Window keyboard behavior
+
+Ctrl+W closes the active application window, including the journal editor and other dialogs.
+It must work while a text field has focus and use the same closing path as the title-bar Close
+button. Preserve pending-write guards, cancellation, and main-window disconnect/shutdown behavior.
+Closing a dialog must not close its owner or save its draft.
 
 ## Main Window
 
@@ -33,6 +41,11 @@ Retain the account rail, group tabs, split layout, dense alternating register ro
 and default/minimum sizes from P01–P10. Show explicit currency. Preserve valid selection by
 account and entry ID after refresh. Cancel obsolete searches and reject previous-session results.
 Keep the UI responsive during reads and writes.
+
+The register's Payee / Description column and selected-entry summary display payee in normal
+text, followed by an em dash and italic description when both are present. Payee-only and
+description-only entries display their available text without an empty separator. Keep dense
+single-line rows, ellipsis for overflow, and a tooltip/accessibility name with the full summary.
 
 Retain Payment and Deposit headings. Their tooltips explain selected-account credit and debit
 movements. Details and editor use explicit Debit/Credit labels. Current and running balances use
@@ -42,11 +55,26 @@ from details and contribute to totals.
 ## Entry Editor and Delete
 
 Keep N, E, Delete, F5, Ctrl+O, and Ctrl+Enter behavior with text-input typing guards. Keep account
-suggestions and split-line keyboard workflows. Bind line view models to controls with stable
+suggestions and split-line keyboard workflows. Tab from Description focuses the first posting
+account input, then traverses Account, Debit, Credit for each posting row. Shift+Tab reverses
+this order. Keep add/remove posting and save actions keyboard accessible; noninteractive
+layout and error areas must not interrupt data-entry focus. Ctrl+Shift+Delete removes the
+focused posting when more than two lines remain, then focuses an adjacent posting account. Bind line view models to controls with stable
 automation IDs. Give errors field and line context. Do not parse English messages to control Save.
 
-New sessions start at book-local today. Continue saves once and starts another draft with the
-same date. Cancel does not save. Disable repeat submission while a journal write is pending.
+While either journal date input is focused, `-` subtracts one day, `+` adds one day, and
+`T`/`t` sets current book-local today. Support both the main keyboard and numeric keypad signs.
+Use the displayed date for stepping and book-local today when blank. Reject stepping invalid
+text with field feedback; `T` can replace it. Keep dates in range and leave the other date alone.
+
+New creation dialogs start at book-local today; editing retains the entry's saved date.
+Continue saves once and starts another draft with the same date, then focuses and selects the
+accounting-date text after controls become available. Failed saves retain the current draft.
+Posting account inputs select all their text on keyboard or initial mouse focus; typing replaces
+the selected name and searches suggestions. Amount inputs format exact valid values with two
+decimal places on focus loss. Leave empty, invalid, and nonzero excess-precision text intact so
+validation can report it; formatting must not round away financial errors. Cancel does not save.
+Disable repeat submission while a journal write is pending.
 A failed or conflicting save retains the draft. Show success only after commit is confirmed.
 Show which reconciled lines reset after a financial edit.
 

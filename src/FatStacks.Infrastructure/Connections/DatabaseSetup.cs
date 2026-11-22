@@ -46,6 +46,8 @@ public sealed class DatabaseSetup : IDatabaseSetup
                     services.AddGrate(x => x.WithConnectionString(opened.Settings.ConnectionString).WithSqlFilesDirectory(ScriptDirectory)
                         .DoNotCreateDatabase().WithTransaction().WithVersion("1")
                         .WithFolders(Folders.Create(Folders.Default.Values.OfType<MigrationsFolder>().Select(folder =>
+                            // Grate has no default types folder; run TVP definitions before dependent procedures.
+                            folder.Key == "RunFirstAfterUp" ? folder with { Path = "types", Name = "Journal parameter types" } :
                             folder.Key is "Permissions" or "AfterMigration"
                                 ? folder with { TransactionHandling = TransactionHandling.Default }
                                 : folder)))).UseDatabase(typeof(SqlServerDatabase));

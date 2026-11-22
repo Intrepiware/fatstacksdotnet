@@ -59,6 +59,22 @@ public sealed class AccountSetupWindowTests
         }
         finally { if (window.IsVisible) window.Close(); session.Dispose(); }
     }
+    [STATestMethod]
+    public void AccountTypeCanBeSelectedByTypingItsNamePrefix()
+    {
+        var (_, session) = RegisterJourneyTests.OpenAsync().GetAwaiter().GetResult();
+        var model = new AccountSetupViewModel { Accounts = new RegisterJourneyTests.Accounts(), Session = session };
+        var window = new AccountSetupWindow(model);
+        try
+        {
+            window.Show(); Pump(); model.New(); Pump();
+            var type = Find<ComboBox>(window, "AccountType"); type.Focus();
+            var text = new System.Windows.Input.TextComposition(System.Windows.Input.InputManager.Current, type, "exp");
+            type.RaiseEvent(new System.Windows.Input.TextCompositionEventArgs(System.Windows.Input.Keyboard.PrimaryDevice, text) { RoutedEvent = System.Windows.Input.TextCompositionManager.TextInputEvent });
+            Pump(); Assert.AreEqual((byte)11, model.Type.Id); Assert.AreEqual("Expenses", model.ClassName);
+        }
+        finally { window.Close(); session.Dispose(); }
+    }
     private static void Pump() => Dispatcher.CurrentDispatcher.Invoke(DispatcherPriority.ApplicationIdle, new Action(() => { }));
     private static T Find<T>(Window window, string id) where T : DependencyObject
     {
