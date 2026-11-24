@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Fat Stacks.NET — journal entry mock-up</title><link rel="stylesheet" href="assets/mock.css"><script src="assets/mock.js" defer></script></head>
+<body data-screen="journal">
+<main class="window journal-window" aria-label="Journal entry window">
+ <div id="app-title"></div>
+ <div class="journal-body">
+  <div id="journal-fields"><header class="journal-heading"><h1>Journal entry</h1><span>USD</span></header>
+   <div class="journal-fields"><label class="field" for="date">Date<input id="date" type="date" aria-label="Accounting date" autocomplete="off" title="YYYY-MM-DD; shortcuts: - previous day, + next day, T today"></label><label class="field" for="bank-date">Bank posting date<input id="bank-date" type="date" placeholder="Select a date" aria-label="Bank posting date" autocomplete="off" title="YYYY-MM-DD; shortcuts: - previous day, + next day, T today"></label><label class="field" for="payee">Payee<input id="payee" aria-label="Payee" autocomplete="off" accesskey="p"></label></div>
+   <label class="field description-field" for="description">Description<input id="description" aria-label="Description" autocomplete="off" accesskey="e"></label>
+  </div>
+  <section class="posting-region" aria-label="Journal postings"><div class="posting-columns" aria-hidden="true"><span></span><span>Account</span><span class="center" title="Reconciliation status">C</span><span class="amount-head">Debit</span><span class="amount-head">Credit</span><span></span></div><div class="posting-scroll" id="postings"></div><div id="balance-summary" class="posting-footing" role="status" aria-live="polite"></div><datalist id="account-options"></datalist></section>
+  <footer class="journal-footer"><div id="reset-warning" class="notice" role="status" hidden></div><button id="add-line" class="add-line">+ Add posting</button><div id="journal-status" class="journal-status" role="status"></div><div id="errors" class="error-list" role="alert"></div><div class="journal-actions"><button id="cancel">Cancel</button><button id="continue" title="Save and start another entry with the same date">Continue</button><button id="save" title="Save (Ctrl+Enter)">Save</button></div></footer>
+ </div>
+</main>
+<p class="review-note">Keyboard: <kbd>Tab</kbd> from Description → Account → Debit → Credit; <kbd>Ctrl+Enter</kbd> saves; <kbd>Ctrl+Shift+Delete</kbd> removes the focused posting. Both date inputs support <kbd>−</kbd>, <kbd>+</kbd>, and <kbd>T</kbd>. Entering an amount clears its opposite. This HTML review uses the browser’s native calendar and account suggestions; WPF calendar and popup behavior require Windows acceptance. FR-013–019/023.</p>
+</body></html>

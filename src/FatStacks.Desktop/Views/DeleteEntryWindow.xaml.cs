@@ -1,4 +1,5 @@
 using System.ComponentModel;
+using System.Globalization;
 using System.Windows;
 using FatStacks.Core.Accounts;
 using FatStacks.Core.Journal;
@@ -13,8 +14,24 @@ public partial class DeleteEntryWindow : Window
     public DeleteEntryWindow(JournalRequest entry, IReadOnlyList<AccountRecord> accounts, Func<DeleteJournalRequest, Task<FatStacks.Core.Contracts.OperationResult<bool>>> delete)
     {
         this.entry = entry; this.delete = delete; InitializeComponent();
-        Preview.Text = $"{entry.AccountingDate:d} · {entry.Description}";
-        Lines.ItemsSource = entry.Lines.Select(x => new { Account = accounts.FirstOrDefault(a => a.AccountId == x.AccountId) is { } account ? AccountCatalog.Path(account, accounts) : "Unavailable account", x.Debit, x.Credit, Status = x.Status switch { 1 => "Reconciling", 2 => "Cleared", _ => "Uncleared" } }).ToArray();
+        JournalDate.Text = entry.AccountingDate.ToString("MMM d, yyyy", CultureInfo.CurrentCulture);
+        var payee = string.IsNullOrWhiteSpace(entry.Payee) ? "" : entry.Payee.Trim();
+        var description = string.IsNullOrWhiteSpace(entry.Description) ? "" : entry.Description.Trim();
+        PayeeText.Text = payee.Length == 0 && description.Length == 0 ? "Journal entry" : payee;
+        SeparatorText.Text = payee.Length > 0 && description.Length > 0 ? " — " : "";
+        DescriptionText.Text = description;
+        Preview.ToolTip = $"{PayeeText.Text}{SeparatorText.Text}{DescriptionText.Text}";
+        System.Windows.Automation.AutomationProperties.SetName(Preview, (string)Preview.ToolTip);
+        if (entry.BankPostingDate is { } bankDate) BankDate.Text = $"Bank posting date: {bankDate.ToString("MMM d, yyyy", CultureInfo.CurrentCulture)}";
+        else BankDate.Visibility = Visibility.Collapsed;
+        Lines.ItemsSource = entry.Lines.OrderBy(x => x.Order).Select(x => new
+        {
+            Account = accounts.FirstOrDefault(a => a.AccountId == x.AccountId) is { } account ? AccountCatalog.Path(account, accounts) : "Unavailable account",
+            DebitText = x.Debit == 0 ? "" : x.Debit.ToString("N2", CultureInfo.CurrentCulture),
+            CreditText = x.Credit == 0 ? "" : x.Credit.ToString("N2", CultureInfo.CurrentCulture),
+            Status = x.Status switch { 1 => "Reconciling", 2 => "Cleared", _ => "Uncleared" },
+            StatusSymbol = x.Status switch { 1 => "R", 2 => "✓", _ => "" }
+        }).ToArray();
         Loaded += (_, _) => CancelButton.Focus();
     }
     private async void DeleteClicked(object sender, RoutedEventArgs e)

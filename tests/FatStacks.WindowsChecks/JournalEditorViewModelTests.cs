@@ -71,6 +71,73 @@ public sealed class JournalEditorViewModelTests
         Assert.IsTrue(model.ApplyDateShortcut('T', true)); Assert.AreEqual(new DateTime(2026, 11, 22), model.BankPostingDate);
         Assert.AreEqual(new DateTime(2026, 11, 21), model.AccountingDate);
     }
+    [TestMethod]
+    public void PostingNumbersFollowRowsWithoutChangingControlIdentity()
+    {
+        var model = Editor(new FakeJournal());
+        model.AddLine(); model.AddLine();
+        var retained = model.Lines[3]; var id = retained.AccountControlId;
+        model.RemoveLine(model.Lines[1]);
+        CollectionAssert.AreEqual(new[] { 1, 2, 3 }, model.Lines.Select(x => x.LineNumber).ToArray());
+        Assert.AreEqual(id, retained.AccountControlId);
+        Assert.IsTrue(model.Lines[1].IsEvenRow); Assert.IsFalse(retained.IsEvenRow);
+    }
+    [TestMethod]
+    public void FootingNamesShortSideAndHidesTotalsForInvalidText()
+    {
+        var model = Editor(new FakeJournal());
+        Assert.AreEqual("Balanced", model.BalanceStatus);
+        model.Lines[0].Debit = "1001";
+        StringAssert.StartsWith(model.BalanceStatus, "Credits short by ");
+        Assert.IsTrue(model.DebitOver); Assert.IsFalse(model.CreditOver);
+        model.Lines[0].Debit = "999";
+        StringAssert.StartsWith(model.BalanceStatus, "Debits short by ");
+        Assert.IsTrue(model.CreditOver); Assert.IsFalse(model.DebitOver);
+        model.Lines[0].Debit = "bad";
+        Assert.AreEqual("", model.DebitTotal); Assert.AreEqual("", model.CreditTotal);
+        Assert.IsFalse(model.DebitOver); Assert.IsFalse(model.CreditOver);
+        Assert.AreEqual("Enter valid amounts to check the balance.", model.BalanceStatus);
+        Assert.IsTrue(model.Lines[0].HasErrors);
+    }
+    [TestMethod]
+    public async Task CorrectionsClearOnlyResolvedErrorsAndKeepTheirRowIdentity()
+    {
+        var model = Editor(new FakeJournal());
+        model.AddLine(); model.Lines[2].AccountText = "missing"; model.Lines[2].Debit = "bad";
+        model.Lines[0].Debit = "100000000";
+        Assert.IsFalse(await model.SaveAsync(false));
+        Assert.IsNotEmpty(model.Lines[0].DebitError);
+        var invalid = model.Lines[2];
+        model.Lines[0].Debit = "1000";
+        Assert.AreEqual("", model.Lines[0].DebitError); Assert.IsTrue(invalid.HasErrors);
+        model.RemoveLine(model.Lines[1]);
+        Assert.AreEqual(2, invalid.LineNumber);
+        Assert.IsTrue(model.Errors.Any(x => x.LineOrder == 2 && x.Field == "Account"));
+        invalid.AccountText = "Equity"; invalid.Credit = "1000";
+        Assert.IsEmpty(model.Errors); Assert.IsFalse(invalid.HasErrors);
+        Assert.AreEqual("Balanced", model.BalanceStatus);
+    }
+    [TestMethod]
+    public void CorrectingEitherDateClearsItsErrorWithoutClearingTheOther()
+    {
+        var model = Editor(new FakeJournal());
+        model.SetDateError(false, "Invalid accounting date."); model.SetDateError(true, "Invalid bank date.");
+        model.AccountingDate = model.AccountingDate;
+        Assert.AreEqual("", model.AccountingDateError); Assert.IsNotEmpty(model.BankPostingDateError);
+        model.BankPostingDate = null;
+        Assert.AreEqual("", model.BankPostingDateError); Assert.IsEmpty(model.Errors);
+    }
+    [TestMethod]
+    public void ResetMarkersTrackReconciledEditsAndReversion()
+    {
+        var model = Editor(new FakeJournal());
+        var lines = new[] { new JournalLine(1, new byte[8], 1, 1, 1000, 0, "USD", 2), new JournalLine(2, new byte[8], 2, 2, 0, 1000, "USD", 1) };
+        model.Initialize(new(1, 1, new byte[8], Day, null, "", "", 0, lines, lines.Select(x => new LineVersion(x.LineId!.Value, x.Version!)).ToArray()), Accounts, "USD", Day);
+        model.Lines[0].Debit = "1001"; model.Lines[1].AccountText = "Bank";
+        Assert.IsTrue(model.Lines.All(x => x.WillReset));
+        model.Lines[0].Debit = "1000"; model.Lines[1].AccountText = "Equity";
+        Assert.IsTrue(model.Lines.All(x => !x.WillReset)); Assert.IsFalse(model.HasResetWarning);
+    }
     private sealed class FixedClock(DateTimeOffset utc) : TimeProvider
     {
         public DateTimeOffset Utc { get; set; } = utc;
@@ -93,12 +160,32 @@ public sealed class JournalEditorViewModelTests
         {
             System.Globalization.CultureInfo.CurrentCulture = System.Globalization.CultureInfo.GetCultureInfo(culture);
             var line = Editor(new FakeJournal()).Lines[0];
-            line.Debit = input; line.Credit = "other draft"; line.FormatAmount(false);
-            Assert.AreEqual(expected, line.Debit); Assert.AreEqual("other draft", line.Credit);
+            line.Credit = "other draft"; line.Debit = input; line.FormatAmount(false);
+            Assert.AreEqual(expected, line.Debit);
+            Assert.AreEqual(string.IsNullOrWhiteSpace(input) ? "other draft" : "", line.Credit);
             line.Debit = "other draft"; line.Credit = input; line.FormatAmount(true);
-            Assert.AreEqual(expected, line.Credit); Assert.AreEqual("other draft", line.Debit);
+            Assert.AreEqual(expected, line.Credit);
+            Assert.AreEqual(string.IsNullOrWhiteSpace(input) ? "other draft" : "", line.Debit);
         }
         finally { System.Globalization.CultureInfo.CurrentCulture = previous; }
+    }
+    [TestMethod]
+    public void OppositeAmountClearsAndBalanceUpdatesAsRowsChange()
+    {
+        var model = Editor(new FakeJournal());
+        Assert.IsTrue(model.CanSave); Assert.IsFalse(model.IsUnbalanced);
+        model.Lines[0].Credit = "25";
+        Assert.AreEqual("", model.Lines[0].Debit);
+        Assert.IsTrue(model.IsUnbalanced); Assert.IsFalse(model.CanSave);
+        StringAssert.Contains(model.BalanceSummary, "Out of balance:");
+        model.Lines[0].Debit = "1000";
+        Assert.AreEqual("", model.Lines[0].Credit);
+        Assert.IsFalse(model.IsUnbalanced); Assert.IsTrue(model.CanSave);
+        model.AddLine(); model.Lines[2].Debit = "25";
+        Assert.IsFalse(model.CanSave);
+        model.RemoveLine(model.Lines[2]); Assert.IsTrue(model.CanSave);
+        model.Lines[0].Debit = "invalid";
+        StringAssert.Contains(model.BalanceSummary, "Enter valid amounts");
     }
     [TestMethod]
     [DataRow(false, false)]
@@ -144,6 +231,179 @@ public sealed class JournalEditorViewModelTests
         finally { System.Globalization.CultureInfo.CurrentCulture = oldCulture; }
     }
 #if WINDOWS
+    [STATestMethod]
+    public void NewJournalDialogOpensWithReadOnlyBalanceStatusAndUpdatesItsFooting()
+    {
+        var service = new FakeJournal();
+        var model = Editor(service);
+        model.Initialize(null, Accounts, "USD", Day, 1);
+        var window = new FatStacks.Desktop.Views.JournalEditorWindow(model);
+        try
+        {
+            window.Show(); Pump();
+            var footing = (System.Windows.Controls.Grid)window.FindName("TotalsFooting");
+            var status = Descendants(footing).OfType<System.Windows.Controls.TextBlock>()
+                .SelectMany(x => x.Inlines.OfType<System.Windows.Documents.Run>())
+                .Single(x => System.Windows.Data.BindingOperations.GetBinding(x, System.Windows.Documents.Run.TextProperty)?.Path.Path == nameof(model.BalanceStatus));
+            Assert.AreEqual(System.Windows.Data.BindingMode.OneWay,
+                System.Windows.Data.BindingOperations.GetBinding(status, System.Windows.Documents.Run.TextProperty)!.Mode);
+            Assert.AreEqual("Balanced", status.Text);
+            model.Lines[0].Debit = "25"; Pump();
+            StringAssert.StartsWith(status.Text, "Credits short by ");
+            model.Lines[1].Credit = "25"; Pump();
+            Assert.AreEqual("Balanced", status.Text);
+            model.Lines[0].Debit = "invalid"; Pump();
+            Assert.AreEqual("Enter valid amounts to check the balance.", status.Text);
+            Assert.AreEqual(0, service.Calls);
+        }
+        finally { window.Close(); }
+    }
+    [STATestMethod]
+    public void PostingFootingKeepsInputEdgesAndErrorsExposeAccessibleFeedback()
+    {
+        var model = Editor(new FakeJournal());
+        var window = new FatStacks.Desktop.Views.JournalEditorWindow(model);
+        try
+        {
+            window.Show(); Pump();
+            System.Windows.Controls.TextBox Input(string id) => Descendants(window).OfType<System.Windows.Controls.TextBox>().Single(x => System.Windows.Automation.AutomationProperties.GetAutomationId(x) == id);
+            var debit = Input(model.Lines[0].DebitControlId);
+            var total = (System.Windows.Controls.TextBlock)window.FindName("DebitFooting");
+            void CheckEdge()
+            {
+                var edge = debit.TranslatePoint(new(debit.ActualWidth - debit.BorderThickness.Right - debit.Padding.Right, 0), window).X;
+                var totalEdge = total.TranslatePoint(new(total.ActualWidth, 0), window).X;
+                Assert.AreEqual(edge, totalEdge, 1.0, "Totals must share the input text edge.");
+            }
+            CheckEdge();
+            for (var i = 0; i < 20; i++) model.AddLine();
+            Pump();
+            var scroll = (System.Windows.Controls.ScrollViewer)window.FindName("PostingScroll");
+            Assert.AreEqual(System.Windows.Visibility.Visible, scroll.ComputedVerticalScrollBarVisibility);
+            CheckEdge();
+            debit.Text = "invalid"; Pump();
+            Assert.AreEqual("", total.Text);
+            Assert.AreEqual(new System.Windows.Thickness(2), debit.BorderThickness);
+            Assert.AreEqual("Invalid", System.Windows.Automation.AutomationProperties.GetItemStatus(debit));
+            Assert.IsNotEmpty(System.Windows.Automation.AutomationProperties.GetHelpText(debit));
+            Assert.AreEqual(model.Lines[0].DebitError, debit.ToolTip);
+            Assert.IsTrue(System.Windows.Controls.Validation.GetHasError(debit));
+            CheckEdge();
+            debit.Text = "1000"; Pump();
+            Assert.AreEqual("", System.Windows.Automation.AutomationProperties.GetItemStatus(debit));
+            Assert.IsFalse(System.Windows.Controls.Validation.GetHasError(debit));
+            Assert.IsFalse(model.Lines[0].HasErrors);
+            debit.Focus(); Pump();
+            var row = Descendants(window).OfType<System.Windows.Controls.Grid>().Single(x => ReferenceEquals(x.DataContext, model.Lines[0]) && x.ColumnDefinitions.Count == 6);
+            Assert.AreEqual("#FFDDEBFA", row.Background.ToString());
+            Assert.AreEqual("#FFFFFFFF", debit.Background.ToString());
+        }
+        finally { window.Close(); }
+    }
+
+    [STATestMethod]
+    public void AmountColumnsAlignRightAndUnbalancedDraftDisablesSaveActions()
+    {
+        var model = Editor(new FakeJournal());
+        var window = new FatStacks.Desktop.Views.JournalEditorWindow(model);
+        try
+        {
+            window.Show(); Pump();
+            var controls = Descendants(window).OfType<System.Windows.FrameworkElement>().ToArray();
+            var debit = controls.OfType<System.Windows.Controls.TextBox>().Single(x => System.Windows.Automation.AutomationProperties.GetAutomationId(x) == model.Lines[0].DebitControlId);
+            var credit = controls.OfType<System.Windows.Controls.TextBox>().Single(x => System.Windows.Automation.AutomationProperties.GetAutomationId(x) == model.Lines[0].CreditControlId);
+            Assert.AreEqual(System.Windows.TextAlignment.Right, debit.TextAlignment);
+            Assert.AreEqual(System.Windows.TextAlignment.Right, credit.TextAlignment);
+            var actions = controls.OfType<System.Windows.Controls.Button>().Where(x => System.Windows.Automation.AutomationProperties.GetAutomationId(x) is "SaveJournal" or "ContinueJournal").ToArray();
+            Assert.HasCount(2, actions); Assert.IsTrue(actions.All(x => x.IsEnabled));
+            debit.Text = "25"; Pump();
+            Assert.IsTrue(actions.All(x => !x.IsEnabled));
+            model.Lines[1].Credit = "25"; Pump();
+            Assert.IsTrue(actions.All(x => x.IsEnabled));
+            var summary = controls.Single(x => System.Windows.Automation.AutomationProperties.GetAutomationId(x) == "JournalBalanceSummary");
+            StringAssert.Contains(System.Windows.Automation.AutomationProperties.GetName(summary), "Balanced");
+        }
+        finally { window.Close(); }
+    }
+    [STATestMethod]
+    public void ValidationMessagesSeparateLineFieldsAndOmitPrefixForEntryErrors()
+    {
+        var model = Editor(new FakeJournal());
+        model.Errors.Add(new("Debit", "Enter a valid amount.", 4));
+        model.Errors.Add(new("Amount", "Enter one positive Debit or Credit.", 4));
+        model.Errors.Add(new("Balance", "Total Debit must equal total Credit."));
+        var window = new FatStacks.Desktop.Views.JournalEditorWindow(model);
+        try
+        {
+            window.Show();
+            System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+            var messages = Descendants(window).OfType<System.Windows.Controls.TextBlock>()
+                .Where(x => x.DataContext is JournalError)
+                .Select(x => new System.Windows.Documents.TextRange(x.ContentStart, x.ContentEnd).Text).ToArray();
+            CollectionAssert.AreEqual(new[]
+            {
+                "Line 4 · Debit: Enter a valid amount.",
+                "Line 4 · Amount: Enter one positive Debit or Credit.",
+                "Balance: Total Debit must equal total Credit."
+            }, messages);
+        }
+        finally { window.Close(); }
+    }
+    [STATestMethod]
+    public void PayeeAndDescriptionExposeNamesWhenFocused()
+    {
+        var model = Editor(new FakeJournal());
+        var window = new FatStacks.Desktop.Views.JournalEditorWindow(model);
+        try
+        {
+            window.Show(); Pump();
+            foreach (var (control, expectedName) in new[] { ("PayeeInput", "Payee"), ("DescriptionInput", "Description") })
+            {
+                var input = (System.Windows.Controls.TextBox)window.FindName(control);
+                input.Focus(); Pump();
+                Assert.IsTrue(input.IsKeyboardFocused);
+                var peer = System.Windows.Automation.Peers.UIElementAutomationPeer.CreatePeerForElement(input);
+                Assert.IsNotNull(peer);
+                Assert.AreEqual(expectedName, peer.GetName());
+                input.Text = "Synthetic text"; Pump();
+                Assert.AreEqual(expectedName, peer.GetName(), "Entered text must not replace the field name.");
+            }
+        }
+        finally { window.Close(); }
+        static void Pump() => System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+    }
+    [STATestMethod]
+    public void ReconciledEditWarningIsVisibleAndClearsWhenRestored()
+    {
+        var model = Editor(new FakeJournal());
+        var entry = new JournalRequest(1, 10, new byte[8], Day, null, null, "Existing", 0,
+            [new(101, new byte[8], 1, 1, 25, 0, "USD", 2), new(202, new byte[8], 2, 2, 0, 25, "USD", 2)],
+            [new(101, new byte[8]), new(202, new byte[8])]);
+        model.Initialize(entry, Accounts, "USD", Day);
+        var window = new FatStacks.Desktop.Views.JournalEditorWindow(model);
+        try
+        {
+            window.Show(); Pump();
+            var warning = Descendants(window).OfType<System.Windows.Controls.TextBlock>()
+                .Single(x => System.Windows.Automation.AutomationProperties.GetAutomationId(x) == "JournalResetWarning");
+            Assert.IsFalse(warning.IsVisible);
+            model.Lines[0].Debit = "26"; Pump();
+            Assert.IsTrue(warning.IsVisible);
+            StringAssert.Contains(warning.Text, "Line 1 (Bank)");
+            model.Lines[0].Debit = "25"; Pump();
+            Assert.IsFalse(warning.IsVisible);
+        }
+        finally { window.Close(); }
+        static IEnumerable<System.Windows.DependencyObject> Descendants(System.Windows.DependencyObject parent)
+        {
+            for (var i = 0; i < System.Windows.Media.VisualTreeHelper.GetChildrenCount(parent); i++)
+            {
+                var child = System.Windows.Media.VisualTreeHelper.GetChild(parent, i); yield return child;
+                foreach (var nested in Descendants(child)) yield return nested;
+            }
+        }
+        static void Pump() => System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+    }
     [STATestMethod]
     [DataRow(Outcome.Success)]
     [DataRow(Outcome.Failed)]

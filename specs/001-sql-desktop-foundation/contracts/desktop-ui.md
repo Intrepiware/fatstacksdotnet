@@ -62,6 +62,32 @@ layout and error areas must not interrupt data-entry focus. Ctrl+Shift+Delete re
 focused posting when more than two lines remain, then focuses an adjacent posting account. Bind line view models to controls with stable
 automation IDs. Give errors field and line context. Do not parse English messages to control Save.
 
+Use a six-column posting grid: 1-based line number, Account, read-only C (blank, R, or checkmark
+with full status in tooltip and accessibility name), centered Debit and Credit headings with
+right-aligned amount inputs, and Remove (`×`). Share column alignment and scrollbar-gutter space
+across the header, scrollable posting rows, and totals footing so columns and totals stay
+vertically aligned whether or not the vertical scrollbar is visible. Shade even posting rows with
+a continuous `#F0F8FC` register stripe and highlight the hovered or keyboard-focused posting row
+in `#DDEBFA`, while keeping the Account, Debit, and Credit input boxes crisp white (`#FFFFFF`).
+
+Place the totals footing directly beneath the posting rows under a top border. In the Account
+column of the footing, display a semi-bold `Totals:` prefix in `#23384E` followed by muted
+`Balanced` when debits equal credits, or red (`#B42318`) `Credits short by <difference>` /
+`Debits short by <difference>` when unequal (or muted `Enter valid amounts to check the balance.`
+without totals when amount text is invalid). In the Debit and Credit footing cells, show only the
+right-aligned formatted totals aligned to the right text edge of the inputs above, omitting
+currency codes and repeated Debit/Credit labels; keep the book currency visible in the header.
+Color only the over-side total red while the entry is unbalanced. Expose the full Debit, Credit,
+and difference/balanced summary to assistive technology.
+
+When a posting field fails validation or contains unparseable amount text, mark that input with a
+2px red (`#B42318`) border, set its invalid accessibility state and field error tooltip, and
+render that row's line number as a solid red pill badge with white text so error identification
+does not rely on color alone. When an edit to a Cleared or Reconciling line would reset it to
+Uncleared, style that row's line number in bold amber (`#A16207`) in addition to showing the
+yellow reset warning banner. As the user edits and fixes invalid fields, dates, or unbalanced
+totals, immediately clear the resolved error messages and inline error markers.
+
 While either journal date input is focused, `-` subtracts one day, `+` adds one day, and
 `T`/`t` sets current book-local today. Support both the main keyboard and numeric keypad signs.
 Use the displayed date for stepping and book-local today when blank. Reject stepping invalid

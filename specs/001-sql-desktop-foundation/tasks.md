@@ -538,3 +538,159 @@ T098 implementation and Windows regression source are complete. Its interactive 
   - Update the overlapping completion claims for T047, T073, T098, T105, and T106 only when these results support the updates.
   - Do not use the existing cross-build, 99 portable test passes, or 13 real SQL test passes as proof of Windows acceptance. Keep checks that cannot run marked as unverified.
   - Follow SC-002/003/004/006, US3/AC1–AC12, and FR-009/012/013/016/018/019/023. Also follow the FR-023 reset presentation requirement under T106 and the plan's Windows acceptance evidence requirement.
+
+
+## Phase 15: Convergence
+
+**Assessment:** Review the current implementation against all five stories. The new editor
+criteria come from `spec.md`. Apply the detailed presentation rules in
+[the desktop UI contract](contracts/desktop-ui.md#entry-editor-and-delete) to T109–T112 and T116.
+Use `mockups/journal.html` as a visual reference for those criteria, not as a source of additional requirements.
+
+**Execution:** Complete each remaining obligation once. The tasks below reference earlier
+open tasks where the work overlaps. Preserve completed behavior and recorded test results.
+Earlier task checkboxes do not establish that the current requirements are satisfied.
+
+**Order:** T109 establishes the row layout used by T110–T112. Complete those editor changes
+before T116 verifies them. Complete T108 before security reconciliation checks under T113.
+Complete T114–T119 as their required implementations become available. Finish the acceptance
+report in T117 after the relevant verification and package checks.
+
+**US3 execution status (2026-11-24):** The code and regression tests for T109–T112 are
+implemented. Their Windows verification remains pending, so these task boxes remain open.
+The US3 portions of T116 and the outstanding target checks in T107 also remain open.
+The solution cross-build passes with no warnings or errors. All 107 portable tests pass.
+WindowsChecks cannot start on this Linux runner. The 13 SQL journal/register cases fail
+during fixture setup before their assertions run. See [the execution evidence](validation/us3.md#phase-15-editor-implementation).
+US4, US5, and feature-wide release work were not part of this implementation pass.
+
+- [ ] T108 [US4] CRITICAL — F32. Complete independent line reconciliation per FR-017/021–023, US4/AC1–AC5, plan: EF reconciliation transaction, and T048–T053/T074 (missing).
+  - Implement `src/FatStacks.Infrastructure/Reconciliation/ReconciliationService.cs` and the required Core contracts.
+  - Change one line's status in an EF transaction using the loaded line and header versions. Update the header version in the same transaction.
+  - Return the refreshed versions on success. Roll back both changes on a conflict.
+  - Add accessible status controls in the entry details and the required Desktop view model. Keep the journal editor's C column read-only, as FR-013 now requires.
+  - Complete the selected-account summary in `database/sprocs/ReadAccountRegister.sql` and `src/FatStacks.Core/Reconciliation/ReconciliationSummary.cs`.
+  - Derive Mixed only from the selected account's lines. Do not store a fourth status.
+  - Verify every transition between Uncleared, Reconciling, and Cleared. Verify independent states after refresh and restart.
+  - Verify that status-only changes preserve dates, accounts, money, and balances. Verify conflicts, rollback, and financial-edit resets through the existing journal procedures.
+  - Complete the tests and evidence specified in T048–T053. Do not implement a statement reconciliation wizard.
+
+- [ ] T109 [US3] HIGH — F33. Add numbered posting rows and row tracking per FR-013, US3/AC3, and T045 (missing).
+  - Update `src/FatStacks.Desktop/Views/JournalEditorWindow.xaml` and `src/FatStacks.Desktop/ViewModels/JournalEditorViewModel.cs`.
+  - Show a 1-based line number before Account. Update the displayed sequence after a row is added or removed.
+  - Apply a continuous `#F0F8FC` stripe to even-numbered posting rows. Apply a full-row `#DDEBFA` band when the row is hovered or contains keyboard focus.
+  - Keep posting text inputs white (`#FFFFFF`) in both states.
+  - Keep six columns in this order: line number, Account, C, Debit, Credit, and Remove (`×`). Center the Debit and Credit headings.
+  - Keep the read-only C column between Account and Debit. Preserve blank, R, and checkmark markers with full status names in tooltips and accessibility text.
+  - Preserve right-aligned amounts and clearing of the opposite amount when nonempty text is entered.
+  - Preserve stable control identities and account suggestions. Keep Tab and Shift+Tab in the specified order without stopping on row numbers or status markers.
+  - Verify numbering after row changes and keyboard navigation through a long split in `tests/FatStacks.WindowsChecks/JournalEditorViewModelTests.cs`.
+
+- [ ] T110 [US3] HIGH — F34. Replace the single balance summary with an aligned totals footing per FR-015/020 and US3/AC4 (partial).
+  - Update `src/FatStacks.Desktop/Views/JournalEditorWindow.xaml` and `src/FatStacks.Desktop/ViewModels/JournalEditorViewModel.cs` after T109.
+  - Place the footing directly below the posting rows with a top rule. Share column alignment and scrollbar-gutter space across the header, posting rows, and footing. Keep them aligned with and without a vertical scrollbar.
+  - Place a semi-bold `Totals:` label in the Account column of the footing. Use `#23384E` for the label.
+  - Follow the label with muted `Balanced` text when the totals are equal.
+  - When totals differ, show `Credits short by <difference>` or `Debits short by <difference>` in red (`#B42318`).
+  - When any amount text is invalid, show muted `Enter valid amounts to check the balance.` text. Hide both numeric totals in this state.
+  - Preserve the invalid amount text for correction.
+  - When amount text is valid, show only formatted numeric totals beneath Debit and Credit. Omit currency codes and repeated column labels.
+  - Align each total with the right text edge of its amount inputs above.
+  - Color only the over-side total red (`#B42318`) when totals differ. Clear that emphasis when balance is restored.
+  - Keep the book currency visible beside the editor heading. Expose complete debit, credit, and balance status text to assistive technology.
+  - Update totals as the draft changes. Keep Save and Continue disabled while totals differ and while a save is pending.
+  - Preserve validation before write dispatch, exact monetary precision, and retained drafts on failure.
+  - Add behavior checks for balanced, debit-short, credit-short, and invalid-text drafts. Add Windows checks for alignment with short and scrolling splits.
+
+- [ ] T111 [US3] HIGH — F35. Add field error cues that clear during correction per FR-013–015, US3/AC5, and T039/T045 (partial).
+  - Update `src/FatStacks.Desktop/ViewModels/JournalEditorViewModel.cs`, `src/FatStacks.Desktop/Views/JournalEditorWindow.xaml`, and `src/FatStacks.Desktop/Views/AccountComboBox.cs` as needed.
+  - Map each posting validation error to its affected input. Include invalid amount text and account-selection errors.
+  - Give invalid inputs a 2px red (`#B42318`) border. Expose the invalid state and error message through accessibility and a tooltip.
+  - Mark each affected line number with a compact, solid red (`#B42318`) pill badge and white text. Keep the number readable so color is not the only error cue.
+  - Recheck the affected validation when input changes. Immediately remove each resolved error from the error list and its visual markers.
+  - Immediately clear resolved errors for both accounting-date and bank-posting-date inputs when the user corrects them. Clear their associated inline markers as well.
+  - Clear a balance error when the draft balances. Keep unresolved errors on other fields and rows visible.
+  - Keep errors attached to the correct rows after a split line is added or removed. Preserve invalid draft text and reject invalid writes.
+  - Reuse the existing validation rules without moving business rules into WPF or duplicating persistence validation.
+  - Add regressions for malformed amounts, excess precision, range errors, invalid accounts, and balance correction. Include correction of both date fields, multiple simultaneous errors, and row removal.
+  - Verify the tooltip, accessible state, border, and badge on Windows. Do not treat a successful cross-build as proof of accessibility.
+
+- [ ] T112 [US3] HIGH — F36. Mark lines affected by reconciliation resets per FR-023, US3/AC11, and T106 (partial).
+  - Update `src/FatStacks.Desktop/ViewModels/JournalEditorViewModel.cs` and `src/FatStacks.Desktop/Views/JournalEditorWindow.xaml` after T109.
+  - Use the existing reset comparison to display each affected line number in bold amber (`#A16207`). Cover account or monetary changes to Cleared and Reconciling lines.
+  - Keep the yellow warning before Save and its line names. Update both cues as edits change.
+  - Remove both cues for a line when its original values are restored. Leave unchanged lines unmarked.
+  - Keep the red error badge identifiable when the same row also has a reset warning. Retain the reset explanation in the warning text.
+  - Preserve the implemented dismissible register confirmation after Save and the reset result in the editor after Continue.
+  - Preserve the existing SQL reset rules and unchanged line statuses. Add no status-editing control to the editor's C column.
+  - Add regressions for account changes, amount changes, multiple affected lines, and restoration of original values. Verify the rendered cues under T116.
+
+- [ ] T113 [US5] HIGH — F37. Complete the remaining book settings and security workflows per FR-019/020/024–026, US5/AC1–AC6, and T054–T061/T078 (missing).
+  - Implement the planned services in `src/FatStacks.Infrastructure/Books/`, `src/FatStacks.Infrastructure/Securities/`, and `src/FatStacks.Core/Securities/`.
+  - Complete the Desktop settings, security-definition, and holding-entry views specified in T060.
+  - Preserve supported currencies and the permanent currency lock after the first entry, including after all entries are deleted.
+  - Use the planned serializable EF transaction for currency changes. Verify a currency change racing the first journal save.
+  - Preserve the security metadata limits and declared quantity precision in T054–T056. Keep quantities separate from monetary carrying amounts.
+  - Extend the shared journal procedures for balanced opening holdings and same-security transfers. Keep every procedure call in `StoredProcedureRepository`.
+  - Derive holdings from journal movements without a separate holding table or balance override.
+  - Check affected old and new holding histories, including later entries, after backdated changes, edits, and deletes.
+  - Reject over-transfers, negative positions, and stranded value with zero units. Preserve total transferred units and carrying amounts.
+  - Complete the reference, SQL, and Windows tests from T054–T061. Rerun monetary and reconciliation regressions after procedure changes.
+  - Keep trades, pricing, lots, gains, short positions, and conversion outside the interface. Do not label carrying amounts as market values.
+
+- [ ] T114 HIGH — F38. Complete the dedicated transport verification per FR-030, plan: TLS warnings, and T018/T077 (partial).
+  - Run the existing matrix in `tests/FatStacks.SqlTests/Connections/TransportTests.cs` against trusted-TLS, plaintext, self-signed, and expired-certificate fixtures.
+  - Retain the implemented fixture checks and encryption assertions. Do not recreate the earlier, weaker matrix.
+  - Verify automatic fallback from certificate checking, visible non-blocking warnings, and preserved authentication or protocol failures.
+  - Record each fixture and result separately in `specs/001-sql-desktop-foundation/validation/us1.md`. Leave unavailable fixtures unverified.
+  - Correct observed failures and rerun the affected cases. Do not add confirmation prompts for the allowed transport conditions.
+
+- [ ] T115 HIGH — F39. Complete diagnostic test coverage per FR-029/031, plan: redacted diagnostics, and T062/T079 (partial).
+  - Retain the existing journal diagnostic tests. Add the remaining application, SQL command, and global exception cases in `tests/FatStacks.SqlTests/Diagnostics/RedactionTests.cs` and `tests/FatStacks.WindowsChecks/DiagnosticsTests.cs`.
+  - Use synthetic sentinel values for financial text, passwords, account numbers, tokens, connection secrets, and SQL parameters.
+  - Verify that none of those values appears in diagnostic or exception output. Verify that failures still identify the operation or a safe error category.
+  - Correct only observed failures in the existing diagnostic paths. Add no encrypted logging subsystem or new logging framework.
+  - Record executed and unverified checks separately in the acceptance evidence.
+
+- [ ] T116 HIGH — F40. Complete Windows acceptance for the revised interface and remaining journeys per SC-001–SC-006, FR-009/013/015/018/023, and T027/T036/T047/T064/T076/T080/T094/T097/T107 (partial).
+  - Run the affected Windows checks after T109–T112. Use an interactive Windows runner and isolated synthetic SQL data.
+  - Verify numbered rows, stripes on even-numbered rows, hover and focus bands, and the six-column layout.
+  - Verify the contract colors, semi-bold totals label, white text on red error badges, and bold amber reset markers.
+  - Verify that totals align with the right text edges of their inputs, including when the scrollbar appears.
+  - Verify short-side messages and muted balanced or invalid-amount messages. Verify that invalid amount text hides both numeric totals.
+  - Verify that correcting posting fields, either date field, or the entry balance immediately clears the resolved errors and their inline markers.
+  - Check short and long splits with and without scrollbars. Check keyboard navigation, visible focus, screen-reader output, and high-DPI layouts.
+  - Verify the amber reset markers, warning reversion, dismissible register confirmation, and Continue result.
+  - Retain the existing delete preview implementation. Verify its gray summary card, wrapping payee and italic description, conditional separator, and Account/C/Debit/Credit columns.
+  - Verify blank/R/checkmark status markers with full status names in tooltips and accessibility text. Verify no currency column or extra posting heading appears.
+  - Verify the red Delete button, initial Cancel focus, safe default, cancelled deletion, and complete confirmed deletion.
+  - Complete outstanding connection and register checks from T076/T094/T097. Complete the remaining journal checks from T107, including pending-write protections and retained failures.
+  - Reconcile the recorded J01–J07 passes with the remaining J08 checks in `validation/manual-us3.md`. Do not discard earlier passes or claim that they verify the new editor changes.
+  - Record results in `validation/us1.md`, `validation/us2.md`, `validation/us3.md`, and `validation/ui-parity.md` under this feature directory.
+  - Record exact reference results, runner details, and observed failures. Fix failures and rerun affected checks.
+  - Provide repeatable manual steps and reasons where automation is impractical. Keep unavailable checks unverified.
+  - Complete the remaining feature-wide parity rows after the US4 and US5 interfaces exist. Update overlapping completion claims only when the evidence supports them.
+
+- [ ] T117 HIGH — F41. Complete the feature acceptance report per FR-001–FR-033, SC-001–SC-008, plan: delivery and verification order, and T066/T068/T081 (missing).
+  - Create `specs/001-sql-desktop-foundation/validation/acceptance.md` after the dependent implementation and verification tasks.
+  - Map every functional requirement, success criterion, and story acceptance criterion to its result or an explicit unverified status.
+  - Record exact financial references, rollback and conflict results, source-review disposition, and the constitution self-review.
+  - Run the required restore, build, formatting, analyzer, service, SQL, and Windows checks on compatible runners.
+  - Distinguish static review, synthetic tests, real SQL results, Windows execution, and target-environment measurements.
+  - Reuse the recorded SC-008 performance pass unless a relevant change requires new measurements. Do not recreate completed work from T065/T083/T095.
+  - Reconcile earlier task completion claims with the final evidence. Preserve unavailable checks as unverified and record remaining release limits.
+
+- [ ] T118 MEDIUM — F42. Complete SQL-definition merge verification per FR-033, plan: SQL definition merge attributes, and T063/T082 (missing).
+  - Add `tests/FatStacks.Tests/Deployment/DefinitionMergeTests.cs` using temporary test repositories.
+  - Verify readable text diffs and deliberate conflicts when two branches change one procedure or view, including non-overlapping edits.
+  - Preserve the existing `text -merge` attributes. Verify that current repeatable definitions agree with deployed objects.
+  - Verify that applied one-time table migrations remain immutable. Do not add separate table-definition copies.
+  - Record the executed checks and any unresolved failures.
+
+- [ ] T119 MEDIUM — F43. Complete Windows packaging and release guidance per FR-031/032, plan: migration, installation, and recovery, and T067/T068/T084 (missing).
+  - Create `scripts/Publish-Windows.ps1` and `docs/releases/phase-1.md`.
+  - Package the framework-dependent Windows x64 application with required assets, licenses, and grate files.
+  - Verify the package on Windows. Record the application version and required .NET desktop runtime.
+  - Document settings location, installation, and updates while the app is closed. Document explicit schema maintenance and version compatibility.
+  - State migration-specific recovery limits. Do not imply that replacing an executable reverses a schema change.
+  - Update README and quickstart instructions with verified commands. Add no backup, encryption, or key-management subsystem.

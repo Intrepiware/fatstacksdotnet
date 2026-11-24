@@ -72,6 +72,7 @@ public partial class MainWindow : Window
         finally { journalActionBusy = false; }
     }
     private async void NewJournalClicked(object sender, RoutedEventArgs e) => await ShowJournalAsync(false);
+    private void DismissSaveNoticeClicked(object sender, RoutedEventArgs e) => register?.DismissSaveNotice();
     private async void EditJournalClicked(object sender, RoutedEventArgs e) => await ShowJournalAsync(true);
     private async void DeleteJournalClicked(object sender, RoutedEventArgs e) => await DeleteJournalAsync();
     private async void RegisterDoubleClicked(object sender, MouseButtonEventArgs e)

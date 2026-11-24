@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Fat Stacks.NET — main window mock-up</title><link rel="stylesheet" href="assets/mock.css"><script src="assets/mock.js" defer></script></head>
+<body data-screen="main">
+<main class="window main-window" aria-label="Fat Stacks.NET main window">
+ <div id="app-title"></div>
+ <div class="menubar"><details><summary>File</summary><div class="file-menu"><button disabled title="Outside this two-screen mock-up">Connections…</button><button disabled title="Outside this two-screen mock-up">Set up accounts…</button><a href="main.html">Reload</a><a href="index.html">Exit review</a></div></details></div>
+ <header class="app-header"><div><div class="brand">FAT STACKS.NET</div><div class="book-title">Personal demo — personal_demo</div></div><nav class="toolbar" aria-label="Journal actions"><span class="register-badge">REGISTER</span><a id="new-entry" class="button" href="journal.html" title="New entry (N)">New entry</a><a id="edit-entry" class="button" href="journal.html?preset=edit" title="Edit selected entry (E)">Edit</a><button disabled title="Delete confirmation is outside the requested two screens">Delete</button><button disabled title="Account setup is outside this mock-up">Accounts…</button><button disabled title="Connection setup is outside this mock-up">Connections…</button><button id="reload" title="Reload (F5)">Reload</button></nav></header>
+ <div class="workspace">
+  <aside class="rail" aria-label="Account browser"><nav id="account-tabs" class="tabs" aria-label="Account groups"></nav><div id="group-title" class="group-title"></div><div id="accounts"></div></aside><div class="splitter" role="separator" aria-label="Account rail divider"></div>
+  <section class="register-area" aria-label="Selected account register">
+   <header class="account-header"><div><h2 id="account-title"></h2><div id="account-path" class="path"></div></div><div class="balance-label"><small>CURRENT BALANCE</small><strong id="current-balance"></strong></div></header>
+   <div class="filterbar"><span class="filter-pill">Showing: Last 90 days</span><span id="transaction-count" class="muted"></span><input id="search" aria-label="Search transactions" title="Search descriptions and counter-accounts (Ctrl+F)" autocomplete="off"></div>
+   <div id="save-notice" class="notice" role="status" hidden><span id="save-notice-text"></span><button id="dismiss-notice">Dismiss</button></div>
+   <div class="register-scroll"><table id="register-table" class="data-table" aria-label="Transaction register"><colgroup><col style="width:105px"><col style="width:25%"><col><col style="width:35px"><col style="width:100px"><col style="width:100px"><col style="width:115px"></colgroup><thead><tr><th>Date</th><th>Payee / Description</th><th>Category</th><th class="center" title="Reconciliation status">C</th><th class="num" title="Net credits to the selected account">Payment</th><th class="num" title="Net debits to the selected account">Deposit</th><th class="num">Balance</th></tr></thead><tbody id="register-body"></tbody></table><div id="empty-state" class="empty-state" hidden></div></div>
+   <section id="details" class="detail-pane" aria-label="Selected journal entry"><div id="detail-summary" class="summary-text"></div><table class="data-table" aria-label="Journal entry lines"><colgroup><col><col style="width:110px"><col style="width:110px"><col style="width:100px"><col style="width:75px"><col style="width:90px"></colgroup><thead><tr><th>Account</th><th class="num">Debit</th><th class="num">Credit</th><th>Status</th><th>Security</th><th class="num">Quantity</th></tr></thead><tbody id="detail-body"></tbody></table><div id="entry-id" class="entry-id"></div></section>
+  </section>
+ </div>
+ <footer class="statusbar"><span>Book opened.</span><span class="muted">12 accounts · USD</span><span id="register-status"></span><span class="identity" title="Synthetic logical book identity">Book demo-0001 · USD · UTC</span></footer>
+</main>
+<p class="review-note">Account groups, row selection, account links, search, Reload, New entry, and Edit are interactive. Read-only line states represent existing history; US4 state editing is excluded. FR-007/009/010/011/012/023.</p>
+</body></html>

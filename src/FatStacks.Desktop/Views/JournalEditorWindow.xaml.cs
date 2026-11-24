@@ -15,6 +15,8 @@ public partial class JournalEditorWindow : Window
         Model.CloseRequested += CloseRequested;
         Closed += (_, _) => Model.CloseRequested -= CloseRequested;
         Loaded += (_, _) => FocusDateInput();
+        foreach (var picker in new[] { AccountingDateInput, BankDateInput })
+            picker.AddHandler(TextBox.TextChangedEvent, new TextChangedEventHandler(DateTextChanged));
     }
     private void CloseRequested(object? sender, EventArgs e)
     {
@@ -26,7 +28,7 @@ public partial class JournalEditorWindow : Window
     {
         if (sender is ContentControl { DataContext: JournalLineViewModel line } host && host.Content is null)
         {
-            var picker = new AccountComboBox(line.AccountPaths); picker.Bind(line);
+            var picker = new AccountComboBox(line.AccountPaths) { Padding = new Thickness(6, 4, 6, 4) }; picker.Bind(line);
             picker.SuggestionAccepted += (_, _) => picker.MoveToNextField();
             host.Content = picker;
         }
@@ -46,6 +48,7 @@ public partial class JournalEditorWindow : Window
     { if (sender is FrameworkElement { DataContext: JournalLineViewModel line }) line.FormatAmount(true); }
     private bool CanSave()
     {
+        if (!Model.CanSave) return false;
         foreach (var picker in new[] { AccountingDateInput, BankDateInput })
         {
             if (string.IsNullOrWhiteSpace(picker.Text))
@@ -54,7 +57,7 @@ public partial class JournalEditorWindow : Window
                 continue;
             }
             if (!DateTime.TryParse(picker.Text, System.Globalization.CultureInfo.CurrentCulture, out var parsed))
-            { Model.Errors.Clear(); Model.Errors.Add(new("Date", "Enter a valid date before saving.")); return false; }
+            { Model.SetDateError(ReferenceEquals(picker, BankDateInput), "Enter a valid date before saving."); return false; }
             if (ReferenceEquals(picker, AccountingDateInput)) Model.AccountingDate = parsed.Date; else Model.BankPostingDate = parsed.Date;
         }
         return true;
@@ -72,7 +75,7 @@ public partial class JournalEditorWindow : Window
             if (!string.IsNullOrWhiteSpace(picker.Text))
             {
                 if (!DateTime.TryParse(picker.Text, System.Globalization.CultureInfo.CurrentCulture, out var parsed))
-                { Model.Errors.Add(new(bankDate ? "BankPostingDate" : "AccountingDate", "Enter a valid date or press T for today.")); return; }
+                { Model.SetDateError(bankDate, "Enter a valid date or press T for today."); return; }
                 current = parsed.Date;
             }
             if (bankDate) Model.BankPostingDate = current; else Model.AccountingDate = current;
@@ -84,7 +87,27 @@ public partial class JournalEditorWindow : Window
             picker.Text = picker.SelectedDate!.Value.ToString("d", System.Globalization.CultureInfo.CurrentCulture);
         }
     }
-    private void DateInvalid(object? sender, DatePickerDateValidationErrorEventArgs e) { Model.Errors.Clear(); Model.Errors.Add(new("Date", "Enter a valid date before saving.")); e.ThrowException = false; }
+    private void DateInvalid(object? sender, DatePickerDateValidationErrorEventArgs e)
+    {
+        Model.SetDateError(ReferenceEquals(sender, BankDateInput), "Enter a valid date before saving.");
+        e.ThrowException = false;
+    }
+    private void DateTextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (sender is not DatePicker picker || e.OriginalSource is not TextBox input || !picker.IsLoaded || !input.IsKeyboardFocused) return;
+        var bank = ReferenceEquals(picker, BankDateInput);
+        if (DateTime.TryParse(input.Text, System.Globalization.CultureInfo.CurrentCulture, out var parsed))
+        {
+            Model.SetDateError(bank, "");
+            if (bank) Model.BankPostingDate = parsed.Date; else Model.AccountingDate = parsed.Date;
+        }
+        else if (string.IsNullOrWhiteSpace(input.Text))
+        {
+            if (bank) Model.BankPostingDate = null; else Model.AccountingDate = null;
+            Model.SetDateError(bank, bank ? "" : "Choose an accounting date.");
+        }
+        else Model.SetDateError(bank, "Enter a valid date before saving.");
+    }
     private void CancelClicked(object sender, RoutedEventArgs e) => Model.Cancel();
     private void AddClicked(object sender, RoutedEventArgs e) { Model.AddLine(); FocusLastAccount(); }
     private void FocusLastAccount() => FocusAccount(Model.Lines.Count - 1);

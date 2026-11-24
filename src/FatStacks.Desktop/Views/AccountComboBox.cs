@@ -35,7 +35,7 @@ internal sealed class AccountComboBox : UserControl
         var layout = new Grid();
         layout.ColumnDefinitions.Add(new ColumnDefinition());
         layout.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(28) });
-        editor = new TextBox { VerticalContentAlignment = VerticalAlignment.Center };
+        editor = new TextBox { VerticalContentAlignment = VerticalAlignment.Center, Background = System.Windows.Media.Brushes.White };
         editor.SetBinding(Control.PaddingProperty, new Binding(nameof(Padding)) { Source = this });
         var toggle = new Button { Content = "▾", Padding = new Thickness(0), Margin = new Thickness(0), Focusable = false, IsTabStop = false, ToolTip = "Show accounts" };
         System.Windows.Automation.AutomationProperties.SetName(toggle, "Show account suggestions");
@@ -103,6 +103,7 @@ internal sealed class AccountComboBox : UserControl
     {
         SetBinding(AccountPathsProperty, new Binding(nameof(line.AccountPaths)) { Source = line, Mode = BindingMode.OneWay });
         editor.SetBinding(TextBox.TextProperty, new Binding(nameof(line.AccountText)) { Source = line, Mode = BindingMode.TwoWay, UpdateSourceTrigger = UpdateSourceTrigger.PropertyChanged });
+        editor.SetBinding(JournalInputValidation.ErrorProperty, new Binding(nameof(line.AccountError)) { Source = line });
         System.Windows.Automation.AutomationProperties.SetAutomationId(editor, line.AccountControlId);
         System.Windows.Automation.AutomationProperties.SetName(this, "Posting account");
     }

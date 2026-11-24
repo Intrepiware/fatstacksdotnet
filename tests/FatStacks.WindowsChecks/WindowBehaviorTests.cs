@@ -14,6 +14,66 @@ namespace FatStacks.WindowsChecks;
 public sealed class WindowBehaviorTests
 {
     [STATestMethod]
+    public void DeletePreviewUsesSummaryCardAndSeparateMoneyColumns()
+    {
+        var entry = new FatStacks.Core.Journal.JournalRequest(1, 1, new byte[8], new(2026, 11, 10), new(2026, 11, 11),
+            "U3 Shop", "J07 expense", 0,
+            [new(1, new byte[8], 1, 1, 30, 0, "USD", 2), new(2, new byte[8], 2, 2, 0, 15, "USD", 0), new(3, new byte[8], 2, 3, 0, 15, "USD", 1)],
+            [new(1, new byte[8]), new(2, new byte[8]), new(3, new byte[8])]);
+        var window = new DeleteEntryWindow(entry, JournalEditorViewModelTests.Accounts,
+            _ => throw new AssertFailedException("Preview must not delete an entry."));
+        try
+        {
+            window.Show(); Pump();
+            Assert.AreEqual("U3 Shop", ((System.Windows.Documents.Run)window.FindName("PayeeText")).Text);
+            Assert.AreEqual(" — ", ((System.Windows.Documents.Run)window.FindName("SeparatorText")).Text);
+            Assert.AreEqual("J07 expense", ((System.Windows.Documents.Run)window.FindName("DescriptionText")).Text);
+            Assert.AreEqual("U3 Shop — J07 expense", System.Windows.Automation.AutomationProperties.GetName((TextBlock)window.FindName("Preview")));
+            StringAssert.Contains(((TextBlock)window.FindName("BankDate")).Text, "Bank posting date:");
+            Assert.IsNotEmpty(((TextBlock)window.FindName("JournalDate")).Text);
+            Assert.IsTrue(((Button)window.FindName("CancelButton")).IsKeyboardFocused);
+            var delete = ((StackPanel)window.FindName("Actions")).Children.OfType<Button>()
+                .Single(x => System.Windows.Automation.AutomationProperties.GetAutomationId(x) == "ConfirmDelete");
+            Assert.AreEqual("_Delete", delete.Content);
+            Assert.AreEqual(System.Windows.Media.Color.FromRgb(0xB4, 0x23, 0x18), ((System.Windows.Media.SolidColorBrush)delete.Background).Color);
+            var lines = (ItemsControl)window.FindName("Lines");
+            Assert.HasCount(3, lines.Items);
+            Assert.AreEqual(30m.ToString("N2", System.Globalization.CultureInfo.CurrentCulture), lines.Items[0].GetType().GetProperty("DebitText")!.GetValue(lines.Items[0]));
+            Assert.AreEqual("", lines.Items[0].GetType().GetProperty("CreditText")!.GetValue(lines.Items[0]));
+            Assert.AreEqual("", lines.Items[1].GetType().GetProperty("DebitText")!.GetValue(lines.Items[1]));
+            Assert.AreEqual(15m.ToString("N2", System.Globalization.CultureInfo.CurrentCulture), lines.Items[1].GetType().GetProperty("CreditText")!.GetValue(lines.Items[1]));
+            Assert.AreEqual("✓", lines.Items[0].GetType().GetProperty("StatusSymbol")!.GetValue(lines.Items[0]));
+            Assert.AreEqual("", lines.Items[1].GetType().GetProperty("StatusSymbol")!.GetValue(lines.Items[1]));
+            Assert.AreEqual("R", lines.Items[2].GetType().GetProperty("StatusSymbol")!.GetValue(lines.Items[2]));
+            Assert.IsNull(lines.Items[0].GetType().GetProperty("Currency"));
+        }
+        finally { window.Close(); }
+    }
+
+    [STATestMethod]
+    public void DeletePreviewOmitsSeparatorWhenPayeeOrDescriptionIsEmpty()
+    {
+        foreach (var (payee, description, expected) in new (string?, string, string)[]
+        {
+            (null, "Description only", "Description only"),
+            ("Payee only", "", "Payee only")
+        })
+        {
+            var entry = new FatStacks.Core.Journal.JournalRequest(1, 1, new byte[8], new(2026, 11, 10), null,
+                payee, description, 0, [], []);
+            var window = new DeleteEntryWindow(entry, JournalEditorViewModelTests.Accounts,
+                _ => throw new AssertFailedException("Preview must not delete an entry."));
+            try
+            {
+                window.Show(); Pump();
+                Assert.AreEqual("", ((System.Windows.Documents.Run)window.FindName("SeparatorText")).Text);
+                Assert.AreEqual(expected, System.Windows.Automation.AutomationProperties.GetName((TextBlock)window.FindName("Preview")));
+            }
+            finally { window.Close(); }
+        }
+    }
+
+    [STATestMethod]
     public void RepeatedNewProfileClearsPasswordBoxAndAcceptsReplacementCredential()
     {
         var model = Model();

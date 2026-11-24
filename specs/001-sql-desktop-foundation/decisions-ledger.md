@@ -1,5 +1,99 @@
 # Decisions Ledger: Fat Stacks.NET — SQL Desktop Foundation
 
+## 2026-11-24 12:00:00 -06:00: Backport journal editor footing, row-tracking, and inline validation design from mock-up
+
+**Files Updated:** [spec.md](spec.md), [contracts/desktop-ui.md](contracts/desktop-ui.md),
+[ui-parity.md](ui-parity.md), [mockups/README.md](mockups/README.md),
+[mockups/index.html](mockups/index.html), [mockups/assets/mock.css](mockups/assets/mock.css),
+and [mockups/assets/mock.js](mockups/assets/mock.js).
+
+Adopt the reviewed HTML mock-up refinements for the journal entry editor so convergence can
+schedule their WPF implementation:
+
+- Align a totals footing directly under the posting grid with shared scrollbar-gutter space
+  so the header, scrollable posting rows, and footing stay vertically aligned with or without
+  a vertical scrollbar.
+- Display a semi-bold `Totals:` prefix in the footing followed by `Balanced` or
+  `<Credits|Debits> short by <difference>` in red, put only the right-aligned numeric totals
+  under the Debit and Credit columns (omitting repeated `Debit`/`Credit` labels and currency
+  codes while keeping currency in the header), and color only the over-side total red while
+  unbalanced.
+- Number posting rows `1..N`, apply continuous `#F0F8FC` striping to even rows and `#DDEBFA`
+  highlighting to hovered or focused rows, and keep posting text inputs white (`#FFFFFF`).
+- Highlight line numbers in bold amber (`#A16207`) when editing a Cleared or Reconciling line
+  would reset it to Uncleared.
+- Mark invalid posting inputs with a 2px red (`#B42318`) border, invalid accessibility state,
+  and field error tooltip, and style the row's line number as a solid red pill badge with
+  white text so error identification does not depend on color alone. Clear field and balance
+  validation errors immediately as the user corrects the input.
+
+---
+
+## 2026-11-23 01:15:10 +00:00: Clarify journal amount entry and balance feedback
+
+**Files Updated:** [spec.md](spec.md), [US3 manual checklist](validation/manual-us3.md),
+[US3 parity evidence](validation/ui-parity.md), [US3 validation](validation/us3.md), the
+journal editor view and view model, and its regression checks.
+
+Clear the opposite amount when Debit or Credit receives nonempty text. Right-align amount
+inputs and move the read-only status marker between Account and Debit. Show debit and credit
+totals and their difference as the draft changes. Disable Save and Continue while the totals
+are unequal, including the keyboard save path. Preserve field validation for invalid amounts.
+
+---
+
+## 2026-11-22 22:38:28 +00:00: Put delete-preview payee and narration on one line
+
+**Files Updated:** [spec.md](spec.md), [US3 parity evidence](validation/ui-parity.md),
+[US3 manual checklist](validation/manual-us3.md), the Desktop delete dialog, and its Windows
+rendering checks.
+
+Put the payee and italic description on one wrapping line in the gray summary card. Show a
+separator only when both values exist. Remove the “Journal entry lines” heading because the
+Account, C, Debit, and Credit column headings identify the posting list.
+
+---
+
+## 2026-11-22 16:17:17 +00:00: Compact status in the journal delete preview
+
+**Files Updated:** [spec.md](spec.md), [US3 parity evidence](validation/ui-parity.md),
+[US3 manual checklist](validation/manual-us3.md), the Desktop delete dialog, and its Windows
+rendering regression.
+
+Place status between Account and Debit in the delete preview. Use the register's blank,
+R, and checkmark markers for Uncleared, Reconciling, and Cleared. Keep the full status name
+available through a tooltip and accessibility text. Remove the currency column from the
+preview; the journal still stores and validates each line's currency.
+
+---
+
+## 2026-11-22 16:01:32 +00:00: Align the journal delete dialog with the source layout
+
+**Files Updated:** [spec.md](spec.md), [US3 parity evidence](validation/ui-parity.md),
+[US3 manual checklist](validation/manual-us3.md), the Desktop delete dialog, and a Windows
+rendering regression.
+
+Use the source dialog's gray summary card and compact posting rows. Show separate Debit and
+Credit values, line status, and currency for each journal posting. Make the Delete action red
+and label it Delete. Keep Cancel focused and safe by default. The earlier J07 screenshot showed
+the current grid layout differed from the supplied source, so J01/J07 visual review must run
+again on Windows.
+
+---
+
+## 2026-11-22 04:10:17 +00:00: Warn before journal reconciliation resets and confirm after Save
+
+**Files Updated:** [spec.md](spec.md), [US3 parity evidence](validation/ui-parity.md),
+[US3 manual checklist](validation/manual-us3.md), journal editor and register presentation,
+and reset-notice regressions.
+
+Show a yellow warning when an edit to a Cleared or Reconciling posting would reset it to
+Uncleared. Update the warning as the draft changes. Show a dismissible confirmation above
+the register after Save closes the editor. Continue keeps its result in the editor. This
+addresses a manual J06 failure where the existing status-bar notice was clipped.
+
+---
+
 ## 2026-11-22 02:39:41 +00:00: Complete US3 precision, diagnostics, and eligibility corrections
 
 **Files Updated:** [tasks.md](tasks.md), [US3 validation](validation/us3.md),
@@ -524,3 +618,12 @@ Keep acceptance criteria focused on distinct observable outcomes, and distinguis
 review from unexecuted runtime checks. The constitution incorporates this writing guidance.
 
 ---
+
+
+## 2026-11-24 — Implement the Phase 15 US3 editor contract
+
+Implemented the posting row numbers, contract colors, aligned totals footing, live field errors,
+and amber reconciliation-reset markers in the WPF editor. Reused the existing Core validation
+rules and retained SQL behavior. Added portable behavior cases and a Windows layout/accessibility
+regression. Implementation was restricted to US3. Windows acceptance and SQL fixture execution
+remain unverified; see the Phase 15 section in validation/us3.md.

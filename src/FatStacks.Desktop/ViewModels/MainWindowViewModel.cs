@@ -44,8 +44,9 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     {
         if (!IsCurrent) return;
         await RefreshAsync(); await ReadAsync(saved.Entry.EntryId);
-        if (saved.ResetLineIds.Count > 0) Status = JournalSaveNotice.Describe(saved, accounts);
+        SaveNotice = saved.ResetLineIds.Count > 0 ? JournalSaveNotice.Describe(saved, accounts) : "";
     }
+    public void DismissSaveNotice() => SaveNotice = "";
     public required IAccountService Accounts { private get; init; }
     public required IRegisterService Register { private get; init; }
     public required BookSession Session { private get; init; }
@@ -85,6 +86,8 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     }
     private string search = ""; public string Search { get => search; set { if (Set(ref search, value)) _ = ReadRegisterAsync(null, "RegisterSearch"); } }
     private string status = ""; public string Status { get => status; private set => Set(ref status, value); }
+    private string saveNotice = ""; public string SaveNotice { get => saveNotice; private set { if (Set(ref saveNotice, value)) Changed(nameof(HasSaveNotice)); } }
+    public bool HasSaveNotice => SaveNotice.Length > 0;
     private long? balanceAccountId;
     private decimal balance;
     public decimal Balance

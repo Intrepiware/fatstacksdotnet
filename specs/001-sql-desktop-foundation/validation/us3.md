@@ -374,3 +374,163 @@ rerun's full output and duration were not supplied. This records a user-reported
 filtered automated suite, including the complete journal journey. It does not establish the
 separate manual visual, screen-reader, long-split, or display-scaling checks in `ui-parity.md`.
 Those checks remain unverified, and T107 remains open for the remaining acceptance evidence.
+
+## J06 reset warning and Save confirmation follow-up
+
+The user recorded J06 as failed: Continue showed the reset notice in the editor, but Save
+closed the editor without a visible notice. The register status bar could clip that text.
+The editor now shows a yellow warning before a financial edit resets a Cleared or Reconciling
+line. The warning names affected line orders and account paths, updates as the draft changes,
+and clears if the original values return. After Save, a separate yellow register banner
+shows the actual reset result and has a Dismiss button. Continue still shows its result in
+the editor. The manual J06 steps now check both messages and the saved line states. The
+original failure remains recorded in `manual-us3.md` until a Windows retest passes.
+
+The solution cross-build passed with zero warnings or errors. All 101 portable tests passed,
+including the reset-warning and banner-state regressions. The new Windows editor-rendering
+regression compiled but has not run here; the current runner is Linux. The changed UI and J06
+manual steps remain unverified on Windows. No SQL procedure or schema changed.
+
+The user then reported that all 36 WindowsChecks tests passed on Windows after this change.
+This includes the new editor warning rendering test. The full run output, versions, and
+duration were not supplied. J06's hands-on check of the warning, the register banner after
+Save, and the saved line states remains unverified until its retest is recorded.
+
+## J07 delete dialog layout follow-up
+
+The user supplied screenshots of the source delete dialog and the J07 dialog. The source uses
+a compact gray summary card, plain posting rows, and a red Delete button. The journal dialog
+now uses that layout. It shows the date, payee when present, description, optional bank posting
+date, and ordered account paths in the card. It keeps separate Debit and Credit columns and
+each line's status. A zero amount leaves its column blank. Cancel remains the
+focused, safe default. The Delete action is red and labeled Delete. The existing guarded,
+atomic delete workflow is unchanged.
+
+The solution cross-build passed with zero warnings or errors. A new Windows rendering check
+for the card details, separate amounts, button label and color, and Cancel focus compiled.
+It has not run on this Linux runner. The J01/J07 comparison and new Windows check remain
+unverified on the revised build. The 36 previously reported WindowsChecks passes preceded
+this dialog change. No SQL schema or procedure changed.
+
+The requested status refinement places C between Account and Debit. Each line shows a blank
+marker for Uncleared, R for Reconciling, or a checkmark for Cleared. The full status name is
+available in the tooltip and accessibility name. The preview no longer has a currency column.
+The revised Windows rendering check covers all three markers and separate amounts; it has
+compiled but has not run on this Linux runner. J07 visual review remains open.
+
+The delete preview now places the payee and italic description on one wrapping line below
+the date. It inserts a separator only when both values exist. The “Journal entry lines”
+heading is removed, so the column headings lead directly into the postings. J07 step 5/6
+now checks this spacing. Windows rendering checks cover both values together and each value
+alone; target-platform execution and visual review remain open.
+
+## J08 Payee and Description accessible names
+
+The user reported that focusing Payee or Description did not announce the field label.
+Both text inputs now expose explicit accessible names. Their existing labels and access
+keys remain connected to the inputs. A Windows regression checks each focused control's
+automation name before and after text entry. J08 includes a focused Narrator retest;
+the spoken announcements remain unverified until the Windows retest is recorded.
+
+The WindowsChecks project and its dependencies cross-build with zero warnings or errors.
+The new automation-name regression compiled but cannot execute on this Linux runner.
+
+## J08 validation message spacing
+
+The J08 step 7 screenshot showed a missing space after the middot in line errors and a
+stray `Line ·` prefix on the entry-wide Balance error. The error template now preserves
+the trailing space in the line prefix and omits that prefix when no line order exists.
+J08 step 7 includes the corrected examples. A Windows rendering regression checks both
+line errors and an entry-wide error. The WindowsChecks project cross-builds with zero
+warnings or errors; the rendering check still requires Windows execution.
+
+## Journal amount entry and balance feedback
+
+Entering nonempty Debit text now clears Credit on that row, and vice versa. The editor
+uses right-aligned amount inputs and Account/C/Debit/Credit columns. C is read-only and
+uses blank, R, or a checkmark with the full state in a tooltip and accessibility name.
+Live totals identify unequal debits/credits and show the difference in red text. Save and
+Continue are disabled while totals differ; Ctrl+Enter also respects that condition.
+Invalid numeric text remains available for correction and field validation. It does not
+produce a misleading balanced total.
+
+The solution cross-build passed with zero warnings or errors after removing obsolete
+temporary build outputs that exhausted disk space on the first attempt. All 102 portable
+tests passed. Windows checks for amount alignment and disabled save actions compiled but
+need Windows execution. The J08 amount-entry retest records the remaining manual checks.
+No SQL procedure or schema changed.
+
+
+## Phase 15 editor implementation
+
+Date: 2026-11-24. Scope: T109–T112 and US3 verification under T116/T107.
+
+The editor now uses numbered posting rows with even-row stripes and full-row hover/focus bands.
+The totals footing shares the posting viewport width, including its scrollbar allowance.
+Numeric totals align with the amount text edges. Invalid amount text hides both totals.
+The footing names the short side and colors only the larger total red.
+
+Posting errors use red borders, tooltips, accessible status/help text, and white-on-red line badges.
+Corrected errors clear during editing. Date errors remain separate for the two date fields.
+The view model reuses Core journal validation after a validation attempt. Malformed amount text
+gets feedback while typing. Errors follow the retained row objects after a row is removed.
+Reconciled financial edits mark the affected line numbers in amber. Restoring the original
+values clears those markers and the existing warning.
+
+The existing Save, Continue, delete preview, reset confirmation, and SQL write paths remain in
+place. No schema, public service contract, financial rule, dependency, or US4/US5 control changed.
+
+| Check | Result |
+| --- | --- |
+| .NET 10 solution restore and cross-build | Passed; zero warnings and errors |
+| Portable tests | 107 passed; zero failed or skipped |
+| Focused portable editor tests | 27 passed; includes five new Phase 15 behavior cases |
+| Changed C# whitespace check | Passed; the formatter reported workspace-load warnings |
+| Diff whitespace check | Passed |
+| Windows editor regression | Compiled; execution blocked before tests by missing Microsoft.WindowsDesktop.App; exit 150 |
+| SQL journal/register regression | 13 failed during fixture creation with sanitized SQL category 0; zero assertions reached |
+| Windows visual, keyboard, screen-reader, and DPI checks | Unverified; use the Phase 15 steps in manual-us3.md |
+
+Build artifacts are isolated under the ignored `artifacts/us3-phase15` directory. The first
+attempt used incompatible cached assets. A later temporary build ran out of space in `/tmp`.
+The final build used the workspace artifacts directory and passed. The SQL fixture retry through
+`host.docker.internal,1433` also failed during setup. These results do not establish a financial
+regression or a successful SQL verification run.
+
+Run the target checks from an interactive Windows session with isolated SQL fixtures:
+
+```powershell
+dotnet build FatStacks.slnx
+dotnet test --project tests/FatStacks.WindowsChecks/FatStacks.WindowsChecks.csproj --filter 'FullyQualifiedName~JournalEditorViewModelTests|FullyQualifiedName~JournalJourneyTests|FullyQualifiedName~WindowBehaviorTests'
+dotnet test --project tests/FatStacks.SqlTests/FatStacks.SqlTests.csproj --filter 'FullyQualifiedName~Journal|FullyQualifiedName~Register'
+```
+
+The new Windows case checks short/scrolling alignment, invalid-input borders and accessible
+feedback, restored feedback after correction, and focused-row colors. Manual review is still
+required for spoken output, visual comparison, mouse hover, and each requested display scale.
+
+Self-review: presentation stays in Desktop; Core remains the authority for financial validation.
+No SQL or persistence change is required. Source review checked exact contract colors, retained
+keyboard handlers, stable control IDs, noninteractive line numbers, and pending-write guards.
+The review does not substitute for Windows execution. T109–T112, T107, and T116 remain open
+until the required target results are recorded. Earlier manual passes remain valid historical
+evidence but do not verify this revised editor.
+
+
+### Journal dialog startup binding correction
+
+The owner reported application shutdown when pressing N in the ledger after the Phase 15 change.
+Source review found a binding defect in the new totals status: WPF `Run.Text` defaults to a
+two-way binding, but `JournalEditorViewModel.BalanceStatus` has no setter. Binding initialization
+can therefore throw while opening the dialog. The status binding now explicitly uses OneWay.
+This preserves live display updates without trying to write to the calculated property.
+
+Added `NewJournalDialogOpensWithReadOnlyBalanceStatusAndUpdatesItsFooting` to the Windows tests.
+It opens a fresh draft and checks balanced, unbalanced, and invalid-text status changes without
+saving. The test compiles but still requires Windows execution. All 27 portable editor tests
+pass. The solution cross-build passes with zero warnings or errors. The first build attempt
+stopped with an internal CLR error; a retry with one build worker and shared compilation
+disabled passed. No SQL or financial rule changed.
+
+Rebuild and restart the Windows app, then press N in the ledger. Run the new regression on
+Windows before recording the reported startup failure as resolved on the target platform.

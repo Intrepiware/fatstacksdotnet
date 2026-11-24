@@ -121,6 +121,25 @@ edit and delete them, restart, and compare balances with known expected results.
   two persisted lines and the expected account balances after reopening (FR-013–FR-015).
 - A line with both a debit and credit, a negative amount, no nonzero amount, or a mismatched
   currency is rejected with a field-specific explanation (FR-014, FR-020).
+- Typing a nonempty Debit clears that row's Credit, and typing a nonempty Credit clears its
+  Debit. Amount inputs are right-aligned. The read-only C column sits between Account and
+  Debit and uses blank, R, or a checkmark for Uncleared, Reconciling, or Cleared. Each
+  posting row shows a 1-based line number on the left, alternate rows use the register's
+  stripe color, and the hovered or focused row uses the register's selected-row band while
+  posting text inputs keep white backgrounds. The header, scrollable posting rows, and
+  totals footing remain vertically aligned whether or not the posting scrollbar is shown
+  (FR-013, FR-015).
+- The journal editor places a totals footing directly under the posting rows. It shows
+  `Totals:` on the left followed by `Balanced` when equal, or names the short side and
+  difference in red (`Credits short by ...` or `Debits short by ...`) when unequal. It shows
+  only the right-aligned numeric totals under the Debit and Credit columns, without currency
+  codes or repeated column labels, and colors the over-side total red while the totals are
+  unequal. Save and Continue are disabled while the totals are unequal (FR-015, FR-020).
+- A posting input with a validation error or invalid amount text shows a thicker red border,
+  exposes its invalid state and message through accessibility and a tooltip, and marks its
+  line number with a compact red pill badge so errors do not rely on color alone. Correcting
+  an invalid field or the entry balance immediately clears its error message and visual
+  markers (FR-013, FR-014, FR-015).
 - A 25.00 debit with a 24.99 credit cannot be saved. No partial entry is visible after a failed
   save, edit, or delete (FR-015, FR-017).
 - A user can add and remove split lines, select accounts through keyboard suggestions, and
@@ -134,8 +153,21 @@ edit and delete them, restart, and compare balances with known expected results.
   duplicate entry (FR-016, FR-017).
 - Editing an existing entry preserves its identity and unaffected line statuses. A conflicting
   external change is reported without overwriting the newer version (FR-017).
-- Delete shows the date, description, and affected lines with Cancel focused by default.
-  Confirming removes the whole entry's effects; cancelling changes nothing (FR-018).
+- Editing a Cleared or Reconciling line's account or monetary amount shows a yellow warning
+  before Save and highlights each affected row's line number in bold amber. Both cues name
+  or mark each affected line and disappear if the original values are restored.
+  After Save, the main register shows a dismissible confirmation of the lines reset to
+  Uncleared. Continue keeps the editor open and shows the reset result there (FR-023).
+- Delete shows the date, payee when present, description, and affected lines in a gray
+  summary card. The payee and italic description share one wrapping line, with a separator
+  only when both are present. Column headings directly introduce the postings, without a
+  separate “Journal entry lines” heading. It shows Account, a compact status marker, Debit,
+  and Credit in that order.
+  The marker is blank for Uncleared, R for Reconciling, and a checkmark for Cleared.
+  The full status name remains available to assistive technology and through a tooltip.
+  The preview does not show a currency column.
+  The Delete button is red and labeled Delete. Cancel has initial focus and is the safe
+  default. Confirming removes the whole entry's effects; cancelling changes nothing (FR-018).
 - A new entry session defaults to today in the book time zone. Changing the device time zone
   does not change stored accounting dates or the default book date (FR-019).
 - In either journal date field, `-` subtracts one day, `+` adds one day, and `T` sets the
@@ -305,7 +337,20 @@ opening quantity and carrying amount and transfer part of that holding between a
   lines, account suggestions, and separate debit and credit fields. Focusing a posting account
   input MUST select all its text so typing starts a replacement search. Leaving an amount
   input MUST format valid values with two decimal places without rounding away invalid
-  excess precision or replacing invalid draft text. Keyboard navigation MUST
+  excess precision or replacing invalid draft text. Debit and Credit inputs MUST be
+  right-aligned. Entering nonempty text in either amount input MUST clear the opposite
+  amount on the same row. A read-only C column between Account and Debit MUST use blank,
+  R, and a checkmark for Uncleared, Reconciling, and Cleared, with full status names in
+  tooltips and accessibility text. Each posting row MUST show a 1-based line number before
+  Account. Alternate posting rows MUST use a continuous register stripe (`#F0F8FC`), and a
+  hovered or keyboard-focused posting row MUST highlight the full row in the register's
+  selected-row color (`#DDEBFA`) while keeping posting text inputs white (`#FFFFFF`). The
+  column headers, scrollable posting rows, and totals footing MUST remain vertically aligned
+  whether or not the vertical scrollbar is active. Invalid posting inputs MUST display a
+  2px red border, expose their invalid state and error message to assistive technology and
+  tooltips, and style the row's line number as a high-contrast red pill badge so error
+  identification does not depend on color alone. Correcting an invalid input MUST immediately
+  clear its inline visual cues and corresponding error entry. Keyboard navigation MUST
   move directly from Description to the first posting account input, then through each row
   in Account, Debit, Credit order. Shift+Tab MUST reverse the sequence. Users MUST be able
   to complete entry creation, split-line changes, and saving without a mouse.
@@ -317,6 +362,17 @@ opening quantity and carrying amount and transfer part of that holding between a
   after every assignment, custom money types, and duplicate SQL numeric parsing are not
   required. Account references MUST belong to the active book.
 - **FR-015**: Saving an entry MUST require equal total debits and credits in the book currency.
+  The editor MUST show a live totals footing aligned under the posting columns, separated by
+  a top rule. The left status area of the footing MUST display a bold `Totals:` label followed
+  by `Balanced` when equal, or `<Credits|Debits> short by <difference>` in red when unequal,
+  or `Enter valid amounts to check the balance.` when any amount text is invalid. The Debit
+  and Credit footing cells MUST align directly beneath their input columns, display only the
+  formatted numeric totals without currency codes or repeated Debit/Credit labels, and color
+  the over-side total red while the totals are unequal. Assistive technology MUST still
+  receive the complete debit, credit, and balance status text.
+  Save and Continue MUST be disabled while the totals are unequal. Invalid amount text MUST
+  remain available for correction, with field validation available before any write and
+  resolved validation messages clearing as the user corrects the draft.
   Creation and amendment MUST persist the whole balanced entry atomically. Opening monetary
   balances MUST be represented by balanced journal entries, not independent balance overrides.
 - **FR-016**: The editor MUST retain drafts on failures and prevent duplicate submissions during
@@ -350,7 +406,13 @@ opening quantity and carrying amount and transfer part of that holding between a
   selected account's lines. When those statuses differ, the summary MUST indicate mixed
   statuses and expose the individual values; mixed is not a stored reconciliation state.
 - **FR-023**: Changing a reconciled line's account, money, currency, or security quantity MUST
-  reset that line to Uncleared with a visible explanation. Unchanged lines MUST retain status.
+  reset that line to Uncleared with a visible explanation. The journal editor MUST warn before
+  Save when an account or monetary edit would reset a Cleared or Reconciling line. The warning
+  MUST name the affected lines, highlight each affected row's line number in bold amber, and
+  update or clear when edits are restored. After Save closes the editor,
+  the register MUST show a visible, dismissible confirmation that names the lines reset to
+  Uncleared. Continue MUST show the reset result in the open editor. Unchanged lines MUST
+  retain status.
 - **FR-024**: The application’s code and database MUST represent accounting class, account type, UI group, currency, and security as separate concepts. The documentation MUST list all five accounting classes and the supported account types. It MUST explain that securities are instruments held within accounts, not a sixth accounting class.
 - **FR-025**: Phase 1 MUST support security definitions, opening quantities with explicit book-
   currency carrying amounts, and same-security transfers between holding accounts in the
