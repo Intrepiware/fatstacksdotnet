@@ -54,6 +54,29 @@ public sealed class JournalWriteTests
         Assert.AreEqual(Outcome.ValidationFailure, (await new StoredProcedureRepository { Database = new(fixture.Settings) }.SaveAsync(invalid)).Outcome);
     }
     [TestMethod]
+    public async Task NullEntryKindRejectsCreateWithoutLockingCurrency()
+    {
+        await using var fixture = await BookDatabaseFixture.CreateAsync();
+        await SeedAsync(fixture);
+        await using var connection = new SqlConnection(fixture.Settings.ConnectionString);
+        await connection.OpenAsync();
+        await using var command = connection.CreateCommand();
+        command.CommandText = """
+            DECLARE @lines dbo.JournalEntryLines, @versions dbo.JournalEntryLineVersions;
+            INSERT @lines (AccountId, LineOrder, Debit, Credit, CurrencyCode, ReconciliationStatus)
+            VALUES (1, 1, 25, 0, N'USD', 0), (2, 2, 0, 25, N'USD', 0);
+            EXEC dbo.SaveJournalEntry @BookId=1, @AccountingDate='20261121', @Description=N'Test',
+                @EntryKind=NULL, @Lines=@lines, @OriginalLines=@versions;
+            """;
+        var error = await Assert.ThrowsExactlyAsync<SqlException>(() => command.ExecuteNonQueryAsync());
+        Assert.AreEqual(51001, error.Number);
+        await using var db = new BookDatabase(fixture.Settings).CreateContext();
+        Assert.IsFalse(await db.JournalEntries.AnyAsync());
+        Assert.IsFalse(await db.JournalEntryLines.AnyAsync());
+        Assert.IsFalse((await db.Books.SingleAsync()).CurrencyLocked);
+    }
+
+    [TestMethod]
     public async Task ReorderRetainsIdsAndOnlyFinancialChangesResetStates()
     {
         await using var fixture = await BookDatabaseFixture.CreateAsync(); await SeedAsync(fixture); var service = Service(fixture.Settings);
@@ -89,23 +112,23 @@ public sealed class JournalWriteTests
     [TestMethod]
     public async Task ClosedAccountRulesRejectReassignmentsWithoutChangingStoredEntry()
     {
-        await using var fixture=await BookDatabaseFixture.CreateAsync(); await SeedAsync(fixture); var service=Service(fixture.Settings);
-        var original=Saved(await service.SaveAsync(Draft(1,2,25) with { AccountingDate=new(2026,11,19) }));
+        await using var fixture = await BookDatabaseFixture.CreateAsync(); await SeedAsync(fixture); var service = Service(fixture.Settings);
+        var original = Saved(await service.SaveAsync(Draft(1, 2, 25) with { AccountingDate = new(2026, 11, 19) }));
         await fixture.ExecuteAsync("UPDATE dbo.Account SET CloseDate='20261120' WHERE AccountId=2; INSERT dbo.Account(BookId,Name,AccountTypeId,DisplayGroupId,OpenDate,CloseDate) VALUES(1,N'Closed replacement',9,5,'20000101','20261120');");
-        var changed=original with { Lines=original.Lines.Select(x => x.AccountId==2 ? x with { AccountId=6 } : x).ToArray() };
-        var result=await service.SaveAsync(changed);
-        Assert.AreEqual(Outcome.ValidationFailure,result.Outcome);
-        Assert.IsTrue(result.Errors!.Any(x => x.Field=="Account" && x.LineOrder==2 && x.Message.Contains("closed",StringComparison.OrdinalIgnoreCase)));
-        Assert.AreEqual(Outcome.ValidationFailure,(await new StoredProcedureRepository { Database=new(fixture.Settings) }.SaveAsync(changed)).Outcome);
-        var unchanged=(await service.LoadAsync(original.EntryId!.Value))!;
-        CollectionAssert.AreEqual(original.Version!,unchanged.Version!);
-        foreach(var line in original.Lines) CollectionAssert.AreEqual(line.Version!,unchanged.Lines.Single(x => x.LineId==line.LineId).Version!);
-        var retained=Saved(await service.SaveAsync(original with { Description="Historical reference retained" }));
-        Assert.AreEqual(2L,retained.Lines.Single(x => x.Order==2).AccountId);
-        Assert.AreEqual(Outcome.ValidationFailure,(await service.SaveAsync(retained with { AccountingDate=new(2026,11,20) })).Outcome);
-        Assert.AreEqual(Outcome.ValidationFailure,(await service.SaveAsync(Draft(1,2,25) with { AccountingDate=new(2026,11,19) })).Outcome);
-        await using var db=new BookDatabase(fixture.Settings).CreateContext();
-        Assert.AreEqual(1,await db.JournalEntries.CountAsync()); Assert.AreEqual(2,await db.JournalEntryLines.CountAsync());
+        var changed = original with { Lines = original.Lines.Select(x => x.AccountId == 2 ? x with { AccountId = 6 } : x).ToArray() };
+        var result = await service.SaveAsync(changed);
+        Assert.AreEqual(Outcome.ValidationFailure, result.Outcome);
+        Assert.IsTrue(result.Errors!.Any(x => x.Field == "Account" && x.LineOrder == 2 && x.Message.Contains("closed", StringComparison.OrdinalIgnoreCase)));
+        Assert.AreEqual(Outcome.ValidationFailure, (await new StoredProcedureRepository { Database = new(fixture.Settings) }.SaveAsync(changed)).Outcome);
+        var unchanged = (await service.LoadAsync(original.EntryId!.Value))!;
+        CollectionAssert.AreEqual(original.Version!, unchanged.Version!);
+        foreach (var line in original.Lines) CollectionAssert.AreEqual(line.Version!, unchanged.Lines.Single(x => x.LineId == line.LineId).Version!);
+        var retained = Saved(await service.SaveAsync(original with { Description = "Historical reference retained" }));
+        Assert.AreEqual(2L, retained.Lines.Single(x => x.Order == 2).AccountId);
+        Assert.AreEqual(Outcome.ValidationFailure, (await service.SaveAsync(retained with { AccountingDate = new(2026, 11, 20) })).Outcome);
+        Assert.AreEqual(Outcome.ValidationFailure, (await service.SaveAsync(Draft(1, 2, 25) with { AccountingDate = new(2026, 11, 19) })).Outcome);
+        await using var db = new BookDatabase(fixture.Settings).CreateContext();
+        Assert.AreEqual(1, await db.JournalEntries.CountAsync()); Assert.AreEqual(2, await db.JournalEntryLines.CountAsync());
     }
     [TestMethod]
     public async Task CompleteLineVersionsAndExternalChangesConflict()

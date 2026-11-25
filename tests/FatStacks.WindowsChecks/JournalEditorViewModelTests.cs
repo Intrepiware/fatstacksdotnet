@@ -118,6 +118,32 @@ public sealed class JournalEditorViewModelTests
         Assert.AreEqual("Balanced", model.BalanceStatus);
     }
     [TestMethod]
+    public async Task MonetaryErrorsMarkOnlyTheAffectedSide()
+    {
+        var service = new FakeJournal();
+        var model = Editor(service);
+        var debit = model.Lines[0];
+        var credit = model.Lines[1];
+        debit.Debit = credit.Credit = "100000000";
+        Assert.IsFalse(await model.SaveAsync(false));
+        Assert.IsTrue(debit.HasErrors && credit.HasErrors);
+        Assert.IsNotEmpty(debit.DebitError);
+        Assert.IsEmpty(debit.CreditError);
+        Assert.IsNotEmpty(credit.CreditError);
+        Assert.IsEmpty(credit.DebitError);
+
+        debit.Debit = "invalid";
+        Assert.IsEmpty(debit.CreditError);
+        debit.Debit = credit.Credit = "25";
+        Assert.IsFalse(debit.HasErrors || credit.HasErrors);
+        Assert.IsEmpty(model.Errors);
+        debit.Debit = "";
+        Assert.IsNotEmpty(debit.DebitError);
+        Assert.IsNotEmpty(debit.CreditError);
+        Assert.AreEqual(0, service.Calls);
+    }
+
+    [TestMethod]
     public void CorrectingEitherDateClearsItsErrorWithoutClearingTheOther()
     {
         var model = Editor(new FakeJournal());

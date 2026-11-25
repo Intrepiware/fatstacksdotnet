@@ -29,15 +29,33 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     public IReadOnlyList<AccountRecord> AccountRecords => accounts;
     public async Task<JournalRequest?> LoadSelectedEntryAsync()
     {
-        if (!IsCurrent || Selected is null) return null;
-        try { return await Journal.LoadAsync(Selected.EntryId, Session.Reads.Token); }
-        catch (Exception ex) when (ex is not OutOfMemoryException) { DatabaseErrors.TraceFailure("JournalLoad", ex); Status = "Entry could not be loaded. Refresh and retry."; return null; }
+        if (!IsCurrent || Selected is not { } selected) return null;
+        try
+        {
+            var entry = await Journal.LoadAsync(selected.EntryId, Session.Reads.Token);
+            if (!IsCurrent || Selected?.EntryId != selected.EntryId) return null;
+            if (entry is null) Status = "The selected entry no longer exists. Refresh the register.";
+            return entry;
+        }
+        catch (OperationCanceledException) { return null; }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            DatabaseErrors.TraceFailure("JournalLoad", ex);
+            if (IsCurrent && Selected?.EntryId == selected.EntryId)
+                Status = "Entry could not be loaded. Refresh and retry.";
+            return null;
+        }
     }
     public async Task<OperationResult<bool>> DeleteEntryAsync(DeleteJournalRequest request)
     {
         if (!IsCurrent) return OperationResult<bool>.Fail("The book is no longer active.");
         var result = await Journal.DeleteAsync(request);
-        if (result.IsSuccess && IsCurrent) { var keep = Rows.FirstOrDefault(x => x.EntryId != request.EntryId)?.EntryId; await RefreshAsync(); await ReadAsync(keep); }
+        if (result.IsSuccess && IsCurrent)
+        {
+            var keep = Rows.FirstOrDefault(x => x.EntryId != request.EntryId)?.EntryId;
+            await RefreshAsync();
+            await ReadAsync(keep);
+        }
         return result;
     }
     public async Task JournalSavedAsync(JournalSaveResult saved)
@@ -160,7 +178,8 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         try
         {
             var today = new BookCalendar(Session.Book.TimeZoneId).Today;
-            var loaded = await Accounts.ListAsync(read.Token); var totals = await Register.BalancesAsync(today, read.Token);
+            var loaded = await Accounts.ListAsync(read.Token);
+            var totals = await Register.BalancesAsync(today, read.Token);
             if (!IsCurrent || read.IsCancellationRequested) return;
             var previousAccount = accounts.FirstOrDefault(account => account.AccountId == accountId);
             var refreshedAccount = loaded.FirstOrDefault(account => account.AccountId == accountId);

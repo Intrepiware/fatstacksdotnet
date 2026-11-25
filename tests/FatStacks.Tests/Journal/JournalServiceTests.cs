@@ -16,7 +16,7 @@ public sealed class JournalServiceTests
         var draft = new JournalRequest(1, null, null, new(2026, 11, 21), null, null, "", 0, [new(null, null, 1, 1, 100000000, 0, "USD"), new(null, null, 2, 2, 0, 100000000, "USD")], []);
         var result = await service.SaveAsync(draft);
         Assert.AreEqual(Outcome.ValidationFailure, result.Outcome); Assert.AreEqual(0, store.Calls);
-        Assert.IsTrue(result.Errors!.Any(x => x.Field == "Amount" && x.LineOrder == 1));
+        Assert.IsTrue(result.Errors!.Any(x => x.Field == "Debit" && x.LineOrder == 1));
     }
     private sealed class Accounts : IAccountService
     {

@@ -26,7 +26,7 @@ public sealed class JournalService : IJournalService
                     return OperationResult<JournalSaveResult>.Fail("This entry changed. Reload it before retrying; your draft has been retained.", Outcome.Conflict);
             }
             var errors = JournalValidation.Validate(request, Session.Book.CurrencyCode, accounts, original?.Lines);
-            if (errors.Count > 0) return new(Outcome.ValidationFailure, Message: "Correct the indicated fields and lines.", Errors: errors.Select(x => new FieldError(x.Field, x.Message, x.LineOrder)).ToArray());
+            if (errors.Count > 0) return new(Outcome.ValidationFailure, Message: "Correct the indicated fields and lines.", Errors: errors);
             return await Store.SaveAsync(request, ct);
         }
         catch (Exception ex) when (ex is not OutOfMemoryException) { TraceFailure("JournalSave", ex); return OperationResult<JournalSaveResult>.Fail("Save was not confirmed. Retain this draft and reload the entry before retrying."); }

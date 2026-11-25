@@ -1,4 +1,5 @@
 using System.Windows.Automation;
+using FatStacks.Core.Calendar;
 using FatStacks.Core.Connections;
 using FatStacks.Infrastructure.Configuration;
 using FatStacks.Infrastructure.Persistence;
@@ -12,6 +13,44 @@ namespace FatStacks.WindowsChecks;
 [DoNotParallelize]
 public sealed class JournalJourneyTests
 {
+    [TestMethod]
+    [DataRow("EditJournal")]
+    [DataRow("DeleteJournal")]
+    public async Task ExternalDeletionReportsStaleSelection(string action)
+    {
+        if (!OperatingSystem.IsWindows() || !Environment.UserInteractive) Assert.Inconclusive("Interactive Windows desktop required.");
+        await using var book = await BookDatabaseFixture.CreateAsync();
+        await book.InitializeAsync();
+        await book.ExecuteAsync("""
+            INSERT dbo.Account(BookId, Name, AccountTypeId, DisplayGroupId, OpenDate)
+            VALUES (1, N'Bank', 1, 1, '20000101'), (1, N'Equity', 9, 5, '20000101');
+            """);
+        var journal = new StoredProcedureRepository { Database = new(book.Settings) };
+        var result = await journal.SaveAsync(new(1, null, null, new BookCalendar("UTC").Today, null, null, "Stale row", 0,
+            [new(null, null, 1, 1, 25, 0, "USD"), new(null, null, 2, 2, 0, 25, "USD")], []));
+        Assert.IsTrue(result.IsSuccess, result.Message);
+        var entry = result.Value!.Entry;
+
+        using var desktop = new DesktopFixture();
+        var store = new ProfileStore(desktop.ProfilePath, new WindowsSecretProtector());
+        var profile = new ConnectionProfile(Guid.NewGuid(), "Stale selection", book.Settings);
+        Assert.IsTrue((await store.SaveAsync(new(1, [profile], profile.ProfileId))).IsSuccess);
+        await desktop.StartAsync();
+        await desktop.WaitTextAsync("RegisterStatus", "1 transactions shown");
+        var grid = await desktop.WaitAsync("RegisterGrid");
+        var row = grid.FindFirst(TreeScope.Descendants, new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.DataItem));
+        ((SelectionItemPattern)row.GetCurrentPattern(SelectionItemPattern.Pattern)).Select();
+        await desktop.WaitTextAsync("SelectedJournalEntry", $"Journal entry {entry.EntryId}");
+
+        Assert.IsTrue((await journal.DeleteAsync(new(1, entry.EntryId!.Value, entry.Version!, entry.OriginalLines))).IsSuccess);
+        await desktop.InvokeAsync(action);
+        await desktop.WaitTextAsync("RegisterStatus", "no longer exists. Refresh");
+        Assert.IsNull(desktop.Find("JournalEditor"));
+        Assert.IsNull(desktop.Find("DeleteEntry"));
+        await desktop.InvokeAsync("RefreshRegister");
+        await desktop.WaitTextAsync("RegisterStatus", "0 transactions shown");
+    }
+
     [TestMethod]
     public async Task OpeningExpenseSplitEditFailureContinueAndDelete()
     {

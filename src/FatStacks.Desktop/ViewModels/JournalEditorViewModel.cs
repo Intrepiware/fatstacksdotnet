@@ -205,7 +205,13 @@ public sealed class JournalEditorViewModel : ObservableObject
             lines.Add(new(line.Original?.LineId, line.Original?.Version, line.AccountId, lines.Count + 1, debit, credit, Currency, line.Original?.Status ?? 0, line.Original?.SecurityId, line.Original?.Quantity));
         }
         var request = new JournalRequest(1, original?.EntryId, original?.Version, AccountingDate is { } day ? DateOnly.FromDateTime(day) : Calendar.Today, BankPostingDate is { } bank ? DateOnly.FromDateTime(bank) : null, Payee, Description, original?.EntryKind ?? 0, lines, original?.OriginalLines ?? []);
-        foreach (var error in JournalValidation.Validate(request, Currency, accounts, original?.Lines)) errors.Add(error);
+        var invalidTextRows = errors.Where(error => error.Field is "Debit" or "Credit").Select(error => error.LineOrder).ToHashSet();
+        foreach (var error in JournalValidation.Validate(request, Currency, accounts, original?.Lines))
+        {
+            // A parse failure already identifies the input. Its placeholder zero cannot establish a row-shape error.
+            if (error.Field == "Amount" && invalidTextRows.Contains(error.LineOrder)) continue;
+            errors.Add(error);
+        }
         return errors.Count == 0 ? request : null;
     }
     private void RefreshValidation()
@@ -271,7 +277,19 @@ public sealed class JournalEditorViewModel : ObservableObject
             {
                 Status = result.Message;
                 foreach (var error in result.Errors ?? [])
+                {
+                    if (error is JournalAccountDateError dateError)
+                    {
+                        // Keep draft paths and identities while adopting the dates used by the service.
+                        var current = dateError.Account;
+                        accounts = accounts.Select(account => account.AccountId == current.AccountId
+                            ? account with { OpenDate = current.OpenDate, CloseDate = current.CloseDate }
+                            : account).ToArray();
+                        continue;
+                    }
                     serviceErrors.Add((error.LineOrder is { } order ? Lines.ElementAtOrDefault(order - 1) : null, new(error.Field, error.Message, error.LineOrder)));
+                }
+                foreach (var line in Lines) UpdateEligibility(line);
                 RefreshValidation();
                 return false;
             }

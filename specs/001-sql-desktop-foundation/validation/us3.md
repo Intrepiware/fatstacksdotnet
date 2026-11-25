@@ -572,3 +572,22 @@ The full Windows run reported one failed journey. The focused rerun passed that 
 date regression. Together with the prior service and SQL evidence and the manual closeout,
 this completes the overlapping US3 acceptance tasks. See the [parity evidence](ui-parity.md)
 and the [manual closeout](manual-us3.md#us3-manual-test-closeout).
+
+## T120–T123 verification
+
+On Linux x64 with .NET SDK 10.0.115, the full portable suite passed all 110 tests.
+The editor regressions cover correcting a date after the service observes new account dates,
+retaining unrelated row errors, and marking the affected side of a monetary error.
+The register regression covers a missing selected entry and a load with no selection.
+
+All 11 journal SQL tests passed against an isolated SQL Server 2022 instance. The null-kind
+case reproduced the original acceptance of an invalid create. With the updated procedure,
+the same request returned SQL validation error 51001. Both journal tables were empty and the
+book currency remained unlocked.
+
+The owner’s Windows run reported 244 passes, two failures, and 13 skips. Both failures were
+in `ExternalDeletionReportsStaleSelection`. The fixture posted its entry on January 1, 2020,
+outside the register’s 90-day window. Both cases timed out waiting for the initial row before
+invoking Edit or Delete. The fixture now posts on the UTC book’s current accounting date.
+The register-window SQL regression passed on SQL Server 2022. The owner confirmed that both corrected
+Windows cases passed on rerun, closing the Edit and Delete checks for T122.

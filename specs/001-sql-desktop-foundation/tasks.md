@@ -690,3 +690,13 @@ portion of T116. The manual guide identifies checks without individual results.
   - Document settings location, installation, and updates while the app is closed. Document explicit schema maintenance and version compatibility.
   - State migration-specific recovery limits. Do not imply that replacing an executable reverses a schema change.
   - Update README and quickstart instructions with verified commands. Add no backup, encryption, or key-management subsystem.
+
+## Phase 16: Convergence
+
+- [X] T120 [US3] HIGH — F44. Revalidate date-dependent service errors in `JournalEditorViewModel.cs` per US3/AC5, FR-013/019, and T104/T111 (partial). Cover an account whose opening date changed after the editor loaded. When the service rejects the old date, retain the draft. Correcting the date must clear the resolved account error and its row badge immediately. Keep unrelated errors visible and use current account eligibility for the retry.
+
+- [X] T121 [US3] HIGH — F45. Associate monetary validation with the affected Debit or Credit input in `JournalValidation.cs` and `JournalEditorViewModel.cs` per US3/AC2/AC5, FR-013/014, and T111 (partial). Cover balanced rows with an out-of-range debit and matching credit on different rows. Verify that each offending input and line number shows the error, each valid opposite input stays clear, and correction removes the resolved feedback. Preserve line-level feedback when the row as a whole is invalid.
+
+- [X] T122 [US3] HIGH — F46. Report a stale register selection when `MainWindowViewModel.LoadSelectedEntryAsync` finds that the requested entry has disappeared per US3/AC10, FR-017, SC-004, and T046 (partial). Cover Edit and Delete after an external deletion. Show an actionable refresh message for the active book and dispatch no write. Preserve ordinary cancellation and the behavior when no entry is selected.
+
+- [X] T123 [US3] MEDIUM — F47. Reject a null entry kind in `database/sprocs/SaveJournalEntry.sql` per T042 and the plan decision to validate the complete monetary entry within the save transaction (partial). Add a SQL integration case that passes a null kind with otherwise valid lines. Verify validation failure, an empty journal, and an unchanged currency lock on a fresh book.

@@ -61,6 +61,30 @@ public sealed class JournalDiagnosticsTests
         Assert.IsNull(await model.LoadSelectedEntryAsync());
         if (cancelled) Assert.AreEqual("", trace.Text); else trace.AssertSingle("JournalLoad");
     }
+    [TestMethod]
+    public async Task MissingSelectedEntryReportsHowToRefresh()
+    {
+        var (sessions, session) = await RegisterJourneyTests.OpenAsync();
+        using var owned = session;
+        using var model = new MainWindowViewModel
+        {
+            Session = session,
+            Sessions = sessions,
+            Accounts = new RegisterJourneyTests.Accounts(),
+            Register = new Register(),
+            Journal = new JournalEditorViewModelTests.FakeJournal()
+        };
+        await model.RefreshAsync();
+        model.Selected = null;
+        var status = model.Status;
+        Assert.IsNull(await model.LoadSelectedEntryAsync());
+        Assert.AreEqual(status, model.Status);
+        model.Selected = model.Rows.Single();
+        Assert.IsNull(await model.LoadSelectedEntryAsync());
+        StringAssert.Contains(model.Status, "Refresh");
+        StringAssert.Contains(model.Status, "no longer exists");
+    }
+
     private static BookSession Session() => new(new(Guid.NewGuid(), "Synthetic", new() { ConnectionString = Private }), new(Guid.NewGuid(), "Synthetic", "USD", "UTC"));
     private static JournalRequest Draft() => new(1, null, null, new(2026, 11, 21), null, Private, Private, 0, [new(null, null, 1, 1, 25, 0, "USD"), new(null, null, 2, 2, 0, 25, "USD")], []);
     private sealed class Accounts(Exception? error) : IAccountService

@@ -1,6 +1,6 @@
 namespace FatStacks.Core.Contracts;
 
-public sealed record FieldError(string Field, string Message, int? LineOrder = null);
+public record FieldError(string Field, string Message, int? LineOrder = null);
 public enum Outcome { Success, ValidationFailure, Conflict, Failed, Cancelled, IdentityMismatch }
 public sealed record OperationResult<T>(Outcome Outcome, T? Value = default, string Message = "", IReadOnlyList<string>? Warnings = null, IReadOnlyList<FieldError>? Errors = null)
 {

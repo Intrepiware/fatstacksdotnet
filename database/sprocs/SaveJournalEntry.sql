@@ -16,6 +16,7 @@ BEGIN
                ON c.CurrencyId = b.CurrencyId
         WHERE  b.BookId = @BookId;
         IF @Currency IS NULL
+           OR @EntryKind IS NULL
            OR @EntryKind <> 0
            OR @AccountingDate IS NULL
            OR @Description IS NULL
