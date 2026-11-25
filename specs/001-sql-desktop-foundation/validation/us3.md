@@ -534,3 +534,41 @@ disabled passed. No SQL or financial rule changed.
 
 Rebuild and restart the Windows app, then press N in the ledger. Run the new regression on
 Windows before recording the reported startup failure as resolved on the target platform.
+
+### Windows journal journey row selection
+
+The owner reported 237 passes, one failure, and 13 skips in the full Windows test run.
+The journal journey reached the two-transaction register, then timed out while looking for
+the expense in a text cell. The transport fixture and benchmark skips have separate prerequisites.
+
+The journey now searches for the expense by a unique description. It selects the single result
+and checks the selected entry against its persisted ID. It also checks that clearing search
+keeps the expense selected. This removes the dependency on the text cells that the virtualized
+grid exposes to UI Automation. The revised journey passed in the focused Windows rerun below.
+
+
+### Focused Windows rerun
+
+The owner ran the WindowsChecks project on Windows x64 with a filter for
+`OpeningExpenseSplitEditFailureContinueAndDelete` and `DateTypingKeepsTextAndCaretUntilCommit`.
+Both tests passed. The run reported 2 passed, 0 failed, and 0 skipped in 23.880 seconds.
+
+The journal journey confirms the revised row selection and passes the edit, conflict, delete,
+split, and restart checks. Together with the recorded service and SQL evidence, this closes
+T047. The date test confirms that both fields retain typed text and caret position, reject an
+incomplete date on Save, and accept the corrected date when focus leaves the field.
+
+
+### Manual acceptance closeout
+
+The owner accepted the existing US3 manual coverage and closed the remaining manual checks.
+The manual record includes J01–J08 passes. It includes the revised layout, reset markers and
+notices, delete preview, and J08 at 100% and 200% scaling.
+The separate 150% check, full J08 totals and validation subsection, and Payee and Description
+screen-reader retest lack individual results. The owner closed those checks with the existing
+evidence. The focused Windows date test independently passed for both date inputs.
+
+The full Windows run reported one failed journey. The focused rerun passed that journey and the
+date regression. Together with the prior service and SQL evidence and the manual closeout,
+this completes the overlapping US3 acceptance tasks. See the [parity evidence](ui-parity.md)
+and the [manual closeout](manual-us3.md#us3-manual-test-closeout).

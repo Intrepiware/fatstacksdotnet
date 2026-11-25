@@ -471,6 +471,72 @@ public sealed class JournalEditorViewModelTests
     }
     private static void Pump() => System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
     [STATestMethod]
+    public void DateTypingKeepsTextAndCaretUntilCommit()
+    {
+        var originalCulture = System.Globalization.CultureInfo.CurrentCulture;
+        System.Globalization.CultureInfo.CurrentCulture = System.Globalization.CultureInfo.GetCultureInfo("en-US");
+        var service = new FakeJournal();
+        var model = Editor(service);
+        var window = new FatStacks.Desktop.Views.JournalEditorWindow(model);
+        try
+        {
+            window.Show();
+            Pump();
+            var description = (System.Windows.Controls.TextBox)window.FindName("DescriptionInput");
+            foreach (var name in new[] { "AccountingDateInput", "BankDateInput" })
+            {
+                var picker = (System.Windows.Controls.DatePicker)window.FindName(name);
+                var input = (System.Windows.Controls.Primitives.DatePickerTextBox)picker.Template.FindName("PART_TextBox", picker);
+                var bank = name == "BankDateInput";
+                string Error() => bank ? model.BankPostingDateError : model.AccountingDateError;
+                DateTime? SelectedDate() => bank ? model.BankPostingDate : model.AccountingDate;
+
+                input.Focus();
+                input.SelectAll();
+                input.SelectedText = "11/";
+                Pump();
+                Assert.AreEqual("11/", input.Text);
+                Assert.AreEqual("", Error());
+
+                description.Focus();
+                Pump();
+                Assert.AreEqual("11/", input.Text, "Rejected text must remain available for correction.");
+                Assert.IsNotEmpty(Error());
+                var save = Descendants(window).OfType<System.Windows.Controls.Button>().Single(x =>
+                    System.Windows.Automation.AutomationProperties.GetAutomationId(x) == "SaveJournal");
+                save.RaiseEvent(new System.Windows.RoutedEventArgs(System.Windows.Controls.Button.ClickEvent));
+                Assert.AreEqual(0, service.Calls);
+
+                var previouslySelected = SelectedDate();
+                input.Focus();
+                input.SelectAll();
+                var typed = "";
+                foreach (var character in "11/10/2026")
+                {
+                    typed += character;
+                    input.SelectedText = character.ToString();
+                    Assert.AreEqual(typed, input.Text);
+                    input.Select(typed.Length, 0);
+                    Pump();
+                    Assert.AreEqual(typed, input.Text);
+                    Assert.AreEqual(typed.Length, input.CaretIndex);
+                    Assert.AreEqual(previouslySelected, SelectedDate());
+                }
+                Assert.AreEqual("", Error());
+
+                description.Focus();
+                Pump();
+                Assert.AreEqual(new DateTime(2026, 11, 10), SelectedDate());
+            }
+        }
+        finally
+        {
+            if (model.IsBusy) { service.Complete(Outcome.Failed); Pump(); }
+            window.Close();
+            System.Globalization.CultureInfo.CurrentCulture = originalCulture;
+        }
+    }
+    [STATestMethod]
     public void DateShortcutTextInputUpdatesBothPickersAndRecoversInvalidText()
     {
         var model = Editor(new FakeJournal());

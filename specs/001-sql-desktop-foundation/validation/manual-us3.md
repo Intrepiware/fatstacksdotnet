@@ -1,13 +1,12 @@
 # Manual test checklist: US3 journal entry
 
-This checklist expands the eight manual checks in [ui-parity.md](ui-parity.md).
-The constitution requires repeatable manual checks but does not prescribe a test-runner layout.
-This document uses numbered actions, expected results, and a result field for each case.
+Use these cases on an interactive Windows desktop with a synthetic book.
+See the [parity checklist](ui-parity.md) for the related acceptance requirements.
+Follow the actions in order and compare each result with its expected result.
 
-The filtered WindowsChecks suite has a user-reported pass.
-These manual checks verify physical keyboard use, rendered content, and desktop accessibility.
-Automated checks cannot establish the visual comparison or the screen-reader experience.
-Some financial checks overlap automation so that the same outcomes can be checked through the UI.
+The owner closed the US3 manual test pass after reviewing the existing evidence.
+The recorded results apply to the builds identified in the evidence. Keep the cases for future regressions.
+See [the manual closeout](#us3-manual-test-closeout) for checks without individual results.
 
 ## Record this run
 
@@ -22,8 +21,9 @@ Some financial checks overlap automation so that the same outcomes can be checke
 - Decimal separator and date format used by Windows: . MM/DD/YYYY
 - Screenshot folder: `.workspace/ph01-us03/manual/` or another recorded folder.
 
-Leave a case unchecked until all its expected results pass.
+For a new run, check a case when all its expected results pass.
 Record **Pass**, **Fail**, or **Blocked** in its result field.
+For a check closed by owner decision, keep that decision with the result record.
 For a failure, give the step number, actual result, and screenshot name.
 For a blocked step, name the missing prerequisite.
 Keep earlier failure evidence when a later attempt passes.
@@ -54,9 +54,22 @@ If you already observed a result on this build, record that observation.
 8. Save each account before creating the next one.
 9. Close Accounts and select **U3 Bank** in the main window.
 10. Clear any register search text.
-11. Keep the register date filter wide enough to include November 2026.
+11. Check that the default 90-day register window includes November 10, 2026.
+    If it does not, use the date substitutions below.
 
-The instructions use November 10, 2026 as the accounting date.
+Use the same dates throughout a run. If the original accounting date is outside the
+register window, record a replacement date 21 days before today in the book time zone.
+Apply these substitutions in the actions and expected results.
+
+| Date in the instructions | Replacement                                           |
+| ------------------------ | ----------------------------------------------------- |
+| November 9, 2026         | One day before the replacement accounting date        |
+| November 10, 2026        | The replacement accounting date                       |
+| November 11, 2026        | One day after the replacement accounting date         |
+| November 12, 2026        | Two days after the replacement accounting date        |
+| November 15, 2026        | Five days after the replacement accounting date       |
+| December 1, 2026         | Twenty-one days after the replacement accounting date |
+
 Enter dates in the format accepted by your Windows settings.
 Enter monetary values with your Windows decimal separator.
 For example, use `25,5` instead of `25.5` if the decimal separator is a comma.
@@ -70,7 +83,8 @@ J08 uses an unsaved draft.
 
 ## J01 — Compare the journal editor
 
-- [x] **J01 editor layout passed.** Reference: P12. The delete-dialog comparison belongs to J07.
+- [x] **Earlier J01 editor layout passed.** Reference P12.
+- [x] **Revised J01 editor layout passed.** The delete-dialog comparison belongs to J07.
 
 **Prerequisites:** Complete Preparation.
 Have the accepted source editor reference image available.
@@ -80,16 +94,18 @@ Development screenshots in `.workspace/ph01-us03/screenshots/` can identify earl
 They do not prove that the current build passes.
 If the source baseline is unavailable, mark only the comparison part blocked.
 
-| Step | Action                                                                                                                        | Expected result                                                                                                                                                                                                      |
-| ---- | ----------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1    | Set Windows display scaling to 100% in Settings → System → Display. Relaunch the application if Windows requests it.          | The recorded scale is 100%.                                                                                                                                                                                          |
-| 2    | Click **New entry**.                                                                                                          | The Journal entry dialog opens. The accounting date uses today in the book time zone. Focus is in Date.                                                                                                              |
-| 3    | Inspect Date, Bank posting date, Payee, Description, Account, Debit, Credit, Status, Add posting, Cancel, Continue, and Save. | Labels and controls are readable. Fields and headings align. Status text is read-only.                                                                                                                               |
-| 4    | Resize the dialog to its smallest permitted size.                                                                             | Fields remain usable. Scrolling makes content reachable. Buttons and errors do not overlap.                                                                                                                          |
-| 5    | Capture the current editor. Compare it with the source editor at the same scale.                                              | Record differences in spacing, alignment, density, labels, and actions. The bank posting date and separate Debit/Credit columns are deliberate additions. Do not treat other differences as approved without review. |
-| 6    | Cancel the empty draft.                                                                                                       | No transaction is added.                                                                                                                                                                                             |
+| Step | Action                                                                                                                                                                  | Expected result                                                                                                                                                                                                                            |
+| ---- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1    | Set Windows display scaling to 100% in Settings → System → Display. Relaunch the application if Windows requests it.                                                    | The recorded scale is 100%.                                                                                                                                                                                                                |
+| 2    | Click **New entry**.                                                                                                                                                    | The Journal entry dialog opens. The accounting date uses today in the book time zone. Focus is in Date.                                                                                                                                    |
+| 3    | Inspect the editor header and posting grid.                                                                                                                             | The header shows the book currency. The six columns are line number, Account, C, Debit, Credit, and Remove (×). The line numbers start at 1. The C column is read-only. Debit and Credit headings are centered. Amount inputs align right. |
+| 4    | Resize the dialog to its smallest permitted size.                                                                                                                       | Fields remain usable. Scrolling makes content reachable. Buttons and errors do not overlap.                                                                                                                                                |
+| 5    | Capture the editor at the same scale as the source reference. Compare the revised posting grid and totals with the approved [journal mock-up](../mockups/journal.html). | Record differences in spacing, alignment, density, labels, and actions. Use the desktop UI contract to judge the approved changes.                                                                                                         |
+| 6    | Cancel the empty draft.                                                                                                                                                 | No transaction is added.                                                                                                                                                                                                                   |
 
-**Result:** Passed on the earlier build. The delete-dialog change does not affect this editor check.
+**Current result:** Passed. New screenshot: .workspace\ph01-us03\manual\J01 - Journal Entry Smallest Size (2).png
+
+**Earlier result:** Passed on the earlier build.
 **Evidence and differences:** .workspace\ph01-us03\manual\J01 - Journal Entry Smallest Size.png (requested screenshot).
 
 ## J02 — Enter an opening, expense, and split with the keyboard
@@ -223,7 +239,8 @@ These manual steps verify the visible error, retained text, and unchanged saved 
 
 ## J06 — Identify the lines reset by a financial edit
 
-- [x] **J06 passed.** References: P15 and FR-023.
+- [x] **Earlier J06 retest passed.** References P15 and FR-023.
+- [x] **Revised J06 reset markers and notices passed.**
 
 **Prerequisites:** Create a separate entry with Date November 10, 2026.
 Use Payee `U3 Reset` and the unique Description `J06 reset fixture`.
@@ -261,7 +278,7 @@ IF (SELECT COUNT(*) FROM dbo.JournalEntryLine
     THROW 51000, 'Expected three synthetic reset lines.', 1;
 
 UPDATE dbo.JournalEntryLine
-SET ReconciliationStatus = 2
+SET ReconciliationStatus = CASE WHEN LineOrder = 3 THEN 1 ELSE 2 END
 WHERE JournalEntryId = @ResetEntryId;
 
 COMMIT;
@@ -276,38 +293,63 @@ ORDER BY l.LineOrder;
 
 Record the query output.
 Status values are 0 = Uncleared, 1 = Reconciling, and 2 = Cleared.
-The SQL fixture sets all three lines to Cleared.
+The fixture sets lines 1 and 2 to Cleared. It sets line 3 to Reconciling.
 Run the script before opening the editor so that you do not create an unrelated version conflict.
 
-| Step | Action                                                                                                                                                                                                             | Expected result                                                                                                                                          |
-| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1    | Reload the register and edit `J06 reset fixture`.                                                                                                                                                                  | All three C cells show checkmarks; their tooltips say Cleared.                                                                                                                         |
-| 2    | Change only Payee to `U3 Reset Revised`. Check for a reset warning. Save. Reopen.                                                                                                                                  | All three lines remain Cleared. A text-only edit does not reset them. No reset warning appears before Save.                                              |
-| 3    | Change line 1 Debit from 20 to 21. Confirm the warning names only line 1. Restore Debit 20 and confirm it disappears. Then change line 1 Debit to 21 and line 3 Credit to 26. Leave line 2 unchanged. Save.        | Before Save, a yellow warning names lines 1 and 3 by order and account path and says they will reset to Uncleared. The edit saves and the dialog closes. |
-| 4    | After Save closes the editor, capture the yellow confirmation directly below the register search/date controls. Confirm it names lines 1 and 3. Click Dismiss and verify that the banner closes. Reopen the entry. | Lines 1 and 3 are Uncleared. Line 2 is still Cleared. Bank is 924.00.                                                                                    |
-| 5    | Close the editor. Rerun the fixture script to set all three lines to Cleared again. Reload and reopen the entry.                                                                                                   | The editor loads the new versions and all three C cells show checkmarks for Cleared.                                                                                     |
-| 6    | Change line 1 Debit from 21 to 22. Change line 3 Credit from 26 to 27. Check the yellow warning before saving. Click Continue.                                                                                     | The notice identifies reset lines 1 and 3 by order and path. A fresh draft opens with Date retained and focused.                                         |
-| 7    | Capture the Continue notice. Cancel the fresh draft. Reopen the saved reset entry.                                                                                                                                 | Lines 1 and 3 are Uncleared. Line 2 remains Cleared. Bank is 923.00.                                                                                     |
-| 8    | Close the editor. Delete only `J06 reset fixture` through the normal confirmation dialog.                                                                                                                          | Bank returns to 950.00. The J02 entries remain.                                                                                                          |
+| Step | Action                                                                                                                                                                                                             | Expected result                                                                                                                                                                                                                                       |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1    | Reload the register. Edit `J06 reset fixture`.                                                                                                                                                                     | Lines 1 and 2 show checkmarks. Line 3 shows R. The tooltips and accessible names give the full status for each line.                                                                                                                                  |
+| 2    | Change only Payee to `U3 Reset Revised`. Check for reset cues. Save and reopen the entry.                                                                                                                          | The editor shows no reset warning or amber marker. All three statuses remain as set by the fixture.                                                                                                                                                   |
+| 3    | Change line 1 Debit from 20 to 21. Restore 20. Change line 1 Debit to 21 again. Change line 3 Credit to 26. Leave line 2 unchanged. Check the cues. Run the draft checks below before saving. Save the entry.      | The first change marks only line 1. Restoring 20 removes its marker and warning. The final draft shows bold amber (`#A16207`) numbers on lines 1 and 3. The yellow warning names both lines by number and account path. The editor closes after Save. |
+| 4    | After Save closes the editor, capture the yellow confirmation directly below the register search/date controls. Confirm it names lines 1 and 3. Click Dismiss and verify that the banner closes. Reopen the entry. | Lines 1 and 3 are Uncleared. Line 2 is still Cleared. Bank is 924.00.                                                                                                                                                                                 |
+| 5    | Close the editor. Rerun the fixture script. Reload and reopen the entry.                                                                                                                                           | Lines 1 and 2 are Cleared. Line 3 is Reconciling. The editor loads the current versions.                                                                                                                                                              |
+| 6    | Change line 1 Debit from 21 to 22. Change line 3 Credit from 26 to 27. Check the yellow warning before saving. Click Continue.                                                                                     | The notice identifies reset lines 1 and 3 by order and path. A fresh draft opens with Date retained and focused.                                                                                                                                      |
+| 7    | Capture the Continue notice. Cancel the fresh draft. Reopen the saved reset entry.                                                                                                                                 | Lines 1 and 3 are Uncleared. Line 2 remains Cleared. Bank is 923.00.                                                                                                                                                                                  |
+| 8    | Close the editor. Delete only `J06 reset fixture` through the normal confirmation dialog.                                                                                                                          | Bank returns to 950.00. The J02 entries remain.                                                                                                                                                                                                       |
 
-The warning must update as the draft changes and disappear when the original values are restored.
+Before saving in step 3, also run these checks on the draft:
+
+1. Change line 1 Account to U3 Expense B. Check that the warning still identifies line 1.
+2. Enter `abc` in line 1 Debit. Check that the red line badge stays readable.
+3. Check that the warning still explains the reset for the changed account.
+4. Restore U3 Expense A and Debit 21. Check that the red badge clears and the amber marker returns.
+5. Confirm that line 2 has neither marker. Complete step 3.
+
+The warning must update as the draft changes. It clears when the original values are restored.
 The post-save confirmation stays visible until Dismiss is used or a later save replaces it.
 It must remain readable when the main window is narrow.
 If either message disappears before it can be read, record that as a usability failure.
 No reconciliation-status editing control is expected in US3.
 
-**Result:** FAILED.
+**Current result:** PASSED.
+
+**Earlier result:** FAILED.
 **Evidence, notices, and actual line states:** Step 3 "expects" column indicates I should see a special message that line 1 and 3 reset to uncleared. I DO NOT see this when I press the save button (the dialog simply closes). I DO see it if I press the Continue button however.
 
 **Retest after warning and register-banner change:** Passed. Keep the original failure above as history.
 
-Query output:
+Earlier fixture query output:
 
 | JournalEntryLineId | LineOrder | Name         | Debit | Credit | ReconciliationStatus |
 | :----------------- | :-------- | :----------- | :---- | :----- | :------------------- |
 | 12                 | 1         | U3 Expense A | 20.00 | 0.00   | 2                    |
 | 13                 | 2         | U3 Expense B | 5.00  | 0.00   | 2                    |
 | 14                 | 3         | U3 Bank      | 0.00  | 25.00  | 2                    |
+
+Second run fixture query output:
+
+# Result Set Batch 1 - Query 1
+
+```
+JournalEntryLineId LineOrder Name Debit Credit ReconciliationStatus
+
+---
+
+10 1 U3 Expense A 20.00 0.00 2
+11 2 U3 Expense B 5.00 0.00 2
+12 3 U3 Bank 0.00 25.00 1
+(3 rows affected)
+```
 
 ## J07 — Edit, cancel deletion, confirm deletion, and restart
 
@@ -337,7 +379,7 @@ The temporary J04 and J06 entries have been deleted.
 
 ## J08 — Test long splits, scaling, and accessibility
 
-- [ ] **J08 passed.** References: P11, P13–P15, and P22.
+- [x] **J08 passed.** References: P11, P13–P15, and P22.
 
 **Prerequisites:** Create two Expense accounts with a shared long parent path.
 For example, create an Expense parent named `U3 Household and Family Expenses`.
@@ -358,8 +400,8 @@ Do not mark the whole case passed after testing only one scale.
 | 3    | Use Up/Down to choose a result and Enter to accept it. Reopen suggestions and press Escape. Repeat selection with Tab and then with the mouse.                                          | Each acceptance method selects the intended account. Escape dismisses suggestions without unexpectedly closing the editor. Focus returns or advances predictably.                                                                   |
 | 4    | Create 30 posting rows with Add posting. Put Debit 1 in rows 1–29 and Credit 29 in row 30. Use the long-path accounts on debit rows and U3 Bank on the last row.                        | All 30 rows are reachable. The draft balances. Do not save it.                                                                                                                                                                      |
 | 5    | Tab forward through all rows. Use Shift+Tab to return through several rows.                                                                                                             | Focus remains visible. The editor scrolls the focused row into view. Account, Debit, Credit order is preserved.                                                                                                                     |
-| 6    | Focus a middle row's Account and press Ctrl+Shift+Delete.                                                                                                                               | Only that row is removed. Focus moves to an adjacent Account. Scrolling remains usable.                                                                                                                                             |
-| 7    | Enter `25.5` in an amount field and Tab away. Enter `abc` in another amount field and try Save.                                                                                         | The exact amount displays two decimal places. The invalid text remains available for correction. Feedback is readable and reachable at this scale. Line errors use the affected row number, such as `Line 4 · Debit: …` or `Line 4 · Amount: …`, with a space after the middot. The entry-wide error reads `Balance: Total Debit must equal total Credit.` without a line prefix or middot.                                                                                  |
+| 6    | Focus a middle row’s Account input. Press Ctrl+Shift+Delete.                                                                                                                            | Only that row is removed. Focus moves to an adjacent Account input. Line numbers remain consecutive. Even-numbered rows regain the stripe.                                                                                          |
+| 7    | Run the totals and validation checks below.                                                                                                                                             | The inputs, totals, and error cues remain readable and reachable at this scale.                                                                                                                                                     |
 | 8    | Start Windows Narrator with Ctrl+Windows+Enter, or start your normal screen reader. Navigate Date, Bank posting date, Payee, Description, posting accounts, Debit, Credit, and actions. | Each control has a meaningful spoken name and role. Row context distinguishes repeated amount fields. Focus and validation feedback can be found without relying on color. Record the actual announcements for any unclear control. |
 | 9    | Inspect a long account choice and the saved J02 split register text with the screen reader. Cancel the draft first if needed.                                                           | Full account paths, payee, and description are accessible. Popup navigation does not trap focus.                                                                                                                                    |
 | 10   | In a new unsaved draft, type `new entry`, `edit`, and ordinary digits in Payee and Description. Use Delete to remove characters.                                                        | Typing N or E does not open another entry. Delete edits text rather than deleting a transaction.                                                                                                                                    |
@@ -367,35 +409,35 @@ Do not mark the whole case passed after testing only one scale.
 | 12   | Open Accounts, focus its search field, and press Ctrl+W.                                                                                                                                | Only Accounts closes. The main window stays open.                                                                                                                                                                                   |
 | 13   | Capture the long-path popup, a scrolled middle row, bottom actions, and readable validation feedback.                                                                                   | Evidence identifies the actual scale. No important content is clipped or unreachable.                                                                                                                                               |
 
-### J08 amount entry, status, and balance retest
+### J08 posting layout, totals, and validation
 
-Use a separate two-row draft for these checks.
-They do not require recreating the 30-row draft.
+Repeat these checks at each J08 display scale.
+Use a new draft with U3 Expense A on row 1 and U3 Bank on row 2.
+Enter amounts with the Windows decimal separator.
+Use the 30-row draft to repeat the layout checks with the posting scrollbar visible.
 
-1. Open **New entry**. Select U3 Expense A on row 1 and U3 Bank on row 2.
-2. Check the column order: **Account, C, Debit, Credit**. Both C cells are blank for new
-   Uncleared lines. Hover over a C cell to check the full status name.
-3. Enter Debit `25` on row 1 and Credit `20` on row 2. Tab away from the last amount.
-   Both values are right-aligned and show two decimal places. The summary shows total debits
-   25.00, total credits 20.00, and an out-of-balance amount of 5.00.
-4. Check that Save and Continue are disabled. Press Ctrl+Enter. The draft must remain open
-   and no transaction must be created.
-5. On row 2, enter Debit `20`. Its Credit must clear as soon as nonempty Debit text is entered.
-   The summary now shows debits 45.00 and credits 0.00. Save and Continue remain disabled.
-6. On row 2, enter Credit `25`. Its Debit must clear. The totals become 25.00 each.
-   The summary says Balanced. Save and Continue become enabled when no save is pending.
-7. On row 1, replace Debit `25` with `25.0000`. Tab away. It becomes `25.00`.
-   The summary remains Balanced.
-8. Replace that Debit with `abc`. The summary must ask for valid amounts instead of claiming
-   the entry balances. Save remains available to show field validation for invalid text.
-   Try Save. The invalid draft must remain open with an understandable field error.
-9. Cancel the draft. Confirm the saved register and balances have not changed.
-10. If a saved entry has Cleared or Reconciling lines, open it and inspect C.
-    Expect a checkmark for Cleared and R for Reconciling. Hover for the full state name.
-    This column is read-only. Cancel without saving.
+| Step | Action                                                                                                                                                                                                   | Expected result                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A1   | Inspect rows 1 and 2. Hover over one row. Move keyboard focus into another row.                                                                                                                          | Even-numbered rows have a continuous `#F0F8FC` stripe. Hover and keyboard focus apply a full-row `#DDEBFA` band. Account, Debit, and Credit input backgrounds stay white (`#FFFFFF`).                                                                                                                                                                                                                                              |
+| A2   | Enter Debit `25` on row 1 and Credit `25` on row 2. Tab away from both amounts. Inspect the footing. Repeat the alignment check with the scrollbar visible.                                              | Each input displays two decimal places. The footing starts below the posting rows with a top rule. The Account column shows semi-bold `Totals:` in `#23384E` followed by muted `Balanced` text. The header, rows, and footing share the same column edges. Each total is numeric and lines up with the right text edge above it. Currency appears in the editor header. The totals omit currency codes and repeated column labels. |
+| A3   | Change row 2 Credit to `20`. Press Ctrl+Enter.                                                                                                                                                           | The footing shows `Credits short by 5.00` in red (`#B42318`). Only the Debit total is red. Save and Continue are disabled. Ctrl+Enter leaves the draft open.                                                                                                                                                                                                                                                                       |
+| A4   | Change row 2 Credit to `30`. Inspect the footing with a screen reader.                                                                                                                                   | The footing shows `Debits short by 5.00` in red. Only the Credit total is red. The screen reader can read both totals and the short-side status.                                                                                                                                                                                                                                                                                   |
+| A5   | Type `20` into row 2 Debit. Then enter `25` into its Credit field.                                                                                                                                       | The first nonempty input clears the opposite field on the same row. The second input restores 25.00 on both sides. `Balanced` replaces the short-side message and both totals lose red emphasis. Save and Continue are enabled when no save is pending.                                                                                                                                                                            |
+| A6   | Replace row 1 Debit with `25.0000`. Tab away.                                                                                                                                                            | Debit displays `25.00`. The footing stays balanced.                                                                                                                                                                                                                                                                                                                                                                                |
+| A7   | Replace row 1 Debit with `abc`. Hover over it. Focus it with a screen reader. Try Save.                                                                                                                  | The muted message reads `Enter valid amounts to check the balance.` Both numeric totals are blank. The field has a 2px red (`#B42318`) border and an error tooltip. The screen reader exposes the invalid state and the error. The line number appears in white on a solid red pill badge. Save leaves the draft and its invalid text open.                                                                                        |
+| A8   | Replace row 1 Account with an unknown account. Try Save again. Correct Debit to `25`, then correct Account to U3 Expense A.                                                                              | Correcting Debit immediately removes its error message and border. The Account error and line badge remain until Account is corrected. The Account cue then clears and the footing shows balanced totals.                                                                                                                                                                                                                          |
+| A9   | Change row 2 Credit to `20` in the corrected draft. Then restore it to `25`.                                                                                                                             | The balance error has no line prefix. Restoring `25` immediately clears the error and the red emphasis.                                                                                                                                                                                                                                                                                                                            |
+| A10  | Set row 1 Debit to `100000000` and row 2 Credit to the same amount. Try Save.                                                                                                                            | The editor rejects the out-of-range amounts. Feedback identifies the affected posting lines. The draft stays open.                                                                                                                                                                                                                                                                                                                 |
+| A11  | Cancel the draft. Open a new one with three rows. Enter `abc` in the Debit fields of rows 2 and 3. Remove row 2.                                                                                         | The removed row’s error disappears. The remaining invalid input keeps its border and badge. Its message now names line 2, with a space after the middot in the line prefix.                                                                                                                                                                                                                                                        |
+| A12  | Cancel the draft. Open a balanced draft with Debit `25` and Credit `25`. Type a complete date in each date field, one character at a time. In a US date format, use `11/10/2026`. Tab out of each field. | Each character stays where it was typed. Separators do not trigger an error or move the caret while typing. Each field accepts the completed date when focus leaves it.                                                                                                                                                                                                                                                            |
+| A13  | Replace Date with an incomplete date. Tab out. Try Save. Correct Date. Repeat with an incomplete Bank posting date.                                                                                      | Each unfinished date stays visible after focus leaves it. The field shows an error. Save leaves the draft open.                                                                                                                                                                                                                                                                                                                    |
+| A14  | With both date fields invalid, type a complete date in Date. Press `T` in Bank posting date.                                                                                                             | Correcting Date clears its error and marker. Bank posting date keeps its error until `T` replaces the invalid text with book-local today. Date keeps the corrected value.                                                                                                                                                                                                                                                          |
+| A15  | Cancel the draft. Check the register.                                                                                                                                                                    | The saved entries and balances match their values before J08.                                                                                                                                                                                                                                                                                                                                                                      |
 
-**Result:** Unverified.
-**Amount replacement, balance, and status observations:**
+For C markers and reset cues, use J06. For all date shortcuts, use the date steps in J02.
+
+**Result:** Closed by owner decision. Individual results for the full subsection were not recorded. The focused Windows run passed the date typing regression.
+**Evidence:** Record totals, borders, badge text, and spoken feedback.
 
 ### J08 step 8: Payee and Description retest
 
@@ -413,7 +455,7 @@ This fix still needs a manual retest on Windows.
 8. Cancel the draft. Record the actual announcements and the screen reader used.
 
 **Original observation:** Payee and Description labels were not announced on focus.
-**Retest result:** Unverified.
+**Retest result:** Closed by owner decision. No separate spoken result was recorded.
 
 Stop Narrator with Ctrl+Windows+Enter when finished, if you started it for this test.
 Cancel all remaining drafts.
@@ -422,11 +464,11 @@ No J08 entry should be saved.
 
 | Scale | Result: Pass / Fail / Blocked | Screenshot names and observations |
 | ----- | ----------------------------- | --------------------------------- |
-| 100%  | Unverified                    |                                   |
-| 150%  | Unverified                    |                                   |
-| 200%  | Unverified                    |                                   |
+| 100%  | Passed                        |                                   |
+| 150%  | Closed by owner decision      | No separate result recorded.      |
+| 200%  | Passed                        |                                   |
 
-**Overall result:** Unverified.
+**Overall result:** Passed.
 **Screen reader and version:**
 **Accessibility failures or unclear announcements:**
 
@@ -435,47 +477,24 @@ No J08 entry should be saved.
 1. Record a result for J01–J08.
 2. Attach screenshots or give their local paths.
 3. Record each failure with its case ID and step number.
-4. Keep unavailable checks marked Blocked and unverified.
+4. Mark unavailable checks Blocked. Record why each check could not run.
 5. Report the results before marking the corresponding parity rows or T107 complete.
-
-Document review: These instructions preserve the eight original checks.
-They separate manual observations from automated financial and write-dispatch evidence.
-No test has been marked passed by this documentation change.
-
+6. Record the revised J01, J06, and J08 results for the Phase 15 build.
 
 ## Phase 15 editor retest
 
-Status: Unverified. Run after building the Phase 15 editor on interactive Windows.
-Use a synthetic book and retain the existing J01–J08 results as test history.
-Repeat the visual checks at 100%, 150%, and 200% display scaling.
+The revised [J01](#j01--compare-the-journal-editor), [J06](#j06--identify-the-lines-reset-by-a-financial-edit),
+and [J08](#j08--test-long-splits-scaling-and-accessibility) cases are closed for this release.
+Use Preparation and J02 to set up the fixture if these cases are run again.
+Use J07 for the delete preview.
 
-1. Open a new entry. Check the six columns: line number, Account, C, Debit, Credit, and Remove.
-   Check centered amount headings and right-aligned amount inputs.
-2. Add enough rows to show the posting scrollbar. Remove a middle row.
-   Check consecutive 1-based numbers and stripes on even-numbered rows (`#F0F8FC`).
-3. Hover a row, then move keyboard focus through another row.
-   Check a continuous `#DDEBFA` band on the active row and white posting text inputs.
-   Check that Tab and Shift+Tab retain their existing order.
-4. Enter matching debit and credit amounts. Check the semi-bold `Totals:` prefix (`#23384E`)
-   and muted Balanced text. Check numeric totals directly under the input text edges.
-   Repeat with the scrollbar visible and hidden. Check that the footing stays below the rows.
-5. Increase Debit, then increase Credit beyond Debit. Check that the footing names the short
-   side and difference in `#B42318`. Check that only the larger numeric total turns red.
-   Check that Save and Continue stay disabled until totals match.
-6. Enter malformed amount text. Check the muted invalid-amount message and hidden numeric totals.
-   Check the 2px red input border, error tooltip, and solid red line badge with white text.
-   With a screen reader, check the invalid state and error explanation on the input.
-7. Attempt to save an invalid account or an out-of-range amount. Correct one field at a time.
-   Check immediate removal of each resolved message and marker. Other errors must remain.
-   Remove an invalid split row and verify that remaining errors identify the correct rows.
-8. Enter invalid text in both date fields. Correct the accounting date, then the bank posting date.
-   Check that each field clears only its own error. Check T replacement and the existing date shortcuts.
-9. Edit a synthetic entry with Cleared and Reconciling lines. Change an account and an amount.
-   Check bold amber (`#A16207`) line numbers and the yellow warning with affected line names.
-   Restore the original values and check that both cues clear. Also check a row with a reset
-   warning and a field error: its red error badge must stay readable.
-10. Verify Save and Continue reset notices, the existing delete preview, pending-write guards,
-    and retained failure drafts using J06–J08. Record actual results and screenshots.
+## US3 manual test closeout
 
-Record screen-reader/version details and the actual spoken messages. Keep any unavailable
-check marked Unverified. Do not mark T107 or T116 complete from a build or portable test run.
+The owner accepted the existing manual coverage and ended the US3 manual test pass.
+The record includes passes for J01–J08, including the revised J01 and J06 checks.
+J08 has recorded scaling passes at 100% and 200%.
+
+The J08 totals and validation steps lack individual results for the full subsection.
+The 150% display check and the separate Payee and Description screen-reader retest also lack
+individual results. Close these checks by owner decision. The focused Windows run separately
+passed the automated test for typing and correcting dates in both fields.

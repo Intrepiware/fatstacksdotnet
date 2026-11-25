@@ -1,13 +1,18 @@
 using System.ComponentModel;
+using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
+using System.Windows.Markup;
 using System.Windows.Media;
+using System.Windows.Threading;
 using FatStacks.Desktop.ViewModels;
 namespace FatStacks.Desktop.Views;
 
 public partial class JournalEditorWindow : Window
 {
+    private readonly Dictionary<DatePicker, string> rejectedDateText = [];
     public JournalEditorViewModel Model { get; }
     public JournalEditorWindow(JournalEditorViewModel model)
     {
@@ -16,7 +21,10 @@ public partial class JournalEditorWindow : Window
         Closed += (_, _) => Model.CloseRequested -= CloseRequested;
         Loaded += (_, _) => FocusDateInput();
         foreach (var picker in new[] { AccountingDateInput, BankDateInput })
+        {
+            picker.Language = XmlLanguage.GetLanguage(CultureInfo.CurrentCulture.IetfLanguageTag);
             picker.AddHandler(TextBox.TextChangedEvent, new TextChangedEventHandler(DateTextChanged));
+        }
     }
     private void CloseRequested(object? sender, EventArgs e)
     {
@@ -35,10 +43,10 @@ public partial class JournalEditorWindow : Window
     }
     private async void SaveClicked(object sender, RoutedEventArgs e) { if (CanSave()) await Model.SaveAsync(false); }
     private async void ContinueClicked(object sender, RoutedEventArgs e) { if (CanSave() && await Model.SaveAsync(true)) FocusDateInput(); }
-    private void FocusDateInput() => Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Input, new Action(() =>
+    private void FocusDateInput() => Dispatcher.BeginInvoke(DispatcherPriority.Input, new Action(() =>
     {
         AccountingDateInput.ApplyTemplate();
-        if (AccountingDateInput.Template.FindName("PART_TextBox", AccountingDateInput) is System.Windows.Controls.Primitives.DatePickerTextBox input)
+        if (AccountingDateInput.Template.FindName("PART_TextBox", AccountingDateInput) is DatePickerTextBox input)
         { input.Focus(); input.SelectAll(); }
         else AccountingDateInput.Focus();
     }));
@@ -51,12 +59,14 @@ public partial class JournalEditorWindow : Window
         if (!Model.CanSave) return false;
         foreach (var picker in new[] { AccountingDateInput, BankDateInput })
         {
+            // WPF may briefly display the previous valid date while rejected text is restored.
+            if (rejectedDateText.ContainsKey(picker)) return false;
             if (string.IsNullOrWhiteSpace(picker.Text))
             {
                 if (ReferenceEquals(picker, AccountingDateInput)) Model.AccountingDate = null; else Model.BankPostingDate = null;
                 continue;
             }
-            if (!DateTime.TryParse(picker.Text, System.Globalization.CultureInfo.CurrentCulture, out var parsed))
+            if (!DateTime.TryParse(picker.Text, CultureInfo.CurrentCulture, out var parsed))
             { Model.SetDateError(ReferenceEquals(picker, BankDateInput), "Enter a valid date before saving."); return false; }
             if (ReferenceEquals(picker, AccountingDateInput)) Model.AccountingDate = parsed.Date; else Model.BankPostingDate = parsed.Date;
         }
@@ -72,9 +82,10 @@ public partial class JournalEditorWindow : Window
         if (e.Text[0] is '-' or '+')
         {
             DateTime? current = null;
-            if (!string.IsNullOrWhiteSpace(picker.Text))
+            var text = rejectedDateText.GetValueOrDefault(picker, picker.Text);
+            if (!string.IsNullOrWhiteSpace(text))
             {
-                if (!DateTime.TryParse(picker.Text, System.Globalization.CultureInfo.CurrentCulture, out var parsed))
+                if (!DateTime.TryParse(text, CultureInfo.CurrentCulture, out var parsed))
                 { Model.SetDateError(bankDate, "Enter a valid date or press T for today."); return; }
                 current = parsed.Date;
             }
@@ -82,31 +93,45 @@ public partial class JournalEditorWindow : Window
         }
         if (Model.ApplyDateShortcut(e.Text[0], bankDate))
         {
-            picker.SelectedDate = bankDate ? Model.BankPostingDate : Model.AccountingDate;
+            rejectedDateText.Remove(picker);
+            picker.SetCurrentValue(DatePicker.SelectedDateProperty, bankDate ? Model.BankPostingDate : Model.AccountingDate);
             // Also replace invalid or uncommitted text when the selected date did not change.
-            picker.Text = picker.SelectedDate!.Value.ToString("d", System.Globalization.CultureInfo.CurrentCulture);
+            picker.Text = picker.SelectedDate!.Value.ToString("d", CultureInfo.CurrentCulture);
         }
     }
     private void DateInvalid(object? sender, DatePickerDateValidationErrorEventArgs e)
     {
-        Model.SetDateError(ReferenceEquals(sender, BankDateInput), "Enter a valid date before saving.");
         e.ThrowException = false;
+        if (sender is not DatePicker picker) return;
+
+        rejectedDateText[picker] = e.Text;
+        Model.SetDateError(ReferenceEquals(picker, BankDateInput), "Enter a valid date or press T for today.");
+        // DatePicker reverts invalid text on commit. Restore it in the text box without
+        // assigning DatePicker.Text, which would immediately attempt another commit.
+        Dispatcher.BeginInvoke(DispatcherPriority.Normal, new Action(() =>
+        {
+            if (rejectedDateText.GetValueOrDefault(picker) != e.Text) return;
+            try
+            {
+                if (picker.Template?.FindName("PART_TextBox", picker) is DatePickerTextBox input)
+                    input.Text = e.Text;
+            }
+            finally { rejectedDateText.Remove(picker); }
+        }));
     }
     private void DateTextChanged(object sender, TextChangedEventArgs e)
     {
-        if (sender is not DatePicker picker || e.OriginalSource is not TextBox input || !picker.IsLoaded || !input.IsKeyboardFocused) return;
+        if (sender is not DatePicker picker || e.OriginalSource is not TextBox input ||
+            !picker.IsLoaded || !input.IsKeyboardFocused || rejectedDateText.ContainsKey(picker)) return;
+
+        // Let DatePicker commit typed text on Enter or focus loss. Updating SelectedDate
+        // during typing replaces the draft with a formatted date and moves the caret.
         var bank = ReferenceEquals(picker, BankDateInput);
-        if (DateTime.TryParse(input.Text, System.Globalization.CultureInfo.CurrentCulture, out var parsed))
-        {
+        var error = bank ? Model.BankPostingDateError : Model.AccountingDateError;
+        if (error.Length == 0) return;
+        if ((bank && string.IsNullOrWhiteSpace(input.Text)) ||
+            DateTime.TryParse(input.Text, CultureInfo.CurrentCulture, out _))
             Model.SetDateError(bank, "");
-            if (bank) Model.BankPostingDate = parsed.Date; else Model.AccountingDate = parsed.Date;
-        }
-        else if (string.IsNullOrWhiteSpace(input.Text))
-        {
-            if (bank) Model.BankPostingDate = null; else Model.AccountingDate = null;
-            Model.SetDateError(bank, bank ? "" : "Choose an accounting date.");
-        }
-        else Model.SetDateError(bank, "Enter a valid date before saving.");
     }
     private void CancelClicked(object sender, RoutedEventArgs e) => Model.Cancel();
     private void AddClicked(object sender, RoutedEventArgs e) { Model.AddLine(); FocusLastAccount(); }

@@ -27,9 +27,10 @@ public sealed class JournalJourneyTests
         await desktop.InvokeAsync("ContinueJournal"); await desktop.WaitTextAsync("JournalStatus", "saved");
         Assert.AreEqual(date, Value(await desktop.WaitAsync("AccountingDate")));
         await FillAsync([("Expense A", "25", ""), ("Bank", "", "25")]);
-        await desktop.SetAsync("JournalDescription", "Expense");
+        const string expenseDescription = "Lunch receipt";
+        await desktop.SetAsync("JournalDescription", expenseDescription);
         await desktop.InvokeAsync("SaveJournal"); await desktop.WaitTextAsync("RegisterStatus", "2 transactions shown");
-        await SelectAsync("Expense"); await desktop.InvokeAsync("EditJournal");
+        await SelectExpenseAsync(); await desktop.InvokeAsync("EditJournal");
         await FillAsync([("Expense A", "30", ""), ("Bank", "", "30")]);
         // Stale editor detects even an independent line update and retains the draft with two-decimal amount formatting.
         await book.ExecuteAsync("UPDATE dbo.JournalEntryLine SET ReconciliationStatus=2 WHERE AccountId=3;");
@@ -38,7 +39,7 @@ public sealed class JournalJourneyTests
         await desktop.InvokeAsync("CancelJournal");
         await desktop.InvokeAsync("EditJournal"); await FillAsync([("Expense A", "30", ""), ("Bank", "", "30")]);
         await desktop.InvokeAsync("SaveJournal"); await desktop.WaitTextAsync("RegisterStatus", "2 transactions shown");
-        await SelectAsync("Expense"); await desktop.InvokeAsync("DeleteJournal");
+        await SelectExpenseAsync(); await desktop.InvokeAsync("DeleteJournal");
         Assert.IsTrue((await desktop.WaitAsync("CancelDelete")).Current.HasKeyboardFocus);
         await desktop.InvokeAsync("CancelDelete"); Assert.AreEqual(970m, await BankAsync());
         await desktop.InvokeAsync("DeleteJournal"); await desktop.InvokeAsync("ConfirmDelete"); await desktop.WaitTextAsync("RegisterStatus", "1 transactions shown"); Assert.AreEqual(1000m, await BankAsync());
@@ -61,16 +62,47 @@ public sealed class JournalJourneyTests
                 ((ValuePattern)credits[i].GetCurrentPattern(ValuePattern.Pattern)).SetValue(values[i].Credit);
             }
         }
-        async Task SelectAsync(string text)
+        async Task SelectExpenseAsync()
         {
-            var grid = await desktop.WaitAsync("RegisterGrid");
-            for (var attempt = 0; attempt < 100; attempt++)
-            {
-                foreach (AutomationElement row in grid.FindAll(TreeScope.Descendants, new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.DataItem)))
-                    if (row.FindAll(TreeScope.Descendants, new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.Text)).Cast<AutomationElement>().Any(x => x.Current.Name.Contains(text, StringComparison.Ordinal))) { ((SelectionItemPattern)row.GetCurrentPattern(SelectionItemPattern.Pattern)).Select(); return; }
+            // The register can still show its previous count while an edit is being saved.
+            for (var attempt = 0; attempt < 100 && desktop.Find("JournalEditor") is not null; attempt++)
                 await Task.Delay(100);
+            Assert.IsNull(desktop.Find("JournalEditor"), "The journal editor stayed open after Save.");
+
+            // Search by a description that does not match a counter-account name.
+            await using var db = new BookDatabase(book.Settings).CreateContext();
+            var entryId = await db.JournalEntries
+                .Where(x => x.Description == expenseDescription)
+                .Select(x => x.JournalEntryId)
+                .SingleAsync();
+
+            await desktop.SetAsync("RegisterSearch", expenseDescription);
+            await desktop.WaitTextAsync("RegisterStatus", "1 transactions shown");
+            var rowCondition = new PropertyCondition(AutomationElement.ControlTypeProperty, ControlType.DataItem);
+            var selected = false;
+            for (var attempt = 0; attempt < 100 && !selected; attempt++)
+            {
+                try
+                {
+                    var row = desktop.Find("RegisterGrid")?.FindFirst(TreeScope.Descendants, rowCondition);
+                    if (row?.TryGetCurrentPattern(SelectionItemPattern.Pattern, out var pattern) == true)
+                    {
+                        ((SelectionItemPattern)pattern).Select();
+                        selected = true;
+                    }
+                }
+                catch (ElementNotAvailableException)
+                {
+                    // Refresh can replace the row between finding it and selecting it.
+                }
+                if (!selected) await Task.Delay(100);
             }
-            Assert.Fail("Journal row was not found.");
+            Assert.IsTrue(selected, "The expense search returned one transaction, but its row could not be selected.");
+
+            await desktop.WaitTextAsync("SelectedJournalEntry", $"Journal entry {entryId}");
+            await desktop.SetAsync("RegisterSearch", "");
+            await desktop.WaitTextAsync("RegisterStatus", "2 transactions shown");
+            await desktop.WaitTextAsync("SelectedJournalEntry", $"Journal entry {entryId}");
         }
         async Task<decimal> BankAsync() { await using var db = new BookDatabase(book.Settings).CreateContext(); return await db.JournalEntryLines.Where(x => x.AccountId == 1).SumAsync(x => x.Debit - x.Credit); }
     }

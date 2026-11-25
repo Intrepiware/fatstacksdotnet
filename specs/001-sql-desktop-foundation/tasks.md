@@ -228,31 +228,31 @@ no partial writes. Repeated Save while pending sends one request.
 
 ### Tests
 
-- [X] T037 [P] [US3] Write financial validation tests in `tests/FatStacks.Tests/Journal/JournalValidationTests.cs`. Cover two positive sides, zero/negative amounts, imbalance, invalid accounts/dates, foreign currency, 99,999,999.99 versus 100,000,000.00, trailing zeros, nonzero excess precision, and totals larger than one line (FR-013–015/019/020).
+- [x] T037 [P] [US3] Write financial validation tests in `tests/FatStacks.Tests/Journal/JournalValidationTests.cs`. Cover two positive sides, zero/negative amounts, imbalance, invalid accounts/dates, foreign currency, 99,999,999.99 versus 100,000,000.00, trailing zeros, nonzero excess precision, and totals larger than one line (FR-013–015/019/020).
 
-- [X] T038 [P] [US3] Write procedure and permission tests in `tests/FatStacks.SqlTests/Journal/JournalWriteTests.cs`. Cover exact class reference results, splits, stable IDs, stale header/full-line sets, independent external line changes, literal SQL-like text, create/edit/delete rollback before commit, and runtime success without DDL permissions (FR-015/017/018/028). Use test-controlled SQL failure injection, not a production fault API.
+- [x] T038 [P] [US3] Write procedure and permission tests in `tests/FatStacks.SqlTests/Journal/JournalWriteTests.cs`. Cover exact class reference results, splits, stable IDs, stale header/full-line sets, independent external line changes, literal SQL-like text, create/edit/delete rollback before commit, and runtime success without DDL permissions (FR-015/017/018/028). Use test-controlled SQL failure injection, not a production fault API.
 
-- [X] T039 [P] [US3] Write editor behavior tests in `tests/FatStacks.WindowsChecks/JournalEditorViewModelTests.cs`. Cover field errors, retained drafts, Save busy-state exclusion, Continue date retention, Cancel, and no success for an unconfirmed commit. Test preference-save failure independently from committed accounting (FR-006/016).
+- [x] T039 [P] [US3] Write editor behavior tests in `tests/FatStacks.WindowsChecks/JournalEditorViewModelTests.cs`. Cover field errors, retained drafts, Save busy-state exclusion, Continue date retention, Cancel, and no success for an unconfirmed commit. Test preference-save failure independently from committed accounting (FR-006/016).
 
 ### Implementation
 
-- [X] T040 [US3] Implement typed journal requests and boundary validation in `src/FatStacks.Core/Journal/JournalRequests.cs` and `src/FatStacks.Core/Journal/JournalValidation.cs`. Match header/line types and lengths from the foundation tasks. Use decimal and check final values before narrowing parameters; accept value-preserving trailing zeros. Include loaded header/full original-line versions and retain IDs on edits (FR-013–017).
+- [x] T040 [US3] Implement typed journal requests and boundary validation in `src/FatStacks.Core/Journal/JournalRequests.cs` and `src/FatStacks.Core/Journal/JournalValidation.cs`. Match header/line types and lengths from the foundation tasks. Use decimal and check final values before narrowing parameters; accept value-preserving trailing zeros. Include loaded header/full original-line versions and retain IDs on edits (FR-013–017).
 
-- [X] T041 [US3] Create table-valued parameter definitions in `database/types/JournalEntryLines.sql` and `database/types/JournalEntryLineVersions.sql`. Match final line fields and original line/version sets from the service contract. Deploy types through grate before dependent procedures. Preserve full decimal precision at the service boundary and use typed SQL values (FR-028).
+- [x] T041 [US3] Create table-valued parameter definitions in `database/types/JournalEntryLines.sql` and `database/types/JournalEntryLineVersions.sql`. Match final line fields and original line/version sets from the service contract. Deploy types through grate before dependent procedures. Preserve full decimal precision at the service boundary and use typed SQL values (FR-028).
 
-- [X] T042 [US3] Implement ordinary monetary creates/edits in `database/sprocs/SaveJournalEntry.sql`. Use one serializable transaction, validate complete balanced lines, book/account/date rules and loaded versions, preserve line IDs, reset only financially changed line statuses, and lock book currency after first save. Return refreshed versions and reset IDs. Reject security EntryKinds until US5 adds them (FR-014–017/020/023).
+- [x] T042 [US3] Implement ordinary monetary creates/edits in `database/sprocs/SaveJournalEntry.sql`. Use one serializable transaction, validate complete balanced lines, book/account/date rules and loaded versions, preserve line IDs, reset only financially changed line statuses, and lock book currency after first save. Return refreshed versions and reset IDs. Reject security EntryKinds until US5 adds them (FR-014–017/020/023).
 
-- [X] T043 [US3] Implement `database/sprocs/DeleteJournalEntry.sql`. Check the loaded header and complete line set, delete lines before the header in one serializable transaction, and return success only after commit. Use restrictive FKs and physical deletion; do not add soft-delete or retained financial copies (FR-017/018).
+- [x] T043 [US3] Implement `database/sprocs/DeleteJournalEntry.sql`. Check the loaded header and complete line set, delete lines before the header in one serializable transaction, and return success only after commit. Use restrictive FKs and physical deletion; do not add soft-delete or retained financial copies (FR-017/018).
 
-- [X] T044 [US3] Add save/delete procedure calls in `src/FatStacks.Infrastructure/Persistence/StoredProcedureRepository.cs` and journal workflows in `src/FatStacks.Core/Journal/JournalService.cs`. Bind every value as a parameter, map conflict/validation/failure results, and keep writes bound to their original session. Refresh successful results without reconstructing identity from row position (FR-003/017/028/029).
+- [x] T044 [US3] Add save/delete procedure calls in `src/FatStacks.Infrastructure/Persistence/StoredProcedureRepository.cs` and journal workflows in `src/FatStacks.Core/Journal/JournalService.cs`. Bind every value as a parameter, map conflict/validation/failure results, and keep writes bound to their original session. Refresh successful results without reconstructing identity from row position (FR-003/017/028/029).
 
-- [X] T045 [US3] Implement `src/FatStacks.Desktop/ViewModels/JournalEditorViewModel.cs` and `src/FatStacks.Desktop/Views/JournalEditorWindow.xaml`. Retain account suggestions, split add/remove and Tab behavior, Debit/Credit fields, Ctrl+Enter, Save/Continue/Cancel, busy exclusion, retained drafts, and book-local date defaults. Use field/line errors and stable control IDs (FR-013/016/019; P11–P16).
+- [x] T045 [US3] Implement `src/FatStacks.Desktop/ViewModels/JournalEditorViewModel.cs` and `src/FatStacks.Desktop/Views/JournalEditorWindow.xaml`. Retain account suggestions, split add/remove and Tab behavior, Debit/Credit fields, Ctrl+Enter, Save/Continue/Cancel, busy exclusion, retained drafts, and book-local date defaults. Use field/line errors and stable control IDs (FR-013/016/019; P11–P16).
 
-- [X] T046 [US3] Implement `src/FatStacks.Desktop/Views/DeleteEntryWindow.xaml` and wire journal actions in `src/FatStacks.Desktop/ViewModels/MainWindowViewModel.cs`. Preview date/description/all lines and states with Cancel focused. Restore valid selection after edits/deletes; keep keyboard typing guards (FR-012/018; P10/P11/P17).
+- [x] T046 [US3] Implement `src/FatStacks.Desktop/Views/DeleteEntryWindow.xaml` and wire journal actions in `src/FatStacks.Desktop/ViewModels/MainWindowViewModel.cs`. Preview date/description/all lines and states with Cancel focused. Restore valid selection after edits/deletes; keep keyboard typing guards (FR-012/018; P10/P11/P17).
 
-- [ ] T047 [US3] Automate opening, expense, split, edit, failed save, Continue, and cancelled/confirmed delete in `tests/FatStacks.WindowsChecks/JournalJourneyTests.cs`. Execute service/SQL/UI cases and record exact reference results and rollback evidence in `specs/001-sql-desktop-foundation/validation/us3.md` (SC-003/004/006).
+- [x] T047 [US3] Automate opening, expense, split, edit, failed save, Continue, and cancelled/confirmed delete in `tests/FatStacks.WindowsChecks/JournalJourneyTests.cs`. Execute service/SQL/UI cases and record exact reference results and rollback evidence in `specs/001-sql-desktop-foundation/validation/us3.md` (SC-003/004/006).
 
-**US3 execution evidence:** [validation/us3.md](validation/us3.md). T037–T046 are implemented. T047 and overlapping T073 remain open for the Windows execution and parity evidence.
+**US3 execution evidence:** [validation/us3.md](validation/us3.md). T037–T047 are complete. The [focused Windows rerun](validation/us3.md#focused-windows-rerun) passed the journal journey. See the [manual closeout](validation/us3.md#manual-acceptance-closeout) for US3 acceptance.
 
 **Checkpoint:** US1–US3 form the first usable monetary-accounting increment. US4 and US5 remain
 required for the complete feature.
@@ -427,7 +427,7 @@ Add no new safety subsystem.
 
 - [ ] T072 CRITICAL — F04: Complete the absent calendar, register read procedure, register service, and account-tree/register/details UI from T028/029/031–036. Implement `BookCalendar`, `database/sprocs/ReadAccountRegister.sql`, `RegisterService`, the procedure binding in `StoredProcedureRepository`, and `MainWindowViewModel`. Verify full-history balances before filtering, book-local dates, Payment/Deposit mapping, deterministic order, closed descendants, complete details, and stable selection. Record reference and Windows results per FR-009–012/019, US2/AC6–10, and plan: register read procedure (missing).
 
-- [ ] T073 CRITICAL — F05: Complete the absent monetary journal implementation and tests from T037–047 in `src/FatStacks.Core/Journal/`, `database/types/`, `database/sprocs/SaveJournalEntry.sql`, `database/sprocs/DeleteJournalEntry.sql`, `StoredProcedureRepository`, and the Desktop editor/delete views. Verify boundary precision, balanced atomic writes, complete loaded-version checks, stable line IDs, permanent currency locking, reset statuses, retained drafts, pending-save exclusion, Continue, and confirmed deletion. Keep every procedure call in the shared repository. Use the specified SQL transactions without an uncertain-outcome framework per FR-013–020/023/028/029, US3/AC1–10, and plan: journal save/delete procedures (missing).
+- [x] T073 CRITICAL — F05: Complete the absent monetary journal implementation and tests from T037–047 in `src/FatStacks.Core/Journal/`, `database/types/`, `database/sprocs/SaveJournalEntry.sql`, `database/sprocs/DeleteJournalEntry.sql`, `StoredProcedureRepository`, and the Desktop editor/delete views. Verify boundary precision, balanced atomic writes, complete loaded-version checks, stable line IDs, permanent currency locking, reset statuses, retained drafts, pending-save exclusion, Continue, and confirmed deletion. Keep every procedure call in the shared repository. Use the specified SQL transactions without an uncertain-outcome framework per FR-013–020/023/028/029, US3/AC1–10, and plan: journal save/delete procedures (missing).
 
 - [ ] T074 CRITICAL — F06: Complete the absent reconciliation implementation and tests from T048–053 after journal maintenance works. Add `ReconciliationService`, `ReconciliationSummary`, the register summary, and individual Desktop status controls. Update one line and its header in an ordinary EF transaction using loaded versions. Verify independent states, Mixed derived only from selected-account lines, unchanged finances, conflict rollback, and resets after financial edits per FR-017/021–023, US4/AC1–5, and plan: EF reconciliation transaction (missing).
 
@@ -456,18 +456,18 @@ Add no new safety subsystem.
 ## Phase 10: Convergence
 
 - [x] T090 [US2] F18. Record the approved five-tab sidebar in the spec, accounting model, data model, parity baseline, and validation steps. Preserve stored display groups and document the Loans Payable and Other routing. Retest the revised M06 under T094 (FR-007/009/024, US2/AC3–5, T035/P03–P04).
-- [X] T091 [US2] CRITICAL — F19 (contradicts). Use the desktop app's existing .NET `Trace.TraceError` pattern for handled failures.
+- [x] T091 [US2] CRITICAL — F19 (contradicts). Use the desktop app's existing .NET `Trace.TraceError` pattern for handled failures.
   - Cover account load and save, register refresh and search, and entry detail load.
   - Include a fixed operation name and a safe error category in each event. Keep the existing UI messages. Omit events for routine cancellation.
   - Verify that failure events reach a trace listener. Check that the events contain no raw exception text, search terms, financial data, credentials, or connection strings.
   - Defer the persistent rolling log file to Phase 2.
   - References — Constitution V, FR-029, and the plan's redacted diagnostics decision.
-- [X] T092 [US2] HIGH — F20 (partial). Update search in `database/sprocs/ReadAccountRegister.sql`.
+- [x] T092 [US2] HIGH — F20 (partial). Update search in `database/sprocs/ReadAccountRegister.sql`.
   - Match the search term against the description or each counter-account path separately. Keep the joined names for display.
   - Add a SQL regression test for a term that spans two joined names. Verify that this term does not match across names.
   - Verify that literal search matching and full-history balances still work.
   - References — FR-011, US2/AC7, P08, T029, and T032.
-- [X] T093 [US2] HIGH — F21 (partial). Preserve transaction selection by stable entry ID during overlapping refreshes in `MainWindowViewModel.cs`.
+- [x] T093 [US2] HIGH — F21 (partial). Preserve transaction selection by stable entry ID during overlapping refreshes in `MainWindowViewModel.cs`.
   - Add a regression test with a delayed read. Select an entry and start two overlapping refreshes.
   - Verify that the latest result restores the selection if the entry still exists.
   - Verify that changing the account or book does not restore an obsolete selection.
@@ -479,53 +479,53 @@ Add no new safety subsystem.
   - Run the revised M06. Record the outstanding US2 comparisons for appearance, keyboard operation, scaling, and accessibility in the parity evidence. Record approved departures there where applicable.
   - Automate keyboard regression checks on Windows where practical. Record repeatable manual steps for the remaining checks.
   - References — Constitution III, SC-002, SC-003, T036, T072, and T088.
-- [X] T095 [US2] MEDIUM — F23 (partial). Complete the register performance checks from T065 and T083.
+- [x] T095 [US2] MEDIUM — F23 (partial). Complete the register performance checks from T065 and T083.
   - Use the shared fixture with 100 accounts and 10,000 entries on the agreed Windows machine.
   - Measure 20 runs for each operation. Measure account selection, search, and refresh.
   - Record the hardware and SQL Server placement in `validation/performance.md`. For each operation, record how many runs finish within two seconds.
   - References — SC-008 and the plan's performance validation.
 
-
 ## Phase 11: Convergence
 
-- [X] T096 [US2] HIGH - F24 (partial). Preserve the selected account when Reload finds it in a different sidebar tab after a display-group change. Select the destination tab and restore the selected transaction if it still appears in the register. Add a regression that moves the selected account between tabs and verifies both stable IDs after refresh. Follow FR-007, FR-012, US2/AC5, US2/AC10, P10, and T035.
+- [x] T096 [US2] HIGH - F24 (partial). Preserve the selected account when Reload finds it in a different sidebar tab after a display-group change. Select the destination tab and restore the selected transaction if it still appears in the register. Add a regression that moves the selected account between tabs and verifies both stable IDs after refresh. Follow FR-007, FR-012, US2/AC5, US2/AC10, P10, and T035.
 - [ ] T097 [US2] HIGH - F25 (partial). Reconcile the remaining Windows evidence under T036, T072, and T094. Record the revised M06 pass and link the successful benchmark run in `validation/us2.md`. Record results for the populated-book Windows register automation and outstanding visual, keyboard, scaling, and accessibility comparisons. Record M21 through M26 when journal entry creation is available. Keep the deferred checks visible until they run. Follow Constitution III, SC-002, and SC-003.
 
 ## Phase 12: US3 desktop follow-up
 
-- [ ] T098 [US3] Correct journal-editor keyboard navigation in `src/FatStacks.Desktop/Views/JournalEditorWindow.xaml`, its code-behind, and the account picker as needed. Tab from Description must focus the first posting account input, then traverse Account, Debit, Credit by row; Shift+Tab must reverse the order. Keep add/remove posting and save actions keyboard accessible, preserve suggestion acceptance and Tab-to-add behavior, and skip noninteractive layout/error areas. Add Windows focus-navigation regressions in `tests/FatStacks.WindowsChecks/JournalEditorViewModelTests.cs` and record an interactive Windows keyboard pass in `validation/us3.md`. Follow FR-013, US3 keyboard acceptance, and P13–P15.
+- [x] T098 [US3] Correct journal-editor keyboard navigation in `src/FatStacks.Desktop/Views/JournalEditorWindow.xaml`, its code-behind, and the account picker as needed. Tab from Description must focus the first posting account input, then traverse Account, Debit, Credit by row; Shift+Tab must reverse the order. Keep add/remove posting and save actions keyboard accessible, preserve suggestion acceptance and Tab-to-add behavior, and skip noninteractive layout/error areas. Add Windows focus-navigation regressions in `tests/FatStacks.WindowsChecks/JournalEditorViewModelTests.cs` and record an interactive Windows keyboard pass in `validation/us3.md`. Follow FR-013, US3 keyboard acceptance, and P13–P15.
 
-T098 implementation and Windows regression source are complete. Its interactive Windows verification remains pending; see [US3 validation](validation/us3.md#journal-keyboard-and-presentation-fixes).
+T098 is complete. The manual record includes keyboard entry and long-split navigation. See [J02 and J08](validation/manual-us3.md).
 
-- [X] T099 [US3] Add journal date shortcuts for both accounting and bank posting inputs: `-` previous day, `+` next day, and `T`/`t` current book-local today. Use current displayed dates, anchor empty fields at book-local today, preserve the other date, and handle invalid text/date limits without crashing. Inject the book calendar, add portable calendar-boundary/time-zone tests and a Windows text-input regression, and record Windows execution as pending in `validation/us3.md`.
+- [x] T099 [US3] Add journal date shortcuts for both accounting and bank posting inputs: `-` previous day, `+` next day, and `T`/`t` current book-local today. Use current displayed dates, anchor empty fields at book-local today, preserve the other date, and handle invalid text/date limits without crashing. Inject the book calendar, add portable calendar-boundary/time-zone tests and a Windows text-input regression, and record Windows execution as pending in `validation/us3.md`.
 
-- [X] T100 [US3] Include Payee in `ReadAccountRegister` and its repository/model mapping. Display payee followed by optional italic description in the dense register and selected-entry summary; show either field independently without empty separators, and expose full text through tooltips/accessibility. Add portable presentation, SQL result-mapping/balance, and Windows template regressions; record Windows execution as pending and document deployment of the updated read procedure for existing books.
+- [x] T100 [US3] Include Payee in `ReadAccountRegister` and its repository/model mapping. Display payee followed by optional italic description in the dense register and selected-entry summary; show either field independently without empty separators, and expose full text through tooltips/accessibility. Add portable presentation, SQL result-mapping/balance, and Windows template regressions; record Windows execution as pending and document deployment of the updated read procedure for existing books.
 
-- [X] T101 [US3] Add account-Type name-prefix selection in the Accounts dialog, return journal Continue focus to Date after confirmed success while retaining the saved date, select all posting-account text on focus, and format exact monetary inputs to two decimal places on focus loss without hiding invalid precision. Add portable formatting cases and Windows prefix/focus/Continue/amount regressions. Record Windows execution separately in `validation/us3.md`.
-
+- [x] T101 [US3] Add account-Type name-prefix selection in the Accounts dialog, return journal Continue focus to Date after confirmed success while retaining the saved date, select all posting-account text on focus, and format exact monetary inputs to two decimal places on focus loss without hiding invalid precision. Add portable formatting cases and Windows prefix/focus/Continue/amount regressions. Record Windows execution separately in `validation/us3.md`.
 
 ## Phase 13: Convergence
 
 **Scope:** US3 only, including its shared account-selection, register-display, diagnostic, and Windows-validation obligations. This assessment covers T037–T047, T073, T098–T101, and the US3 portions of shared tasks. It does not add US4 reconciliation controls, US5 security workflows, or feature-wide release work. Assess the resulting behavior when these tasks overlap earlier open tasks; do not create a second implementation.
 
-- [X] T102 [US3] CRITICAL — F26. Reject monetary precision loss before converting journal draft text to decimal in `src/FatStacks.Desktop/ViewModels/JournalEditorViewModel.cs`. `Request()` currently calls `decimal.TryParse` directly, although `FormatAmount()` already recognizes that parsing can round long fractional input. A debit of `1.000000000000000000000000000001` can become 1 before Core validation and balance against a credit of 1. Apply exact-input validation on every Save/Continue path, preserve the original draft and field/line error, and dispatch no write for nonzero excess precision. Continue accepting value-preserving trailing zeros and supported culture-specific separators. Reuse a focused parsing/precision check rather than introducing a money type or another persistence framework. Add editor-to-service regression coverage that proves both amounts and dispatch counts, including direct Save without prior focus loss and the existing two-decimal formatting path. Follow Constitution VI and monetary precision constraints, FR-014, SC-007, US3/AC2/AC11, and T037/T040/T045/T101 (contradicts).
+- [x] T102 [US3] CRITICAL — F26. Reject monetary precision loss before converting journal draft text to decimal in `src/FatStacks.Desktop/ViewModels/JournalEditorViewModel.cs`. `Request()` currently calls `decimal.TryParse` directly, although `FormatAmount()` already recognizes that parsing can round long fractional input. A debit of `1.000000000000000000000000000001` can become 1 before Core validation and balance against a credit of 1. Apply exact-input validation on every Save/Continue path, preserve the original draft and field/line error, and dispatch no write for nonzero excess precision. Continue accepting value-preserving trailing zeros and supported culture-specific separators. Reuse a focused parsing/precision check rather than introducing a money type or another persistence framework. Add editor-to-service regression coverage that proves both amounts and dispatch counts, including direct Save without prior focus loss and the existing two-decimal formatting path. Follow Constitution VI and monetary precision constraints, FR-014, SC-007, US3/AC2/AC11, and T037/T040/T045/T101 (contradicts).
 
-- [X] T103 [US3] CRITICAL — F27. Complete redacted diagnostic coverage for journal operations that fail outside the already traced SQL save/delete calls. Inspect `src/FatStacks.Core/Journal/JournalService.cs`, `src/FatStacks.Desktop/ViewModels/MainWindowViewModel.cs` (`LoadSelectedEntryAsync`), `src/FatStacks.Desktop/ViewModels/JournalEditorViewModel.cs`, and `src/FatStacks.Desktop/Views/DeleteEntryWindow.xaml.cs`. The current catch paths can return failure or show a message without recording the operation. Use the existing .NET trace convention with fixed operation names and safe failure categories. Keep Core independent of Desktop/Infrastructure types, omit routine cancellation events, and avoid duplicate reporting of a failure already traced by the repository. Add focused listener/sentinel tests for journal load, account reads before write dispatch, and handled editor/delete failures. Verify that exception text, financial text, credentials, connection strings, and parameters are absent. Cover only the US3 portion of T062/T079; add no logging framework or persistent-log subsystem. Follow Constitution V, FR-029, plan: redacted diagnostics, and T044/T045/T046 (partial).
+- [x] T103 [US3] CRITICAL — F27. Complete redacted diagnostic coverage for journal operations that fail outside the already traced SQL save/delete calls. Inspect `src/FatStacks.Core/Journal/JournalService.cs`, `src/FatStacks.Desktop/ViewModels/MainWindowViewModel.cs` (`LoadSelectedEntryAsync`), `src/FatStacks.Desktop/ViewModels/JournalEditorViewModel.cs`, and `src/FatStacks.Desktop/Views/DeleteEntryWindow.xaml.cs`. The current catch paths can return failure or show a message without recording the operation. Use the existing .NET trace convention with fixed operation names and safe failure categories. Keep Core independent of Desktop/Infrastructure types, omit routine cancellation events, and avoid duplicate reporting of a failure already traced by the repository. Add focused listener/sentinel tests for journal load, account reads before write dispatch, and handled editor/delete failures. Verify that exception text, financial text, credentials, connection strings, and parameters are absent. Cover only the US3 portion of T062/T079; add no logging framework or persistent-log subsystem. Follow Constitution V, FR-029, plan: redacted diagnostics, and T044/T045/T046 (partial).
 
-- [X] T104 [US3] HIGH — F28. Make posting-account eligibility consistent across the journal picker, application validation, and SQL boundary in `src/FatStacks.Desktop/ViewModels/JournalEditorViewModel.cs`, `src/FatStacks.Desktop/Views/AccountComboBox.cs`, `src/FatStacks.Core/Journal/JournalValidation.cs`, and the journal service as needed. The editor builds every row's suggestions from all accounts, including closed accounts, and Core currently passes `line.LineId is not null` as the existing-reference check without checking the loaded account for that line. Exclude closed accounts from new-reference selection, retain an existing closed reference only on its original line/account before closure, and refresh eligibility when the accounting date changes. Preserve closed historical labels and the SQL procedure's authoritative validation/version checks. Return field/line feedback that distinguishes an unknown account, a date before opening, and an ineligible closed reference. Add regressions for new lines, retained historical references, an existing line reassigned to a different closed account, and date changes; verify rejected requests leave SQL data unchanged. Follow FR-008/013/019, US3/AC2, T040/T042/T045, and plan: account date rules (partial).
+- [x] T104 [US3] HIGH — F28. Make posting-account eligibility consistent across the journal picker, application validation, and SQL boundary in `src/FatStacks.Desktop/ViewModels/JournalEditorViewModel.cs`, `src/FatStacks.Desktop/Views/AccountComboBox.cs`, `src/FatStacks.Core/Journal/JournalValidation.cs`, and the journal service as needed. The editor builds every row's suggestions from all accounts, including closed accounts, and Core currently passes `line.LineId is not null` as the existing-reference check without checking the loaded account for that line. Exclude closed accounts from new-reference selection, retain an existing closed reference only on its original line/account before closure, and refresh eligibility when the accounting date changes. Preserve closed historical labels and the SQL procedure's authoritative validation/version checks. Return field/line feedback that distinguishes an unknown account, a date before opening, and an ineligible closed reference. Add regressions for new lines, retained historical references, an existing line reassigned to a different closed account, and date changes; verify rejected requests leave SQL data unchanged. Follow FR-008/013/019, US3/AC2, T040/T042/T045, and plan: account date rules (partial).
 
-- [ ] T105 [US3] HIGH — F29. Complete the remaining US3 Windows execution and evidence from T047/T073/T098 and the Windows portions of T099–T101. Run `JournalJourneyTests`, `JournalEditorViewModelTests`, the journal/register-summary/close-shortcut cases in `WindowBehaviorTests`, and the type-prefix case in `AccountSetupWindowTests` on an interactive Windows runner with isolated SQL fixtures. Verify opening, expense, split, edit, failed/conflicting and unconfirmed saves, pending-save exclusion, Continue date retention/focus, date shortcuts, account replacement search, amount formatting, cancelled/confirmed deletion, restart, selection restoration, and payee/italic-description rendering. Fix observed failures and rerun the relevant portable/SQL regressions after implementation changes. Record exact financial results and target-run outcomes in `specs/001-sql-desktop-foundation/validation/us3.md`; record the US3-affected P07, P10–P17, and P22 visual, keyboard, focus, accessibility, long-split, and high-DPI evidence in `validation/ui-parity.md`, with reasons and repeatable steps for automation gaps. Reconcile overlapping task completion only when supported by those results; keep unavailable checks unverified. Follow SC-002/003/004/006, US3/AC1–AC12, FR-009/012/013/016/018/019/023, and plan: Windows acceptance evidence (partial).
+- [x] T105 [US3] HIGH — F29. Complete the remaining US3 Windows execution and evidence from T047/T073/T098 and the Windows portions of T099–T101. Run `JournalJourneyTests`, `JournalEditorViewModelTests`, the journal/register-summary/close-shortcut cases in `WindowBehaviorTests`, and the type-prefix case in `AccountSetupWindowTests` on an interactive Windows runner with isolated SQL fixtures. Verify opening, expense, split, edit, failed/conflicting and unconfirmed saves, pending-save exclusion, Continue date retention/focus, date shortcuts, account replacement search, amount formatting, cancelled/confirmed deletion, restart, selection restoration, and payee/italic-description rendering. Fix observed failures and rerun the relevant portable/SQL regressions after implementation changes. Record exact financial results and target-run outcomes in `specs/001-sql-desktop-foundation/validation/us3.md`; record the US3-affected P07, P10–P17, and P22 visual, keyboard, focus, accessibility, long-split, and high-DPI evidence in `validation/ui-parity.md`, with reasons and repeatable steps for automation gaps. Reconcile overlapping task completion only when supported by those results; keep unavailable checks unverified. Follow SC-002/003/004/006, US3/AC1–AC12, FR-009/012/013/016/018/019/023, and plan: Windows acceptance evidence (partial).
 
-- [ ] T106 [US3] MEDIUM — F30. Explain financial-edit reconciliation resets using visible account/line context in `src/FatStacks.Desktop/ViewModels/JournalEditorViewModel.cs` and `src/FatStacks.Desktop/ViewModels/MainWindowViewModel.cs`. Current notices join `ResetLineIds` into a string, but those database line IDs are not otherwise visible in the editor. Map returned IDs to the saved line orders and displayed account paths so the owner can identify which lines became Uncleared. Preserve unchanged statuses, stable identities, and the existing SQL reset rules; add no US4 status-editing controls. Add presentation regressions for one reset line, multiple resets, unchanged lines, and Save/Continue notices, then include the rendered result in US3 Windows evidence. Follow FR-023, T042/T045/T073, and plan: financial edit status resets (partial).
+- [x] T106 [US3] MEDIUM — F30. Explain financial-edit reconciliation resets using visible account/line context in `src/FatStacks.Desktop/ViewModels/JournalEditorViewModel.cs` and `src/FatStacks.Desktop/ViewModels/MainWindowViewModel.cs`. Current notices join `ResetLineIds` into a string, but those database line IDs are not otherwise visible in the editor. Map returned IDs to the saved line orders and displayed account paths so the owner can identify which lines became Uncleared. Preserve unchanged statuses, stable identities, and the existing SQL reset rules; add no US4 status-editing controls. Add presentation regressions for one reset line, multiple resets, unchanged lines, and Save/Continue notices, then include the rendered result in US3 Windows evidence. Follow FR-023, T042/T045/T073, and plan: financial edit status resets (partial).
 
-**Phase 13 execution status:** T102–T104 are complete with portable and real SQL regression evidence. T106's notice implementation and six portable presentation cases are complete; its rendered Windows evidence remains pending under T105, so T106 stays open. The Linux WindowsChecks host exits 150 before executing tests because Microsoft.WindowsDesktop.App is unavailable. T047, T073, T098, and T105 remain open for target-platform evidence. See [US3 validation](validation/us3.md#phase-13-convergence-implementation) and the [US3 parity checklist](validation/ui-parity.md).
-
+**Phase 13 execution status:** T102–T104 have portable and SQL regression evidence. T106
+has portable presentation tests and a recorded revised J06 pass. The
+[US3 acceptance closeout](validation/us3.md#manual-acceptance-closeout) records the evidence
+for T073 and T105.
 
 ## Phase 14: Convergence
 
 **Scope:** US3 only. Current code assessment found no additional implementation remediation beyond completing the outstanding Windows acceptance obligations. This task consolidates the remaining evidence from T047/T073/T098/T105/T106; it does not request another implementation of their completed behavior.
 
-- [ ] T107 [US3] HIGH — F31 (partial). Complete the remaining acceptance checks on the Windows target platform.
+- [x] T107 [US3] HIGH — F31 (partial). Complete the remaining acceptance checks on the Windows target platform.
   - Use an interactive Windows runner with the .NET 10 desktop runtime. Use isolated SQL test fixtures with synthetic data.
   - Run the US3 automated tests and manual checks in `specs/001-sql-desktop-foundation/validation/ui-parity.md`. Include all the checks below.
   - Check journal creation, editing, and deletion. Check failed saves, saves with conflicts, and saves whose outcome is unconfirmed. Check the guards that apply while a write is pending.
@@ -538,7 +538,6 @@ T098 implementation and Windows regression source are complete. Its interactive 
   - Update the overlapping completion claims for T047, T073, T098, T105, and T106 only when these results support the updates.
   - Do not use the existing cross-build, 99 portable test passes, or 13 real SQL test passes as proof of Windows acceptance. Keep checks that cannot run marked as unverified.
   - Follow SC-002/003/004/006, US3/AC1–AC12, and FR-009/012/013/016/018/019/023. Also follow the FR-023 reset presentation requirement under T106 and the plan's Windows acceptance evidence requirement.
-
 
 ## Phase 15: Convergence
 
@@ -556,13 +555,10 @@ before T116 verifies them. Complete T108 before security reconciliation checks u
 Complete T114–T119 as their required implementations become available. Finish the acceptance
 report in T117 after the relevant verification and package checks.
 
-**US3 execution status (2026-11-24):** The code and regression tests for T109–T112 are
-implemented. Their Windows verification remains pending, so these task boxes remain open.
-The US3 portions of T116 and the outstanding target checks in T107 also remain open.
-The solution cross-build passes with no warnings or errors. All 107 portable tests pass.
-WindowsChecks cannot start on this Linux runner. The 13 SQL journal/register cases fail
-during fixture setup before their assertions run. See [the execution evidence](validation/us3.md#phase-15-editor-implementation).
-US4, US5, and feature-wide release work were not part of this implementation pass.
+**US3 execution status:** T109–T112 are implemented. The owner closed the US3 manual
+test pass using the recorded Windows results and observations. See the
+[US3 acceptance closeout](validation/us3.md#manual-acceptance-closeout) for T107 and the US3
+portion of T116. The manual guide identifies checks without individual results.
 
 - [ ] T108 [US4] CRITICAL — F32. Complete independent line reconciliation per FR-017/021–023, US4/AC1–AC5, plan: EF reconciliation transaction, and T048–T053/T074 (missing).
   - Implement `src/FatStacks.Infrastructure/Reconciliation/ReconciliationService.cs` and the required Core contracts.
@@ -575,7 +571,7 @@ US4, US5, and feature-wide release work were not part of this implementation pas
   - Verify that status-only changes preserve dates, accounts, money, and balances. Verify conflicts, rollback, and financial-edit resets through the existing journal procedures.
   - Complete the tests and evidence specified in T048–T053. Do not implement a statement reconciliation wizard.
 
-- [ ] T109 [US3] HIGH — F33. Add numbered posting rows and row tracking per FR-013, US3/AC3, and T045 (missing).
+- [x] T109 [US3] HIGH — F33. Add numbered posting rows and row tracking per FR-013, US3/AC3, and T045 (missing).
   - Update `src/FatStacks.Desktop/Views/JournalEditorWindow.xaml` and `src/FatStacks.Desktop/ViewModels/JournalEditorViewModel.cs`.
   - Show a 1-based line number before Account. Update the displayed sequence after a row is added or removed.
   - Apply a continuous `#F0F8FC` stripe to even-numbered posting rows. Apply a full-row `#DDEBFA` band when the row is hovered or contains keyboard focus.
@@ -586,7 +582,7 @@ US4, US5, and feature-wide release work were not part of this implementation pas
   - Preserve stable control identities and account suggestions. Keep Tab and Shift+Tab in the specified order without stopping on row numbers or status markers.
   - Verify numbering after row changes and keyboard navigation through a long split in `tests/FatStacks.WindowsChecks/JournalEditorViewModelTests.cs`.
 
-- [ ] T110 [US3] HIGH — F34. Replace the single balance summary with an aligned totals footing per FR-015/020 and US3/AC4 (partial).
+- [x] T110 [US3] HIGH — F34. Replace the single balance summary with an aligned totals footing per FR-015/020 and US3/AC4 (partial).
   - Update `src/FatStacks.Desktop/Views/JournalEditorWindow.xaml` and `src/FatStacks.Desktop/ViewModels/JournalEditorViewModel.cs` after T109.
   - Place the footing directly below the posting rows with a top rule. Share column alignment and scrollbar-gutter space across the header, posting rows, and footing. Keep them aligned with and without a vertical scrollbar.
   - Place a semi-bold `Totals:` label in the Account column of the footing. Use `#23384E` for the label.
@@ -602,7 +598,7 @@ US4, US5, and feature-wide release work were not part of this implementation pas
   - Preserve validation before write dispatch, exact monetary precision, and retained drafts on failure.
   - Add behavior checks for balanced, debit-short, credit-short, and invalid-text drafts. Add Windows checks for alignment with short and scrolling splits.
 
-- [ ] T111 [US3] HIGH — F35. Add field error cues that clear during correction per FR-013–015, US3/AC5, and T039/T045 (partial).
+- [x] T111 [US3] HIGH — F35. Add field error cues that clear during correction per FR-013–015, US3/AC5, and T039/T045 (partial).
   - Update `src/FatStacks.Desktop/ViewModels/JournalEditorViewModel.cs`, `src/FatStacks.Desktop/Views/JournalEditorWindow.xaml`, and `src/FatStacks.Desktop/Views/AccountComboBox.cs` as needed.
   - Map each posting validation error to its affected input. Include invalid amount text and account-selection errors.
   - Give invalid inputs a 2px red (`#B42318`) border. Expose the invalid state and error message through accessibility and a tooltip.
@@ -615,7 +611,7 @@ US4, US5, and feature-wide release work were not part of this implementation pas
   - Add regressions for malformed amounts, excess precision, range errors, invalid accounts, and balance correction. Include correction of both date fields, multiple simultaneous errors, and row removal.
   - Verify the tooltip, accessible state, border, and badge on Windows. Do not treat a successful cross-build as proof of accessibility.
 
-- [ ] T112 [US3] HIGH — F36. Mark lines affected by reconciliation resets per FR-023, US3/AC11, and T106 (partial).
+- [x] T112 [US3] HIGH — F36. Mark lines affected by reconciliation resets per FR-023, US3/AC11, and T106 (partial).
   - Update `src/FatStacks.Desktop/ViewModels/JournalEditorViewModel.cs` and `src/FatStacks.Desktop/Views/JournalEditorWindow.xaml` after T109.
   - Use the existing reset comparison to display each affected line number in bold amber (`#A16207`). Cover account or monetary changes to Cleared and Reconciling lines.
   - Keep the yellow warning before Save and its line names. Update both cues as edits change.
@@ -652,7 +648,7 @@ US4, US5, and feature-wide release work were not part of this implementation pas
   - Correct only observed failures in the existing diagnostic paths. Add no encrypted logging subsystem or new logging framework.
   - Record executed and unverified checks separately in the acceptance evidence.
 
-- [ ] T116 HIGH — F40. Complete Windows acceptance for the revised interface and remaining journeys per SC-001–SC-006, FR-009/013/015/018/023, and T027/T036/T047/T064/T076/T080/T094/T097/T107 (partial).
+- [x] T116 HIGH — F40. Complete Windows acceptance for the revised interface and remaining journeys per SC-001–SC-006, FR-009/013/015/018/023, and T027/T036/T047/T064/T076/T080/T094/T097/T107 (partial).
   - Run the affected Windows checks after T109–T112. Use an interactive Windows runner and isolated synthetic SQL data.
   - Verify numbered rows, stripes on even-numbered rows, hover and focus bands, and the six-column layout.
   - Verify the contract colors, semi-bold totals label, white text on red error badges, and bold amber reset markers.
