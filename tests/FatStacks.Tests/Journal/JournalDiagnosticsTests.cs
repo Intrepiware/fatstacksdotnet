@@ -62,6 +62,29 @@ public sealed class JournalDiagnosticsTests
         if (cancelled) Assert.AreEqual("", trace.Text); else trace.AssertSingle("JournalLoad");
     }
     [TestMethod]
+    public async Task JournalWriteRefreshesRegisterOnce()
+    {
+        var (sessions, session) = await RegisterJourneyTests.OpenAsync();
+        using var owned = session;
+        var register = new Register();
+        using var model = new MainWindowViewModel
+        {
+            Session = session,
+            Sessions = sessions,
+            Accounts = new RegisterJourneyTests.Accounts(),
+            Register = register,
+            Journal = new JournalEditorViewModelTests.FakeJournal()
+        };
+        await model.RefreshAsync();
+        var reads = register.Reads;
+        var request = new JournalRequest(1, 1, new byte[8], new(2026, 11, 21), null, null, "", 0, [], []);
+        await model.JournalSavedAsync(new(request, []));
+        Assert.AreEqual(reads + 1, register.Reads);
+        reads = register.Reads;
+        Assert.IsTrue((await model.DeleteEntryAsync(new(1, 1, new byte[8], []))).IsSuccess);
+        Assert.AreEqual(reads + 1, register.Reads);
+    }
+    [TestMethod]
     public async Task MissingSelectedEntryReportsHowToRefresh()
     {
         var (sessions, session) = await RegisterJourneyTests.OpenAsync();
@@ -114,7 +137,12 @@ public sealed class JournalDiagnosticsTests
     }
     private sealed class Register : IRegisterService
     {
-        public Task<RegisterResult> ReadAsync(long id, DateOnly today, string search, CancellationToken ct = default) => Task.FromResult(new RegisterResult(0, [new(1, today, Private, "Counter", null, 25, 25, "Uncleared")]));
+        public int Reads;
+        public Task<RegisterResult> ReadAsync(long id, DateOnly today, string search, CancellationToken ct = default)
+        {
+            Reads++;
+            return Task.FromResult(new RegisterResult(0, [new(1, today, Private, "Counter", null, 25, 25, "Uncleared")]));
+        }
         public Task<IReadOnlyList<EntryLine>> DetailsAsync(long id, CancellationToken ct = default) => Task.FromResult<IReadOnlyList<EntryLine>>([]);
         public Task<IReadOnlyDictionary<long, decimal>> BalancesAsync(DateOnly today, CancellationToken ct = default) => Task.FromResult<IReadOnlyDictionary<long, decimal>>(new Dictionary<long, decimal>());
     }

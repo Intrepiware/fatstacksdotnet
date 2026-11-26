@@ -53,15 +53,14 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         if (result.IsSuccess && IsCurrent)
         {
             var keep = Rows.FirstOrDefault(x => x.EntryId != request.EntryId)?.EntryId;
-            await RefreshAsync();
-            await ReadAsync(keep);
+            await RefreshAsync(keep);
         }
         return result;
     }
     public async Task JournalSavedAsync(JournalSaveResult saved)
     {
         if (!IsCurrent) return;
-        await RefreshAsync(); await ReadAsync(saved.Entry.EntryId);
+        await RefreshAsync(saved.Entry.EntryId);
         SaveNotice = saved.ResetLineIds.Count > 0 ? JournalSaveNotice.Describe(saved, accounts) : "";
     }
     public void DismissSaveNotice() => SaveNotice = "";
@@ -172,7 +171,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     public bool IsCurrent => !disposed && Sessions.IsCurrent(Session);
     private CancellationTokenSource NewRead(ref CancellationTokenSource? previous)
     { previous?.Cancel(); var next = CancellationTokenSource.CreateLinkedTokenSource(Session.Reads.Token); previous = next; return next; }
-    public async Task RefreshAsync()
+    public async Task RefreshAsync(long? entryId = null)
     {
         if (!IsCurrent) return; using var read = NewRead(ref load); Status = "Loading accounts…";
         try
@@ -204,7 +203,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
                 Changed(nameof(GroupTitle));
             }
 
-            await ReadRegisterAsync(null, "RegisterRefresh");
+            await ReadRegisterAsync(entryId, "RegisterRefresh");
         }
         catch (OperationCanceledException) { }
         catch (Exception ex) when (ex is Microsoft.Data.SqlClient.SqlException or InvalidOperationException)

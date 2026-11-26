@@ -120,7 +120,7 @@ internal sealed class AccountComboBox : UserControl
     {
         // Filtering is synchronous and does not change Text, caret, or account selection.
         string query = editor.Text;
-        var matches = showAll ? accounts : accounts.Where(a => a.Contains(query, StringComparison.OrdinalIgnoreCase)).ToArray();
+        var matches = showAll ? accounts : AccountPathFilter.Matches(accounts, account => account, query).ToArray();
         suggestions.ItemsSource = matches;
         suggestions.SelectedIndex = matches.Length == 0 ? -1 : Math.Max(0, Array.IndexOf(matches, query));
         suggestions.Width = Math.Max(ActualWidth, 240);

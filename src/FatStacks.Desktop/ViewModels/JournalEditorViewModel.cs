@@ -55,7 +55,7 @@ public sealed class JournalLineViewModel : ObservableObject
     public string DebitControlId => $"JournalDebit_{Key}";
     public string CreditControlId => $"JournalCredit_{Key}";
     private string accountText = ""; public string AccountText { get => accountText; set { if (Set(ref accountText, value)) { Changed(nameof(Suggestions)); Changed(nameof(Name)); } } }
-    public IReadOnlyList<AccountSuggestion> Suggestions => EligibleAccounts.Where(x => x.Path.Contains(AccountText, StringComparison.OrdinalIgnoreCase)).ToArray();
+    public IReadOnlyList<AccountSuggestion> Suggestions => AccountPathFilter.Matches(EligibleAccounts, x => x.Path, AccountText).ToArray();
     public long AccountId => Accounts.FirstOrDefault(x => x.Path.Equals(AccountText, StringComparison.OrdinalIgnoreCase))?.Id ?? 0;
     private string debit = ""; public string Debit { get => debit; set { if (Set(ref debit, value) && !string.IsNullOrWhiteSpace(value)) Credit = ""; } }
     private string credit = ""; public string Credit { get => credit; set { if (Set(ref credit, value) && !string.IsNullOrWhiteSpace(value)) Debit = ""; } }

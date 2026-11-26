@@ -396,7 +396,6 @@ public sealed class JournalEditorViewModelTests
             }
         }
         finally { window.Close(); }
-        static void Pump() => System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
     }
     [STATestMethod]
     public void ReconciledEditWarningIsVisibleAndClearsWhenRestored()
@@ -420,15 +419,6 @@ public sealed class JournalEditorViewModelTests
             Assert.IsFalse(warning.IsVisible);
         }
         finally { window.Close(); }
-        static IEnumerable<System.Windows.DependencyObject> Descendants(System.Windows.DependencyObject parent)
-        {
-            for (var i = 0; i < System.Windows.Media.VisualTreeHelper.GetChildrenCount(parent); i++)
-            {
-                var child = System.Windows.Media.VisualTreeHelper.GetChild(parent, i); yield return child;
-                foreach (var nested in Descendants(child)) yield return nested;
-            }
-        }
-        static void Pump() => System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
     }
     [STATestMethod]
     [DataRow(Outcome.Success)]
@@ -611,15 +601,6 @@ public sealed class JournalEditorViewModelTests
         var delete=new FatStacks.Desktop.Views.DeleteEntryWindow(entry,Accounts,_ => throw new AssertFailedException("Cancel must not write."));
         try { delete.Show(); Pump(); Assert.IsTrue(((System.Windows.Controls.Button)delete.FindName("CancelButton")).IsKeyboardFocused); }
         finally { delete.Close(); }
-        static IEnumerable<System.Windows.DependencyObject> Descendants(System.Windows.DependencyObject parent)
-        {
-            for(var i=0;i<System.Windows.Media.VisualTreeHelper.GetChildrenCount(parent);i++)
-            {
-                var child=System.Windows.Media.VisualTreeHelper.GetChild(parent,i); yield return child;
-                foreach(var nested in Descendants(child)) yield return nested;
-            }
-        }
-        static void Pump() => System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke(() => { },System.Windows.Threading.DispatcherPriority.ApplicationIdle);
     }
     [STATestMethod]
     public void DescriptionTabsThroughPostingFieldsAndErrorAreaDoesNotShowAnEmptyScrollbar()
@@ -661,15 +642,6 @@ public sealed class JournalEditorViewModelTests
             Pump(); Assert.AreEqual(System.Windows.Visibility.Visible, errors.ComputedVerticalScrollBarVisibility);
         }
         finally { window.Close(); }
-        static IEnumerable<System.Windows.DependencyObject> Descendants(System.Windows.DependencyObject parent)
-        {
-            for (var i = 0; i < System.Windows.Media.VisualTreeHelper.GetChildrenCount(parent); i++)
-            {
-                var child = System.Windows.Media.VisualTreeHelper.GetChild(parent, i); yield return child;
-                foreach (var nested in Descendants(child)) yield return nested;
-            }
-        }
-        static void Pump() => System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
     }
 #endif
     public sealed class FakeJournal : IJournalService
