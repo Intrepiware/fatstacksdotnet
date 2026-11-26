@@ -335,7 +335,8 @@ public sealed class JournalEditorViewModelTests
         var window = new FatStacks.Desktop.Views.JournalEditorWindow(model);
         try
         {
-            window.Show(); Pump();
+            window.Show();
+            Pump();
             var footing = (System.Windows.Controls.Grid)window.FindName("TotalsFooting");
             var status = Descendants(footing).OfType<System.Windows.Controls.TextBlock>()
                 .SelectMany(x => x.Inlines.OfType<System.Windows.Documents.Run>())
@@ -343,11 +344,14 @@ public sealed class JournalEditorViewModelTests
             Assert.AreEqual(System.Windows.Data.BindingMode.OneWay,
                 System.Windows.Data.BindingOperations.GetBinding(status, System.Windows.Documents.Run.TextProperty)!.Mode);
             Assert.AreEqual("Balanced", status.Text);
-            model.Lines[0].Debit = "25"; Pump();
+            model.Lines[0].Debit = "25";
+            Pump();
             StringAssert.StartsWith(status.Text, "Credits short by ");
-            model.Lines[1].Credit = "25"; Pump();
+            model.Lines[1].Credit = "25";
+            Pump();
             Assert.AreEqual("Balanced", status.Text);
-            model.Lines[0].Debit = "invalid"; Pump();
+            model.Lines[0].Debit = "invalid";
+            Pump();
             Assert.AreEqual("Enter valid amounts to check the balance.", status.Text);
             Assert.AreEqual(0, service.Calls);
         }
@@ -360,7 +364,8 @@ public sealed class JournalEditorViewModelTests
         var window = new FatStacks.Desktop.Views.JournalEditorWindow(model);
         try
         {
-            window.Show(); Pump();
+            window.Show();
+            Pump();
             System.Windows.Controls.TextBox Input(string id) => Descendants(window).OfType<System.Windows.Controls.TextBox>().Single(x => System.Windows.Automation.AutomationProperties.GetAutomationId(x) == id);
             var debit = Input(model.Lines[0].DebitControlId);
             var total = (System.Windows.Controls.TextBlock)window.FindName("DebitFooting");
@@ -371,12 +376,14 @@ public sealed class JournalEditorViewModelTests
                 Assert.AreEqual(edge, totalEdge, 1.0, "Totals must share the input text edge.");
             }
             CheckEdge();
-            for (var i = 0; i < 20; i++) model.AddLine();
+            for (var i = 0; i < 20; i++)
+                model.AddLine();
             Pump();
             var scroll = (System.Windows.Controls.ScrollViewer)window.FindName("PostingScroll");
             Assert.AreEqual(System.Windows.Visibility.Visible, scroll.ComputedVerticalScrollBarVisibility);
             CheckEdge();
-            debit.Text = "invalid"; Pump();
+            debit.Text = "invalid";
+            Pump();
             Assert.AreEqual("", total.Text);
             Assert.AreEqual(new System.Windows.Thickness(2), debit.BorderThickness);
             Assert.AreEqual("Invalid", System.Windows.Automation.AutomationProperties.GetItemStatus(debit));
@@ -384,11 +391,13 @@ public sealed class JournalEditorViewModelTests
             Assert.AreEqual(model.Lines[0].DebitError, debit.ToolTip);
             Assert.IsTrue(System.Windows.Controls.Validation.GetHasError(debit));
             CheckEdge();
-            debit.Text = "1000"; Pump();
+            debit.Text = "1000";
+            Pump();
             Assert.AreEqual("", System.Windows.Automation.AutomationProperties.GetItemStatus(debit));
             Assert.IsFalse(System.Windows.Controls.Validation.GetHasError(debit));
             Assert.IsFalse(model.Lines[0].HasErrors);
-            debit.Focus(); Pump();
+            debit.Focus();
+            Pump();
             var row = Descendants(window).OfType<System.Windows.Controls.Grid>().Single(x => ReferenceEquals(x.DataContext, model.Lines[0]) && x.ColumnDefinitions.Count == 6);
             Assert.AreEqual("#FFDDEBFA", row.Background.ToString());
             Assert.AreEqual("#FFFFFFFF", debit.Background.ToString());
@@ -403,17 +412,21 @@ public sealed class JournalEditorViewModelTests
         var window = new FatStacks.Desktop.Views.JournalEditorWindow(model);
         try
         {
-            window.Show(); Pump();
+            window.Show();
+            Pump();
             var controls = Descendants(window).OfType<System.Windows.FrameworkElement>().ToArray();
             var debit = controls.OfType<System.Windows.Controls.TextBox>().Single(x => System.Windows.Automation.AutomationProperties.GetAutomationId(x) == model.Lines[0].DebitControlId);
             var credit = controls.OfType<System.Windows.Controls.TextBox>().Single(x => System.Windows.Automation.AutomationProperties.GetAutomationId(x) == model.Lines[0].CreditControlId);
             Assert.AreEqual(System.Windows.TextAlignment.Right, debit.TextAlignment);
             Assert.AreEqual(System.Windows.TextAlignment.Right, credit.TextAlignment);
             var actions = controls.OfType<System.Windows.Controls.Button>().Where(x => System.Windows.Automation.AutomationProperties.GetAutomationId(x) is "SaveJournal" or "ContinueJournal").ToArray();
-            Assert.HasCount(2, actions); Assert.IsTrue(actions.All(x => x.IsEnabled));
-            debit.Text = "25"; Pump();
+            Assert.HasCount(2, actions);
+            Assert.IsTrue(actions.All(x => x.IsEnabled));
+            debit.Text = "25";
+            Pump();
             Assert.IsTrue(actions.All(x => !x.IsEnabled));
-            model.Lines[1].Credit = "25"; Pump();
+            model.Lines[1].Credit = "25";
+            Pump();
             Assert.IsTrue(actions.All(x => x.IsEnabled));
             var summary = controls.Single(x => System.Windows.Automation.AutomationProperties.GetAutomationId(x) == "JournalBalanceSummary");
             StringAssert.Contains(System.Windows.Automation.AutomationProperties.GetName(summary), "Balanced");
@@ -451,16 +464,19 @@ public sealed class JournalEditorViewModelTests
         var window = new FatStacks.Desktop.Views.JournalEditorWindow(model);
         try
         {
-            window.Show(); Pump();
+            window.Show();
+            Pump();
             foreach (var (control, expectedName) in new[] { ("PayeeInput", "Payee"), ("DescriptionInput", "Description") })
             {
                 var input = (System.Windows.Controls.TextBox)window.FindName(control);
-                input.Focus(); Pump();
+                input.Focus();
+                Pump();
                 Assert.IsTrue(input.IsKeyboardFocused);
                 var peer = System.Windows.Automation.Peers.UIElementAutomationPeer.CreatePeerForElement(input);
                 Assert.IsNotNull(peer);
                 Assert.AreEqual(expectedName, peer.GetName());
-                input.Text = "Synthetic text"; Pump();
+                input.Text = "Synthetic text";
+                Pump();
                 Assert.AreEqual(expectedName, peer.GetName(), "Entered text must not replace the field name.");
             }
         }
@@ -477,14 +493,17 @@ public sealed class JournalEditorViewModelTests
         var window = new FatStacks.Desktop.Views.JournalEditorWindow(model);
         try
         {
-            window.Show(); Pump();
+            window.Show();
+            Pump();
             var warning = Descendants(window).OfType<System.Windows.Controls.TextBlock>()
                 .Single(x => System.Windows.Automation.AutomationProperties.GetAutomationId(x) == "JournalResetWarning");
             Assert.IsFalse(warning.IsVisible);
-            model.Lines[0].Debit = "26"; Pump();
+            model.Lines[0].Debit = "26";
+            Pump();
             Assert.IsTrue(warning.IsVisible);
             StringAssert.Contains(warning.Text, "Line 1 (Bank)");
-            model.Lines[0].Debit = "25"; Pump();
+            model.Lines[0].Debit = "25";
+            Pump();
             Assert.IsFalse(warning.IsVisible);
         }
         finally { window.Close(); }
@@ -494,22 +513,31 @@ public sealed class JournalEditorViewModelTests
     [DataRow(Outcome.Failed)]
     public void ContinueFocusesDateOnlyAfterSuccessfulSaveAndKeepsEnteredDate(Outcome outcome)
     {
-        var service = new FakeJournal(); var model = Editor(service);
+        var service = new FakeJournal();
+        var model = Editor(service);
         var window = new FatStacks.Desktop.Views.JournalEditorWindow(model);
         try
         {
-            window.Show(); Pump();
+            window.Show();
+            Pump();
             var date = (System.Windows.Controls.DatePicker)window.FindName("AccountingDateInput");
             Assert.AreEqual(Day.ToDateTime(TimeOnly.MinValue), model.AccountingDate);
             Assert.IsTrue(date.IsKeyboardFocusWithin);
-            model.AccountingDate = new DateTime(2026, 10, 23); Pump();
+            model.AccountingDate = new DateTime(2026, 10, 23);
+            Pump();
             var description = (System.Windows.Controls.TextBox)window.FindName("DescriptionInput");
             description.Focus();
             Descendants(window).OfType<System.Windows.Controls.Button>().Single(x => System.Windows.Automation.AutomationProperties.GetAutomationId(x) == "ContinueJournal").RaiseEvent(new System.Windows.RoutedEventArgs(System.Windows.Controls.Button.ClickEvent));
-            Assert.IsTrue(model.IsBusy); service.Complete(outcome);
+            Assert.IsTrue(model.IsBusy);
+            service.Complete(outcome);
             var timer = System.Diagnostics.Stopwatch.StartNew();
-            while (model.IsBusy && timer.Elapsed < TimeSpan.FromSeconds(5)) { Pump(); Thread.Sleep(1); }
-            Pump(); Assert.IsFalse(model.IsBusy);
+            while (model.IsBusy && timer.Elapsed < TimeSpan.FromSeconds(5))
+            {
+                Pump();
+                Thread.Sleep(1);
+            }
+            Pump();
+            Assert.IsFalse(model.IsBusy);
             Assert.AreEqual(new DateTime(2026, 10, 23), model.AccountingDate);
             Assert.AreEqual(outcome == Outcome.Success, date.IsKeyboardFocusWithin);
             Assert.AreEqual(outcome == Outcome.Success ? "" : "1000", model.Lines[0].Debit);
@@ -530,22 +558,43 @@ public sealed class JournalEditorViewModelTests
             var debit = fields.Single(x => System.Windows.Automation.AutomationProperties.GetAutomationId(x) == model.Lines[0].DebitControlId);
             var credit = fields.Single(x => System.Windows.Automation.AutomationProperties.GetAutomationId(x) == model.Lines[0].CreditControlId);
             var description = (System.Windows.Controls.TextBox)window.FindName("DescriptionInput");
-            description.Focus(); description.MoveFocus(new(System.Windows.Input.FocusNavigationDirection.Next)); Pump();
-            Assert.AreSame(account, System.Windows.Input.Keyboard.FocusedElement); Assert.AreEqual(account.Text, account.SelectedText);
-            account.SelectedText = "uIt"; Assert.AreEqual("uIt", model.Lines[0].AccountText);
+            description.Focus();
+            description.MoveFocus(new(System.Windows.Input.FocusNavigationDirection.Next));
+            Pump();
+            Assert.AreSame(account, System.Windows.Input.Keyboard.FocusedElement);
+            Assert.AreEqual(account.Text, account.SelectedText);
+            account.SelectedText = "uIt";
+            Assert.AreEqual("uIt", model.Lines[0].AccountText);
             var popup = Descendants(window).OfType<System.Windows.Controls.Primitives.Popup>().Single(p => p.IsOpen && p.Child is System.Windows.Controls.ListBox);
             var matches = (System.Windows.Controls.ListBox)popup.Child;
             CollectionAssert.AreEqual(new[] { "Equity" }, matches.Items.Cast<string>().ToArray());
             var enter = new System.Windows.Input.KeyEventArgs(System.Windows.Input.Keyboard.PrimaryDevice, System.Windows.PresentationSource.FromVisual(window), 0, System.Windows.Input.Key.Enter) { RoutedEvent = System.Windows.Input.Keyboard.PreviewKeyDownEvent };
-            account.RaiseEvent(enter); Pump(); Assert.IsTrue(enter.Handled);
-            Assert.AreEqual("Equity", model.Lines[0].AccountText); Assert.AreSame(debit, System.Windows.Input.Keyboard.FocusedElement);
+            account.RaiseEvent(enter);
+            Pump();
+            Assert.IsTrue(enter.Handled);
+            Assert.AreEqual("Equity", model.Lines[0].AccountText);
+            Assert.AreSame(debit, System.Windows.Input.Keyboard.FocusedElement);
             Assert.IsNotNull(account.GetBindingExpression(System.Windows.Controls.TextBox.TextProperty));
             description.Focus();
             var click = new System.Windows.Input.MouseButtonEventArgs(System.Windows.Input.Mouse.PrimaryDevice, 0, System.Windows.Input.MouseButton.Left) { RoutedEvent = System.Windows.UIElement.PreviewMouseLeftButtonDownEvent };
-            account.RaiseEvent(click); Assert.IsTrue(click.Handled); Assert.AreEqual(account.Text, account.SelectedText);
-            debit.Focus(); debit.Text = "25"; credit.Focus(); Pump(); Assert.AreEqual("25.00", debit.Text); Assert.AreEqual("25.00", model.Lines[0].Debit);
-            debit.Focus(); debit.Text = "1.001"; credit.Focus(); Pump(); Assert.AreEqual("1.001", debit.Text);
-            credit.Text = "4.5"; description.Focus(); Pump(); Assert.AreEqual("4.50", credit.Text);
+            account.RaiseEvent(click);
+            Assert.IsTrue(click.Handled);
+            Assert.AreEqual(account.Text, account.SelectedText);
+            debit.Focus();
+            debit.Text = "25";
+            credit.Focus();
+            Pump();
+            Assert.AreEqual("25.00", debit.Text);
+            Assert.AreEqual("25.00", model.Lines[0].Debit);
+            debit.Focus();
+            debit.Text = "1.001";
+            credit.Focus();
+            Pump();
+            Assert.AreEqual("1.001", debit.Text);
+            credit.Text = "4.5";
+            description.Focus();
+            Pump();
+            Assert.AreEqual("4.50", credit.Text);
         }
         finally { window.Close(); }
     }
@@ -553,8 +602,10 @@ public sealed class JournalEditorViewModelTests
     {
         for (var i = 0; i < System.Windows.Media.VisualTreeHelper.GetChildrenCount(parent); i++)
         {
-            var child = System.Windows.Media.VisualTreeHelper.GetChild(parent, i); yield return child;
-            foreach (var nested in Descendants(child)) yield return nested;
+            var child = System.Windows.Media.VisualTreeHelper.GetChild(parent, i);
+            yield return child;
+            foreach (var nested in Descendants(child))
+                yield return nested;
         }
     }
     private static void Pump() => System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
@@ -619,7 +670,11 @@ public sealed class JournalEditorViewModelTests
         }
         finally
         {
-            if (model.IsBusy) { service.Complete(Outcome.Failed); Pump(); }
+            if (model.IsBusy)
+            {
+                service.Complete(Outcome.Failed);
+                Pump();
+            }
             window.Close();
             System.Globalization.CultureInfo.CurrentCulture = originalCulture;
         }
@@ -636,11 +691,15 @@ public sealed class JournalEditorViewModelTests
             var accounting = (System.Windows.Controls.DatePicker)window.FindName("AccountingDateInput");
             var bank = (System.Windows.Controls.DatePicker)window.FindName("BankDateInput");
             accounting.Text = new DateTime(2024, 2, 28).ToString("d", System.Globalization.CultureInfo.CurrentCulture);
-            Input(accounting, "+"); Assert.AreEqual(new DateTime(2024, 2, 29), model.AccountingDate);
-            Input(accounting, "-"); Assert.AreEqual(new DateTime(2024, 2, 28), model.AccountingDate);
-            Input(bank, "t"); Assert.AreEqual(new DateTime(2026, 11, 21), model.BankPostingDate);
+            Input(accounting, "+");
+            Assert.AreEqual(new DateTime(2024, 2, 29), model.AccountingDate);
+            Input(accounting, "-");
+            Assert.AreEqual(new DateTime(2024, 2, 28), model.AccountingDate);
+            Input(bank, "t");
+            Assert.AreEqual(new DateTime(2026, 11, 21), model.BankPostingDate);
             accounting.Text = "invalid";
-            Input(accounting, "T"); Assert.AreEqual(new DateTime(2026, 11, 21), model.AccountingDate);
+            Input(accounting, "T");
+            Assert.AreEqual(new DateTime(2026, 11, 21), model.AccountingDate);
             Assert.AreEqual(new DateTime(2026, 11, 21).ToString("d", System.Globalization.CultureInfo.CurrentCulture), accounting.Text);
         }
         finally { window.Close(); }
@@ -651,27 +710,38 @@ public sealed class JournalEditorViewModelTests
             input.Focus();
             var composition = new System.Windows.Input.TextComposition(System.Windows.Input.InputManager.Current, input, text);
             var args = new System.Windows.Input.TextCompositionEventArgs(System.Windows.Input.Keyboard.PrimaryDevice, composition) { RoutedEvent = System.Windows.Input.TextCompositionManager.PreviewTextInputEvent };
-            input.RaiseEvent(args); Assert.IsTrue(args.Handled);
+            input.RaiseEvent(args);
+            Assert.IsTrue(args.Handled);
         }
     }
     [STATestMethod]
     public void EditorBindsAmountsAndDeleteInitiallyFocusesCancel()
     {
-        var service=new FakeJournal(); var model=Editor(service);
-        var window=new FatStacks.Desktop.Views.JournalEditorWindow(model);
+        var service = new FakeJournal();
+        var model = Editor(service);
+        var window = new FatStacks.Desktop.Views.JournalEditorWindow(model);
         try
         {
-            window.Show(); Pump();
-            var amount=Descendants(window).OfType<System.Windows.Controls.TextBox>().Single(x => System.Windows.Automation.AutomationProperties.GetAutomationId(x)==model.Lines[0].DebitControlId);
-            amount.Text="25"; Assert.AreEqual("25",model.Lines[0].Debit);
-            var picker=Descendants(window).OfType<System.Windows.Controls.UserControl>().First(x => x.GetType().Name=="AccountComboBox"); picker.Focus();
-            var escape=new System.Windows.Input.KeyEventArgs(System.Windows.Input.Keyboard.PrimaryDevice,System.Windows.PresentationSource.FromVisual(window),0,System.Windows.Input.Key.Down) { RoutedEvent=System.Windows.Input.Keyboard.PreviewKeyDownEvent };
-            picker.RaiseEvent(escape); Assert.IsTrue(escape.Handled);
+            window.Show();
+            Pump();
+            var amount = Descendants(window).OfType<System.Windows.Controls.TextBox>().Single(x => System.Windows.Automation.AutomationProperties.GetAutomationId(x) == model.Lines[0].DebitControlId);
+            amount.Text = "25";
+            Assert.AreEqual("25", model.Lines[0].Debit);
+            var picker = Descendants(window).OfType<System.Windows.Controls.UserControl>().First(x => x.GetType().Name == "AccountComboBox");
+            picker.Focus();
+            var escape = new System.Windows.Input.KeyEventArgs(System.Windows.Input.Keyboard.PrimaryDevice, System.Windows.PresentationSource.FromVisual(window), 0, System.Windows.Input.Key.Down) { RoutedEvent = System.Windows.Input.Keyboard.PreviewKeyDownEvent };
+            picker.RaiseEvent(escape);
+            Assert.IsTrue(escape.Handled);
         }
         finally { window.Close(); }
-        var entry=new JournalRequest(1,1,new byte[8],Day,null,null,"Preview",0,[new(1,new byte[8],1,1,25,0,"USD"),new(2,new byte[8],2,2,0,25,"USD",2)],[new(1,new byte[8]),new(2,new byte[8])]);
-        var delete=new FatStacks.Desktop.Views.DeleteEntryWindow(entry,Accounts,_ => throw new AssertFailedException("Cancel must not write."));
-        try { delete.Show(); Pump(); Assert.IsTrue(((System.Windows.Controls.Button)delete.FindName("CancelButton")).IsKeyboardFocused); }
+        var entry = new JournalRequest(1, 1, new byte[8], Day, null, null, "Preview", 0, [new(1, new byte[8], 1, 1, 25, 0, "USD"), new(2, new byte[8], 2, 2, 0, 25, "USD", 2)], [new(1, new byte[8]), new(2, new byte[8])]);
+        var delete = new FatStacks.Desktop.Views.DeleteEntryWindow(entry, Accounts, _ => throw new AssertFailedException("Cancel must not write."));
+        try
+        {
+            delete.Show();
+            Pump();
+            Assert.IsTrue(((System.Windows.Controls.Button)delete.FindName("CancelButton")).IsKeyboardFocused);
+        }
         finally { delete.Close(); }
     }
     [STATestMethod]
@@ -681,7 +751,8 @@ public sealed class JournalEditorViewModelTests
         var window = new FatStacks.Desktop.Views.JournalEditorWindow(model);
         try
         {
-            window.Show(); Pump();
+            window.Show();
+            Pump();
             var description = (System.Windows.Controls.TextBox)window.FindName("DescriptionInput");
             var controls = Descendants(window).OfType<System.Windows.Controls.TextBox>().ToArray();
             System.Windows.Controls.TextBox Input(string id) => controls.Single(x => System.Windows.Automation.AutomationProperties.GetAutomationId(x) == id);
@@ -689,16 +760,19 @@ public sealed class JournalEditorViewModelTests
             var firstDebit = Input(model.Lines[0].DebitControlId);
             var firstCredit = Input(model.Lines[0].CreditControlId);
             var secondAccount = Input(model.Lines[1].AccountControlId);
-            description.Focus(); Pump();
+            description.Focus();
+            Pump();
             foreach (var expected in new[] { firstAccount, firstDebit, firstCredit, secondAccount })
             {
                 Assert.IsTrue(((System.Windows.UIElement)System.Windows.Input.Keyboard.FocusedElement).MoveFocus(new(System.Windows.Input.FocusNavigationDirection.Next)));
-                Pump(); Assert.AreSame(expected, System.Windows.Input.Keyboard.FocusedElement);
+                Pump();
+                Assert.AreSame(expected, System.Windows.Input.Keyboard.FocusedElement);
             }
             foreach (var expected in new[] { firstCredit, firstDebit, firstAccount, description })
             {
                 Assert.IsTrue(((System.Windows.UIElement)System.Windows.Input.Keyboard.FocusedElement).MoveFocus(new(System.Windows.Input.FocusNavigationDirection.Previous)));
-                Pump(); Assert.AreSame(expected, System.Windows.Input.Keyboard.FocusedElement);
+                Pump();
+                Assert.AreSame(expected, System.Windows.Input.Keyboard.FocusedElement);
             }
             var errors = (System.Windows.Controls.ScrollViewer)window.FindName("ErrorScroll");
             Assert.AreEqual(System.Windows.Visibility.Collapsed, errors.ComputedVerticalScrollBarVisibility);
@@ -707,11 +781,16 @@ public sealed class JournalEditorViewModelTests
             Assert.IsFalse(remove.IsEnabled);
             var glyph = Descendants(remove).OfType<System.Windows.Controls.TextBlock>().Single(x => x.Text == "×");
             Assert.IsTrue(glyph.ActualWidth > 0 && glyph.ActualWidth >= glyph.DesiredSize.Width);
-            model.AddLine(); Pump(); Assert.IsTrue(remove.IsEnabled);
+            model.AddLine();
+            Pump();
+            Assert.IsTrue(remove.IsEnabled);
             remove.RaiseEvent(new System.Windows.RoutedEventArgs(System.Windows.Controls.Button.ClickEvent));
-            Pump(); Assert.HasCount(2, model.Lines);
-            for (var i = 0; i < 30; i++) model.Errors.Add(new("Amount", "Enter a valid amount.", i + 1));
-            Pump(); Assert.AreEqual(System.Windows.Visibility.Visible, errors.ComputedVerticalScrollBarVisibility);
+            Pump();
+            Assert.HasCount(2, model.Lines);
+            for (var i = 0; i < 30; i++)
+                model.Errors.Add(new("Amount", "Enter a valid amount.", i + 1));
+            Pump();
+            Assert.AreEqual(System.Windows.Visibility.Visible, errors.ComputedVerticalScrollBarVisibility);
         }
         finally { window.Close(); }
     }
