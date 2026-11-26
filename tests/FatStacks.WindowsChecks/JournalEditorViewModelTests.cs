@@ -523,7 +523,8 @@ public sealed class JournalEditorViewModelTests
         var window = new FatStacks.Desktop.Views.JournalEditorWindow(model);
         try
         {
-            window.Show(); Pump();
+            window.Show();
+            Pump();
             var fields = Descendants(window).OfType<System.Windows.Controls.TextBox>().ToArray();
             var account = fields.Single(x => System.Windows.Automation.AutomationProperties.GetAutomationId(x) == model.Lines[0].AccountControlId);
             var debit = fields.Single(x => System.Windows.Automation.AutomationProperties.GetAutomationId(x) == model.Lines[0].DebitControlId);
@@ -531,8 +532,10 @@ public sealed class JournalEditorViewModelTests
             var description = (System.Windows.Controls.TextBox)window.FindName("DescriptionInput");
             description.Focus(); description.MoveFocus(new(System.Windows.Input.FocusNavigationDirection.Next)); Pump();
             Assert.AreSame(account, System.Windows.Input.Keyboard.FocusedElement); Assert.AreEqual(account.Text, account.SelectedText);
-            account.SelectedText = "Equ"; Assert.AreEqual("Equ", model.Lines[0].AccountText);
-            Assert.IsTrue(model.Lines[0].Suggestions.Any(x => x.Path == "Equity"));
+            account.SelectedText = "uIt"; Assert.AreEqual("uIt", model.Lines[0].AccountText);
+            var popup = Descendants(window).OfType<System.Windows.Controls.Primitives.Popup>().Single(p => p.IsOpen && p.Child is System.Windows.Controls.ListBox);
+            var matches = (System.Windows.Controls.ListBox)popup.Child;
+            CollectionAssert.AreEqual(new[] { "Equity" }, matches.Items.Cast<string>().ToArray());
             var enter = new System.Windows.Input.KeyEventArgs(System.Windows.Input.Keyboard.PrimaryDevice, System.Windows.PresentationSource.FromVisual(window), 0, System.Windows.Input.Key.Enter) { RoutedEvent = System.Windows.Input.Keyboard.PreviewKeyDownEvent };
             account.RaiseEvent(enter); Pump(); Assert.IsTrue(enter.Handled);
             Assert.AreEqual("Equity", model.Lines[0].AccountText); Assert.AreSame(debit, System.Windows.Input.Keyboard.FocusedElement);

@@ -77,7 +77,6 @@ public sealed class JournalLineViewModel : ObservableObject
     {
         eligibleAccounts = eligible;
         Changed(nameof(AccountPaths));
-        Changed(nameof(Suggestions));
     }
     public string AccountControlId => $"JournalAccount_{Key}";
     public string DebitControlId => $"JournalDebit_{Key}";
@@ -88,12 +87,10 @@ public sealed class JournalLineViewModel : ObservableObject
         {
             if (Set(ref accountText, value))
             {
-                Changed(nameof(Suggestions));
                 Changed(nameof(Name));
             }
         }
     }
-    public IReadOnlyList<AccountSuggestion> Suggestions => AccountPathFilter.Matches(EligibleAccounts, x => x.Path, AccountText).ToArray();
     public long AccountId => Accounts.FirstOrDefault(x => x.Path.Equals(AccountText, StringComparison.OrdinalIgnoreCase))?.Id ?? 0;
     private string debit = ""; public string Debit
     {

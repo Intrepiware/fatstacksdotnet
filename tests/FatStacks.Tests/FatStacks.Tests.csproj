@@ -12,7 +12,6 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="../../src/FatStacks.Desktop/ViewModels/JournalSaveNotice.cs" Link="Desktop/JournalSaveNotice.cs" />
-    <Compile Include="../../src/FatStacks.Desktop/AccountPathFilter.cs" Link="Desktop/AccountPathFilter.cs" />
     <Compile Include="../../src/FatStacks.Desktop/ViewModels/JournalEditorViewModel.cs" Link="Desktop/JournalEditorViewModel.cs" />
     <Compile Include="../FatStacks.WindowsChecks/JournalEditorViewModelTests.cs" Link="Desktop/JournalEditorViewModelTests.cs" />
   </ItemGroup>
