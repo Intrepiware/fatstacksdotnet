@@ -1,0 +1,24 @@
+{
+  "name": "fat-stacks-net",
+  "version": "1.0.0",
+  "description": "A single-user Windows accounting application on .NET 10 and SQL Server. The current implementation covers connection profiles, explicit book setup, and book switching (US1). Account browsing and journal workflows are not yet delivered.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs",
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Intrepiware/fatstacksdotnet.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Intrepiware/fatstacksdotnet/issues"
+  },
+  "homepage": "https://github.com/Intrepiware/fatstacksdotnet#readme"
+}

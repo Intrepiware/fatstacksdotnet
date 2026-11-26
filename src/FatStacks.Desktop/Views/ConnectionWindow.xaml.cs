@@ -12,11 +12,14 @@ public partial class ConnectionWindow : Window
     private readonly ConnectionViewModel model;
     public ConnectionWindow(ConnectionViewModel model)
     {
-        InitializeComponent(); this.model = model; DataContext = model;
+        InitializeComponent();
+        this.model = model;
+        DataContext = model;
         var profiles = CollectionViewSource.GetDefaultView(model.Profiles);
         if (profiles.SortDescriptions.Count == 0)
             profiles.SortDescriptions.Add(new SortDescription(nameof(ConnectionProfile.FriendlyName), ListSortDirection.Ascending));
-        model.Opened += Opened; model.PropertyChanged += ModelChanged;
+        model.Opened += Opened;
+        model.PropertyChanged += ModelChanged;
         Closed += (_, _) => { model.Opened -= Opened; model.PropertyChanged -= ModelChanged; };
     }
     private void ProfileDoubleClicked(object sender, MouseButtonEventArgs e)
@@ -40,21 +43,35 @@ public partial class ConnectionWindow : Window
                 var b = new Microsoft.Data.SqlClient.SqlConnectionStringBuilder(model.Selected.Settings.ConnectionString);
                 Password.Password = b.Password;
             }
-            else Password.Clear();
+            else
+                Password.Clear();
         }
     }
     private void Opened(object? sender, EventArgs e) => Dispatcher.BeginInvoke(new Action(Close));
-    private void PasswordChanged(object sender, RoutedEventArgs e) { if (DataContext is ConnectionViewModel vm) vm.Password = Password.Password; }
+    private void PasswordChanged(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is ConnectionViewModel vm)
+            vm.Password = Password.Password;
+    }
     private void CancelClicked(object sender, RoutedEventArgs e) => model.Cancel();
-    private void CloseClicked(object sender, RoutedEventArgs e) { model.Cancel(); Close(); }
+    private void CloseClicked(object sender, RoutedEventArgs e)
+    {
+        model.Cancel();
+        Close();
+    }
     protected override void OnClosing(CancelEventArgs e)
     {
-        if (model.Busy) { model.Cancel(); e.Cancel = true; }
+        if (model.Busy)
+        {
+            model.Cancel();
+            e.Cancel = true;
+        }
         base.OnClosing(e);
     }
     private void InitializeClicked(object sender, RoutedEventArgs e)
     {
-        var setup = new BookSetupWindow(model) { Owner = this }; setup.ShowDialog();
+        var setup = new BookSetupWindow(model) { Owner = this };
+        setup.ShowDialog();
     }
     private async void ReassociateClicked(object sender, RoutedEventArgs e)
     {

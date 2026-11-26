@@ -77,7 +77,8 @@ public sealed class RegisterDesktopTests
             for (var i = 0; i < 150; i++)
             {
                 var child = desktop.Find(parentId)?.FindFirst(TreeScope.Descendants, condition);
-                if (child is not null) return child;
+                if (child is not null)
+                    return child;
                 await Task.Delay(100);
             }
 

@@ -16,12 +16,14 @@ public partial class App : Application
     protected override void OnStartup(StartupEventArgs e)
     {
         base.OnStartup(e);
+        WindowShortcuts.Register();
         DispatcherUnhandledException += (_, args) =>
         {
             // Log only an error category, never exception text, values, or SQL details.
             System.Diagnostics.Trace.TraceError("category=UnexpectedApplicationFailure");
             MessageBox.Show("An unexpected application error occurred. The application will close.", "Fat Stacks.NET", MessageBoxButton.OK, MessageBoxImage.Error);
-            args.Handled = true; Shutdown(1);
+            args.Handled = true;
+            Shutdown(1);
         };
         var builder = new ContainerBuilder();
         builder.RegisterType<WindowsSecretProtector>().As<ISecretProtector>().SingleInstance();
@@ -37,12 +39,19 @@ public partial class App : Application
         var sessions = container.Resolve<BookSessionCoordinator>();
         sessions.SessionChanged += (_, _) =>
         {
-            bookScope?.Dispose(); bookScope = null;
+            bookScope?.Dispose();
+            bookScope = null;
             if (sessions.Active is { } active)
                 bookScope = container.BeginLifetimeScope(b => b.RegisterModule(new BookScopeModule(active)));
         };
-        MainWindow = container.Resolve<MainWindow>(); MainWindow.Show();
+        MainWindow = container.Resolve<MainWindow>();
+        MainWindow.Show();
     }
     internal T? ResolveBook<T>() where T : class => bookScope?.Resolve<T>();
-    protected override void OnExit(ExitEventArgs e) { bookScope?.Dispose(); container?.Dispose(); base.OnExit(e); }
+    protected override void OnExit(ExitEventArgs e)
+    {
+        bookScope?.Dispose();
+        container?.Dispose();
+        base.OnExit(e);
+    }
 }

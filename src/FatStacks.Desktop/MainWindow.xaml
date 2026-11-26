@@ -9,6 +9,9 @@
  <Window.Resources>
   <ResourceDictionary>
    <ResourceDictionary.MergedDictionaries><ResourceDictionary Source="Assets/FluentIcons.xaml"/></ResourceDictionary.MergedDictionaries>
+   <DataTemplate x:Key="EntrySummaryTemplate">
+    <TextBlock TextTrimming="CharacterEllipsis" VerticalAlignment="Center" ToolTip="{Binding SummaryText}" AutomationProperties.Name="{Binding SummaryText}"><Run Text="{Binding DisplayPayee,Mode=OneWay}"/><Run Text="{Binding SummarySeparator,Mode=OneWay}"/><Run Text="{Binding DisplayDescription,Mode=OneWay}" FontStyle="Italic"/></TextBlock>
+   </DataTemplate>
    <Style x:Key="NumericHeader" TargetType="DataGridColumnHeader">
     <Setter Property="Background" Value="#F2F5F8"/><Setter Property="Foreground" Value="#23384E"/>
     <Setter Property="Padding" Value="12,10"/><Setter Property="BorderBrush" Value="#DCE3EA"/><Setter Property="BorderThickness" Value="0,0,1,1"/>
@@ -66,7 +69,10 @@
     </StackPanel>
     <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
      <Border Background="#EDF4EE" CornerRadius="4" Padding="10,6" Margin="0,0,12,0"><TextBlock Text="REGISTER" Foreground="#52725B" FontSize="11" FontWeight="SemiBold"/></Border>
-     <Button x:Name="AccountSetupButton" Content="Accounts…" Click="AccountsClicked" IsEnabled="False" AutomationProperties.AutomationId="SetupAccounts"/>
+     <Button x:Name="NewJournalButton" Content="_New entry" Click="NewJournalClicked" ToolTip="New entry (N)" AutomationProperties.AutomationId="NewJournal"/>
+   <Button x:Name="EditJournalButton" Content="_Edit" Click="EditJournalClicked" ToolTip="Edit selected entry (E)" AutomationProperties.AutomationId="EditJournal"/>
+   <Button x:Name="DeleteJournalButton" Content="Delete" Click="DeleteJournalClicked" ToolTip="Delete selected entry (Delete)" AutomationProperties.AutomationId="DeleteJournal"/>
+   <Button x:Name="AccountSetupButton" Content="Accounts…" Click="AccountsClicked" IsEnabled="False" AutomationProperties.AutomationId="SetupAccounts"/>
      <Button Content="Connections…" Click="ConnectionsClicked" AutomationProperties.AutomationId="Connections"/>
      <Button x:Name="ReloadButton" Content="Reload" Click="RefreshClicked" IsEnabled="False" AutomationProperties.AutomationId="RefreshRegister"/>
     </StackPanel>
@@ -109,7 +115,7 @@
    </DockPanel>
    <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch" Background="#E4EAF0"/>
    <Grid Grid.Column="2">
-    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
     <Border Padding="20,18" BorderBrush="#DFE6EC" BorderThickness="0,0,0,1">
      <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
       <StackPanel Margin="0,0,16,0"><TextBlock AutomationProperties.AutomationId="RegisterAccountTitle" Text="{Binding AccountTitle,FallbackValue=Transaction register}" FontSize="20" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/><TextBlock Text="{Binding AccountPath,FallbackValue=Select an account to view its transactions}" Foreground="#748498" Margin="0,4,0,0" TextTrimming="CharacterEllipsis"/></StackPanel>
@@ -122,14 +128,18 @@
       <TextBox x:Name="RegisterSearch" Grid.Column="1" Text="{Binding Search,UpdateSourceTrigger=PropertyChanged}" MaxLength="1000" VerticalContentAlignment="Center" BorderBrush="#CFD8E1" ToolTip="Search descriptions and counter-accounts (Ctrl+F)" AutomationProperties.Name="Search transactions" AutomationProperties.AutomationId="RegisterSearch"/>
      </Grid>
     </Border>
-    <Grid Grid.Row="2">
-     <DataGrid ItemsSource="{Binding Rows}" SelectedItem="{Binding Selected,Mode=OneWay}" SelectionChanged="RegisterSelectionChanged" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False" CanUserDeleteRows="False" CanUserReorderColumns="False" CanUserSortColumns="False"
+    <Border Grid.Row="2" Background="#FFF4D9" BorderBrush="#E7D5A9" BorderThickness="0,0,0,1" Padding="16,10">
+     <Border.Style><Style TargetType="Border"><Setter Property="Visibility" Value="Collapsed"/><Style.Triggers><DataTrigger Binding="{Binding HasSaveNotice}" Value="True"><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers></Style></Border.Style>
+     <DockPanel><Button DockPanel.Dock="Right" Content="Dismiss" Click="DismissSaveNoticeClicked" Margin="12,0,0,0" AutomationProperties.AutomationId="DismissSaveNotice"/><TextBlock Text="{Binding SaveNotice}" TextWrapping="Wrap" VerticalAlignment="Center" AutomationProperties.AutomationId="RegisterSaveNotice" AutomationProperties.LiveSetting="Assertive"/></DockPanel>
+    </Border>
+    <Grid Grid.Row="3">
+     <DataGrid ItemsSource="{Binding Rows}" SelectedItem="{Binding Selected,Mode=OneWay}" SelectionChanged="RegisterSelectionChanged" MouseDoubleClick="RegisterDoubleClicked" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False" CanUserDeleteRows="False" CanUserReorderColumns="False" CanUserSortColumns="False"
                SelectionMode="Single" SelectionUnit="FullRow" GridLinesVisibility="Vertical" VerticalGridLinesBrush="#E4EAF0" BorderThickness="0" RowBackground="White" AlternatingRowBackground="#F0F8FC" Background="#F0F0F0"
                HeadersVisibility="Column" RowHeight="34" EnableRowVirtualization="True" EnableColumnVirtualization="True" AutomationProperties.AutomationId="RegisterGrid">
       <DataGrid.Resources><SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="#DDEBFA"/><SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="#23384E"/><SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="#E8EEF5"/><SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}" Color="#23384E"/></DataGrid.Resources>
       <DataGrid.Columns>
        <DataGridTextColumn Header="Date" Binding="{Binding Date,StringFormat=yyyy-MM-dd}" Width="105"/>
-       <DataGridTextColumn Header="Description" Binding="{Binding Description}" Width="2*"/>
+       <DataGridTemplateColumn Header="Payee / Description" CellTemplate="{StaticResource EntrySummaryTemplate}" Width="2*"/>
        <DataGridTextColumn Header="Category" Binding="{Binding CounterAccounts}" Width="1.4*"/>
        <DataGridTemplateColumn Header="C" Width="35"><DataGridTemplateColumn.CellTemplate><DataTemplate><TextBlock ToolTip="{Binding Status}" AutomationProperties.Name="{Binding Status}" HorizontalAlignment="Center"><TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Text" Value=""/><Style.Triggers><DataTrigger Binding="{Binding Status}" Value="Cleared"><Setter Property="Text" Value="✓"/></DataTrigger><DataTrigger Binding="{Binding Status}" Value="Reconciling"><Setter Property="Text" Value="R"/></DataTrigger><DataTrigger Binding="{Binding Status}" Value="Mixed"><Setter Property="Text" Value="M"/></DataTrigger></Style.Triggers></Style></TextBlock.Style></TextBlock></DataTemplate></DataGridTemplateColumn.CellTemplate></DataGridTemplateColumn>
        <DataGridTextColumn Binding="{Binding Payment,StringFormat=N2}" Width="125" ElementStyle="{StaticResource Money}" HeaderStyle="{StaticResource NumericHeader}"><DataGridTextColumn.Header><TextBlock Text="Payment" ToolTip="Net credits to the selected account"/></DataGridTextColumn.Header></DataGridTextColumn>
@@ -143,9 +153,9 @@
       <TextBlock Text="{Binding EmptyDescription,FallbackValue=Use Connections to open a book.}" Foreground="#748498" TextWrapping="Wrap" TextAlignment="Center" Margin="0,10,0,0"/>
      </StackPanel>
     </Grid>
-    <Border Grid.Row="3" BorderBrush="#DCE3EA" BorderThickness="0,1,0,0" Background="#FAFBFD" Padding="18,12">
+    <Border Grid.Row="4" BorderBrush="#DCE3EA" BorderThickness="0,1,0,0" Background="#FAFBFD" Padding="18,12">
      <Border.Style><Style TargetType="Border"><Setter Property="Visibility" Value="Visible"/><Style.Triggers><DataTrigger Binding="{Binding Selected,FallbackValue={x:Null}}" Value="{x:Null}"><Setter Property="Visibility" Value="Collapsed"/></DataTrigger></Style.Triggers></Style></Border.Style>
-     <StackPanel><DockPanel><TextBlock Text="{Binding Selected.Description}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/><TextBlock Text="{Binding Currency}" Margin="12,0,0,0" Foreground="#748498"/></DockPanel>
+     <StackPanel><DockPanel><ContentControl Content="{Binding Selected}" ContentTemplate="{StaticResource EntrySummaryTemplate}" Focusable="False" IsTabStop="False"/><TextBlock Text="{Binding Currency}" Margin="12,0,0,0" Foreground="#748498"/></DockPanel>
       <DataGrid ItemsSource="{Binding Details}" MaxHeight="180" Margin="0,6" Background="Transparent" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False" CanUserDeleteRows="False" CanUserSortColumns="False" CanUserReorderColumns="False" HeadersVisibility="Column" GridLinesVisibility="None" BorderThickness="0" RowHeight="30" EnableRowVirtualization="True" EnableColumnVirtualization="True" ScrollViewer.HorizontalScrollBarVisibility="Auto" AutomationProperties.AutomationId="EntryDetails">
        <DataGrid.Columns>
         <DataGridTemplateColumn Header="Account" Width="2*" MinWidth="180"><DataGridTemplateColumn.CellTemplate><DataTemplate><TextBlock><Hyperlink Click="DetailAccountClicked" Tag="{Binding AccountId}" ToolTip="Open this account"><Run Text="{Binding AccountName}"/></Hyperlink></TextBlock></DataTemplate></DataGridTemplateColumn.CellTemplate></DataGridTemplateColumn>
@@ -159,7 +169,7 @@
       <TextBlock AutomationProperties.AutomationId="SelectedJournalEntry" Text="{Binding Selected.EntryId,StringFormat=Journal entry {0}}" Foreground="#748498" FontSize="11"/>
      </StackPanel>
     </Border>
-    <Border Grid.Row="4" Background="#FFF4D9" Padding="14,8">
+    <Border Grid.Row="5" Background="#FFF4D9" Padding="14,8">
      <Border.Style><Style TargetType="Border"><Style.Triggers><DataTrigger Binding="{Binding Text,ElementName=Warning}" Value=""><Setter Property="Visibility" Value="Collapsed"/></DataTrigger></Style.Triggers></Style></Border.Style>
      <DockPanel><Button x:Name="DismissWarning" DockPanel.Dock="Right" Content="Dismiss" Click="DismissWarningClicked" AutomationProperties.AutomationId="DismissSessionWarning"/><TextBlock x:Name="Warning" TextWrapping="Wrap" VerticalAlignment="Center" AutomationProperties.AutomationId="SessionWarning"/></DockPanel>
     </Border>

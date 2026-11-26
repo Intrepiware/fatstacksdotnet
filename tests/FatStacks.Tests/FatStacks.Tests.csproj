@@ -10,4 +10,9 @@
     <Compile Include="../../src/FatStacks.Desktop/ViewModels/MainWindowViewModel.cs" Link="Desktop/MainWindowViewModel.cs" />
     <Compile Include="../FatStacks.WindowsChecks/RegisterJourneyTests.cs" Link="Desktop/RegisterJourneyTests.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <Compile Include="../../src/FatStacks.Desktop/ViewModels/JournalSaveNotice.cs" Link="Desktop/JournalSaveNotice.cs" />
+    <Compile Include="../../src/FatStacks.Desktop/ViewModels/JournalEditorViewModel.cs" Link="Desktop/JournalEditorViewModel.cs" />
+    <Compile Include="../FatStacks.WindowsChecks/JournalEditorViewModelTests.cs" Link="Desktop/JournalEditorViewModelTests.cs" />
+  </ItemGroup>
 </Project>

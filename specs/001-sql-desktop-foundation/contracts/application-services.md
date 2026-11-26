@@ -123,7 +123,7 @@ A stored procedure is unnecessary for this operation.
 ## ReadAccountRegister
 
 Inputs: AccountId, book-local Today, and SearchText. Output: current signed balance and ordered
-register rows with entry ID, accounting date, description, counter-account names, Payment,
+register rows with entry ID, accounting date, payee, description, counter-account names, Payment,
 Deposit, running balance, and selected-account reconciliation summary.
 
 Group all selected-account lines by entry. Sum Debit minus Credit. Calculate cumulative totals

@@ -7,7 +7,9 @@ manifest supports development use; do not pass credentials as command-line argum
 ## Folder ownership
 
 - `up/`: immutable one-time creation/evolution scripts, in filename order.
-- `types/`: SQL parameter type definitions when journal writes are delivered.
+- `types/`: journal table-valued parameter definitions. The maintenance adapter maps grate’s
+  `RunFirstAfterUp` stage to this folder so types deploy before dependent procedures.
+  For direct grate maintenance, include `--folders "runfirstafterup=types"`.
 - `sprocs/` and `views/`: one current definition per object. Git uses readable text and `-merge`.
 - `permissions/`: repeatable runtime-role grants, run with maintenance privileges.
 - `afterMigration/`: publish expected schema version only after preceding deployment steps succeed.
@@ -36,3 +38,28 @@ explicitly. Do not restore access by manually setting the schema version before 
 The initial migration creates no user financial records. Recover a failed first deployment by
 inspection and explicit maintenance; transaction rollback should preserve the prior state.
 There is no automated repair, database provisioning, or application backup subsystem.
+
+## US3 journal package compatibility
+
+This increment adds two parameter types, SaveJournalEntry/DeleteJournalEntry, and their runtime
+EXECUTE/REFERENCES grants. It changes no tables or applied one-time scripts; the stored schema
+version stays 1. New databases receive the entire package through explicit initialization.
+Existing books require an explicit maintenance deployment of the current grate package, with
+`RunFirstAfterUp` mapped to `types` as above, before using journal actions. The Initialize
+button preserves an already compatible book; opening a book does not deploy new procedures.
+Use separate maintenance credentials through a secure local invocation; keep them out of command
+arguments and logs. Confirm both procedure definitions and the runtime type/procedure grants.
+
+Type scripts are conditional creation definitions. A future type shape change needs an explicit
+migration plan for dependent procedures and type replacement; editing an applied table migration
+is not an upgrade. Deployment failure must not publish a new schema version. Inspect grate history
+and rerun maintenance explicitly after resolving a failed deployment. Journal operations roll
+back on validation/conflict/SQL failure; an interrupted client response requires reloading before
+retrying because a commit may already have succeeded. No financial history copies are retained
+by these procedures, and deletion is physical.
+
+The register's payee display also requires the current `sprocs/ReadAccountRegister.sql` definition.
+It appends Payee to the result consumed by the application. Deploy that procedure to existing
+books before running the updated build. Executing its CREATE OR ALTER definition directly in
+SSMS with maintenance privileges is sufficient for this procedure-only update and retains its
+runtime grants. It changes no tables or stored schema version.

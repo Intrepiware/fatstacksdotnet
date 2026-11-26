@@ -14,3 +14,6 @@ IF OBJECT_ID('dbo.ReadAccountRegister', 'P') IS NOT NULL GRANT EXECUTE ON dbo.Re
 IF OBJECT_ID('dbo.SaveJournalEntry', 'P') IS NOT NULL GRANT EXECUTE ON dbo.SaveJournalEntry TO FatStacksRuntime;
 IF OBJECT_ID('dbo.DeleteJournalEntry', 'P') IS NOT NULL GRANT EXECUTE ON dbo.DeleteJournalEntry TO FatStacksRuntime;
 -- Maintenance creates/maps an existing login separately and adds its user to this role.
+
+IF TYPE_ID(N'dbo.JournalEntryLines') IS NOT NULL GRANT EXECUTE, REFERENCES ON TYPE::dbo.JournalEntryLines TO FatStacksRuntime;
+IF TYPE_ID(N'dbo.JournalEntryLineVersions') IS NOT NULL GRANT EXECUTE, REFERENCES ON TYPE::dbo.JournalEntryLineVersions TO FatStacksRuntime;

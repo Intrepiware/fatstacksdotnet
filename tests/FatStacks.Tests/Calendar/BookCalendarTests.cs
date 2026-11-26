@@ -21,5 +21,8 @@ public sealed class BookCalendarTests
         foreach (var hour in new[] { 8, 9 })
             Assert.AreEqual(new DateOnly(2026, 11, 1), new BookCalendar("Pacific Standard Time", new FixedClock(new(2026, 11, 1, hour, 30, 0, TimeSpan.Zero))).Today);
     }
-    private sealed class FixedClock(DateTimeOffset utc) : TimeProvider { public override DateTimeOffset GetUtcNow() => utc; }
+    private sealed class FixedClock(DateTimeOffset utc) : TimeProvider
+    {
+        public override DateTimeOffset GetUtcNow() => utc;
+    }
 }

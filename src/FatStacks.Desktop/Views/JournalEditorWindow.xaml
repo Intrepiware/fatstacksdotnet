@@ -1,0 +1,71 @@
+<Window x:Class="FatStacks.Desktop.Views.JournalEditorWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="clr-namespace:FatStacks.Desktop.Views"
+ Title="Journal entry" Icon="/FatStacks.Desktop;component/Assets/ApplicationIcon.ico" Width="940" Height="680" MinHeight="500" MinWidth="780" WindowStartupLocation="CenterOwner" Background="White" FontFamily="Segoe UI" FontSize="13" KeyDown="DialogKeyDown" KeyboardNavigation.TabNavigation="Cycle" AutomationProperties.AutomationId="JournalEditor">
+ <Grid Margin="24"><Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+  <StackPanel Grid.Row="0" IsEnabled="{Binding Idle}">
+   <DockPanel Margin="0,0,0,16"><TextBlock Text="Journal entry" FontSize="24" FontWeight="SemiBold"/><TextBlock Text="{Binding Currency}" HorizontalAlignment="Right" VerticalAlignment="Center"/></DockPanel>
+   <Grid><Grid.ColumnDefinitions><ColumnDefinition Width="180"/><ColumnDefinition Width="180"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+    <StackPanel Margin="0,0,16,0"><Label Content="_Date" Target="{Binding ElementName=AccountingDateInput}"/><DatePicker x:Name="AccountingDateInput" local:JournalInputValidation.Error="{Binding AccountingDateError}" SelectedDate="{Binding AccountingDate}" DateValidationError="DateInvalid" PreviewTextInput="DateShortcutInput" ToolTip="Date shortcuts: - previous day, + next day, T today (book time zone)" AutomationProperties.Name="Accounting date" AutomationProperties.AutomationId="AccountingDate"/></StackPanel>
+    <StackPanel Grid.Column="1" Margin="0,0,16,0"><Label Content="Bank posting date"/><DatePicker x:Name="BankDateInput" local:JournalInputValidation.Error="{Binding BankPostingDateError}" SelectedDate="{Binding BankPostingDate}" DateValidationError="DateInvalid" PreviewTextInput="DateShortcutInput" ToolTip="Date shortcuts: - previous day, + next day, T today (book time zone)" AutomationProperties.Name="Bank posting date" AutomationProperties.AutomationId="BankPostingDate"/></StackPanel>
+    <StackPanel Grid.Column="2"><Label Content="_Payee" Target="{Binding ElementName=PayeeInput}"/><TextBox x:Name="PayeeInput" Text="{Binding Payee,UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Payee" AutomationProperties.AutomationId="JournalPayee"/></StackPanel>
+   </Grid>
+   <Label Content="D_escription" Target="{Binding ElementName=DescriptionInput}" Margin="0,10,0,0"/><TextBox x:Name="DescriptionInput" Text="{Binding Description,UpdateSourceTrigger=PropertyChanged}" AutomationProperties.Name="Description" AutomationProperties.AutomationId="JournalDescription"/>
+  </StackPanel>
+  <Grid Grid.Row="1" Margin="0,20,0,0" IsEnabled="{Binding Idle}">
+   <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+   <Grid x:Name="PostingHeader" Width="{Binding ViewportWidth,ElementName=PostingScroll}" HorizontalAlignment="Left" Margin="0,0,0,6"><Grid.ColumnDefinitions><ColumnDefinition Width="40"/><ColumnDefinition Width="*"/><ColumnDefinition Width="42"/><ColumnDefinition Width="130"/><ColumnDefinition Width="130"/><ColumnDefinition Width="40"/></Grid.ColumnDefinitions>
+    <TextBlock Grid.Column="1" Text="Account" FontWeight="SemiBold"/>
+    <TextBlock Grid.Column="2" Text="C" FontWeight="SemiBold" TextAlignment="Center" ToolTip="Reconciliation status"/>
+    <TextBlock Grid.Column="3" Text="Debit" FontWeight="SemiBold" TextAlignment="Center" Margin="0,0,8,0"/>
+    <TextBlock Grid.Column="4" Text="Credit" FontWeight="SemiBold" TextAlignment="Center" Margin="0,0,8,0"/>
+   </Grid>
+   <ScrollViewer x:Name="PostingScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" CanContentScroll="False" Focusable="False" IsTabStop="False">
+    <ItemsControl Focusable="False" IsTabStop="False" x:Name="PostingRows" ItemsSource="{Binding Lines}"><ItemsControl.ItemTemplate><DataTemplate>
+     <Grid AutomationProperties.Name="{Binding Name}"><Grid.ColumnDefinitions><ColumnDefinition Width="40"/><ColumnDefinition Width="*"/><ColumnDefinition Width="42"/><ColumnDefinition Width="130"/><ColumnDefinition Width="130"/><ColumnDefinition Width="40"/></Grid.ColumnDefinitions>
+      <Grid.Style><Style TargetType="Grid"><Setter Property="Background" Value="Transparent"/><Style.Triggers>
+       <DataTrigger Binding="{Binding IsEvenRow}" Value="True"><Setter Property="Background" Value="#F0F8FC"/></DataTrigger>
+       <Trigger Property="IsMouseOver" Value="True"><Setter Property="Background" Value="#DDEBFA"/></Trigger>
+       <Trigger Property="IsKeyboardFocusWithin" Value="True"><Setter Property="Background" Value="#DDEBFA"/></Trigger>
+      </Style.Triggers></Style></Grid.Style>
+      <Border CornerRadius="9" Padding="4,1" Margin="3,0" HorizontalAlignment="Center" VerticalAlignment="Center">
+       <Border.Style><Style TargetType="Border"><Style.Triggers><DataTrigger Binding="{Binding HasErrors}" Value="True"><Setter Property="Background" Value="#B42318"/></DataTrigger></Style.Triggers></Style></Border.Style>
+       <TextBlock Text="{Binding LineNumber}" AutomationProperties.Name="{Binding Name}">
+        <TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Foreground" Value="#516579"/><Style.Triggers>
+         <DataTrigger Binding="{Binding WillReset}" Value="True"><Setter Property="Foreground" Value="#A16207"/><Setter Property="FontWeight" Value="Bold"/></DataTrigger>
+         <DataTrigger Binding="{Binding HasErrors}" Value="True"><Setter Property="Foreground" Value="White"/><Setter Property="FontWeight" Value="Bold"/></DataTrigger>
+        </Style.Triggers></Style></TextBlock.Style>
+       </TextBlock>
+      </Border>
+      <ContentControl Grid.Column="1" Focusable="False" IsTabStop="False" Loaded="AccountHostLoaded" Margin="0,4,8,4"/>
+      <TextBlock Grid.Column="2" Text="{Binding StatusSymbol}" ToolTip="{Binding StatusName}" AutomationProperties.Name="{Binding StatusName}" Background="Transparent" TextAlignment="Center" VerticalAlignment="Center"/>
+      <TextBox Grid.Column="3" Background="White" Padding="6,4" TextAlignment="Right" Text="{Binding Debit,UpdateSourceTrigger=PropertyChanged}" local:JournalInputValidation.Error="{Binding DebitError}" LostKeyboardFocus="DebitLostFocus" Margin="0,4,8,4" AutomationProperties.Name="Debit" AutomationProperties.AutomationId="{Binding DebitControlId}"/>
+      <TextBox Grid.Column="4" Background="White" Padding="6,4" TextAlignment="Right" Text="{Binding Credit,UpdateSourceTrigger=PropertyChanged}" local:JournalInputValidation.Error="{Binding CreditError}" LostKeyboardFocus="CreditLostFocus" Margin="0,4,8,4" PreviewKeyDown="CreditKeyDown" AutomationProperties.Name="Credit" AutomationProperties.AutomationId="{Binding CreditControlId}"/>
+      <Button Grid.Column="5" Content="×" Width="32" Height="32" Margin="0,4" VerticalAlignment="Center" Padding="0" FontSize="18" IsTabStop="False" IsEnabled="{Binding DataContext.CanRemoveLine,RelativeSource={RelativeSource AncestorType=Window}}" Click="RemoveClicked" ToolTip="Remove posting (Ctrl+Shift+Delete; at least two required)" AutomationProperties.Name="Remove posting"/>
+     </Grid>
+    </DataTemplate></ItemsControl.ItemTemplate></ItemsControl>
+   </ScrollViewer>
+   <Border Grid.Row="2" BorderBrush="#CFD8E1" BorderThickness="0,1,0,0" Padding="0,8,0,0" Margin="0,4,0,0">
+    <Grid x:Name="TotalsFooting" Width="{Binding ViewportWidth,ElementName=PostingScroll}" HorizontalAlignment="Left" AutomationProperties.Name="{Binding BalanceSummary}" AutomationProperties.AutomationId="JournalBalanceSummary" AutomationProperties.LiveSetting="Polite"><Grid.ColumnDefinitions><ColumnDefinition Width="40"/><ColumnDefinition Width="*"/><ColumnDefinition Width="42"/><ColumnDefinition Width="130"/><ColumnDefinition Width="130"/><ColumnDefinition Width="40"/></Grid.ColumnDefinitions>
+     <TextBlock Grid.Column="1" Grid.ColumnSpan="2" Margin="0,0,8,0" TextWrapping="Wrap"><Run Text="Totals: " FontWeight="SemiBold" Foreground="#23384E"/><Run Text="{Binding BalanceStatus,Mode=OneWay}"><Run.Style><Style TargetType="Run"><Setter Property="Foreground" Value="#516579"/><Style.Triggers><DataTrigger Binding="{Binding IsUnbalanced}" Value="True"><Setter Property="Foreground" Value="#B42318"/></DataTrigger></Style.Triggers></Style></Run.Style></Run></TextBlock>
+     <TextBlock x:Name="DebitFooting" Grid.Column="3" Text="{Binding DebitTotal}" TextAlignment="Right" Margin="0,0,15,0"><TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Foreground" Value="#23384E"/><Style.Triggers><DataTrigger Binding="{Binding DebitOver}" Value="True"><Setter Property="Foreground" Value="#B42318"/></DataTrigger></Style.Triggers></Style></TextBlock.Style></TextBlock>
+     <TextBlock x:Name="CreditFooting" Grid.Column="4" Text="{Binding CreditTotal}" TextAlignment="Right" Margin="0,0,15,0"><TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Foreground" Value="#23384E"/><Style.Triggers><DataTrigger Binding="{Binding CreditOver}" Value="True"><Setter Property="Foreground" Value="#B42318"/></DataTrigger></Style.Triggers></Style></TextBlock.Style></TextBlock>
+    </Grid>
+   </Border>
+  </Grid>
+  <StackPanel Grid.Row="2">
+   <Border Background="#FFF4D9" BorderBrush="#E7D5A9" BorderThickness="1" Padding="12,8" Margin="0,0,0,8">
+    <Border.Style><Style TargetType="Border"><Setter Property="Visibility" Value="Collapsed"/><Style.Triggers><DataTrigger Binding="{Binding HasResetWarning}" Value="True"><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers></Style></Border.Style>
+    <TextBlock Text="{Binding ResetWarning}" TextWrapping="Wrap" AutomationProperties.AutomationId="JournalResetWarning" AutomationProperties.LiveSetting="Assertive"/>
+   </Border>
+   <Button Content="+ Add posting" HorizontalAlignment="Left" Click="AddClicked" IsEnabled="{Binding Idle}" AutomationProperties.AutomationId="AddJournalLine" Margin="0,12"/>
+   <ScrollViewer x:Name="ErrorScroll" MaxHeight="100" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Focusable="False" IsTabStop="False"><ItemsControl Focusable="False" IsTabStop="False" ItemsSource="{Binding Errors}" AutomationProperties.AutomationId="JournalErrors"><ItemsControl.ItemTemplate><DataTemplate><TextBlock Foreground="#B42318" TextWrapping="Wrap"><Run><Run.Style><Style TargetType="Run"><Setter Property="Text" Value="{Binding LineOrder,StringFormat='Line {0} · '}"/><Style.Triggers><DataTrigger Binding="{Binding LineOrder}" Value="{x:Null}"><Setter Property="Text" Value=""/></DataTrigger></Style.Triggers></Style></Run.Style></Run><Run Text="{Binding Field}"/><Run Text=": "/><Run Text="{Binding Message}"/></TextBlock></DataTemplate></ItemsControl.ItemTemplate></ItemsControl></ScrollViewer>
+   <Grid Margin="0,12,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+    <TextBlock Text="{Binding Status}" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,16,0" AutomationProperties.AutomationId="JournalStatus"/>
+    <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" IsEnabled="{Binding Idle}">
+     <Button Content="Cancel" Margin="0" Click="CancelClicked" AutomationProperties.AutomationId="CancelJournal"/>
+     <Button Content="_Continue" Margin="8,0,0,0" IsEnabled="{Binding CanSave}" Click="ContinueClicked" AutomationProperties.AutomationId="ContinueJournal" ToolTip="Save and start another entry with the same date"/>
+     <Button Content="_Save" Margin="8,0,0,0" IsEnabled="{Binding CanSave}" Click="SaveClicked" AutomationProperties.AutomationId="SaveJournal" ToolTip="Save (Ctrl+Enter)"/>
+    </StackPanel>
+   </Grid>
+  </StackPanel>
+ </Grid>
+</Window>

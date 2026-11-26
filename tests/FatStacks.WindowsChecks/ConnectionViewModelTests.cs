@@ -160,7 +160,10 @@ public sealed class ConnectionViewModelTests
 
     private static async Task<(ConnectionViewModel Model, MemoryStore Store, FakeConnections Connections)> ModelAsync()
     {
-        var profile = new ConnectionProfile(Guid.NewGuid(), "Original", new() { ConnectionString = "Server=unused;Database=Test;Integrated Security=True" });
+        var profile = new ConnectionProfile(Guid.NewGuid(), "Original", new()
+        {
+            ConnectionString = "Server=unused;Database=Test;Integrated Security=True"
+        });
         var store = new MemoryStore { State = new(1, [profile], null) };
         var connections = new FakeConnections();
         var model = new ConnectionViewModel { Store = store, Connections = connections, Sessions = new(connections, store), Setup = new UnusedSetup() };
@@ -172,9 +175,18 @@ public sealed class ConnectionViewModelTests
     private sealed class MemoryStore : IProfileStore
     {
         public ProfileConfiguration State { get; set; } = ProfileConfiguration.Empty;
-        public bool FailWrites { get; set; }
-        public bool FailLoadAfterWrite { get; set; }
-        public int WriteCount { get; private set; }
+        public bool FailWrites
+        {
+            get; set;
+        }
+        public bool FailLoadAfterWrite
+        {
+            get; set;
+        }
+        public int WriteCount
+        {
+            get; private set;
+        }
         public Task<OperationResult<ProfileConfiguration>> LoadAsync(CancellationToken cancellationToken = default)
             => Task.FromResult(FailLoadAfterWrite && WriteCount > 0
                 ? OperationResult<ProfileConfiguration>.Fail("Settings could not be read.")
@@ -182,7 +194,8 @@ public sealed class ConnectionViewModelTests
         public Task<OperationResult<bool>> SaveAsync(ProfileConfiguration configuration, CancellationToken cancellationToken = default)
         {
             WriteCount++;
-            if (FailWrites) return Task.FromResult(OperationResult<bool>.Fail("Settings could not be saved."));
+            if (FailWrites)
+                return Task.FromResult(OperationResult<bool>.Fail("Settings could not be saved."));
             State = configuration;
             return Task.FromResult(OperationResult<bool>.Success(true));
         }
@@ -190,7 +203,10 @@ public sealed class ConnectionViewModelTests
     private sealed class FakeConnections : IBookConnectionService
     {
         public BookInfo Book { get; } = new(Guid.NewGuid(), "Test book", "USD", "UTC");
-        public int OpenCount { get; private set; }
+        public int OpenCount
+        {
+            get; private set;
+        }
         public Task<OperationResult<BookInfo>> TestAsync(ConnectionSettings settings, CancellationToken cancellationToken = default)
             => Task.FromResult(OperationResult<BookInfo>.Success(Book));
         public Task<OperationResult<BookInfo>> OpenAsync(ConnectionProfile profile, CancellationToken cancellationToken = default)

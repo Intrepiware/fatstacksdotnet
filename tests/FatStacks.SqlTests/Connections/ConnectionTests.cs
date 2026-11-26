@@ -37,21 +37,30 @@ public sealed class ConnectionTests
         await using var db = await Fixtures.BookDatabaseFixture.CreateAsync();
         Assert.IsFalse((await Service().TestAsync(db.Settings)).IsSuccess);
         await db.InitializeAsync();
-        var first = await Service().TestAsync(db.Settings); Assert.IsTrue(first.IsSuccess, first.Message);
+        var first = await Service().TestAsync(db.Settings);
+        Assert.IsTrue(first.IsSuccess, first.Message);
         var repeated = await db.Setup().InitializeAsync(db.Settings, new("Different name", "EUR", "UTC"));
-        Assert.IsTrue(repeated.IsSuccess, repeated.Message); Assert.AreEqual(first.Value!.StableIdentifier, repeated.Value!.StableIdentifier);
-        Assert.AreEqual("USD", repeated.Value.CurrencyCode); Assert.AreEqual("Synthetic test book", repeated.Value.Name);
+        Assert.IsTrue(repeated.IsSuccess, repeated.Message);
+        Assert.AreEqual(first.Value!.StableIdentifier, repeated.Value!.StableIdentifier);
+        Assert.AreEqual("USD", repeated.Value.CurrencyCode);
+        Assert.AreEqual("Synthetic test book", repeated.Value.Name);
     }
     [TestMethod]
     public async Task DifferentBooksHaveDistinctIdentitiesAndMismatchIsRejected()
     {
-        await using var a = await Fixtures.BookDatabaseFixture.CreateAsync(); await a.InitializeAsync();
-        await using var b = await Fixtures.BookDatabaseFixture.CreateAsync(); await b.InitializeAsync("EUR");
-        var first = (await Service().TestAsync(a.Settings)).Value!; var second = (await Service().TestAsync(b.Settings)).Value!;
+        await using var a = await Fixtures.BookDatabaseFixture.CreateAsync();
+        await a.InitializeAsync();
+        await using var b = await Fixtures.BookDatabaseFixture.CreateAsync();
+        await b.InitializeAsync("EUR");
+        var first = (await Service().TestAsync(a.Settings)).Value!;
+        var second = (await Service().TestAsync(b.Settings)).Value!;
         Assert.AreNotEqual(first.StableIdentifier, second.StableIdentifier);
         var profile = new ConnectionProfile(Guid.NewGuid(), "Test", b.Settings, first.StableIdentifier);
         Assert.AreEqual(Outcome.IdentityMismatch, (await Service().OpenAsync(profile)).Outcome);
-        Assert.IsTrue((await Service().OpenAsync(profile with { ExpectedBookIdentifier = second.StableIdentifier })).IsSuccess);
+        Assert.IsTrue((await Service().OpenAsync(profile with
+        {
+            ExpectedBookIdentifier = second.StableIdentifier
+        })).IsSuccess);
     }
     [TestMethod]
     [DataRow("UPDATE dbo.SchemaVersion SET Version=2")]
@@ -59,21 +68,28 @@ public sealed class ConnectionTests
     [DataRow("DROP TABLE dbo.SchemaVersion")]
     public async Task IncompatibleMissingOrUnreadableSchemaNeverOpens(string change)
     {
-        await using var db = await Fixtures.BookDatabaseFixture.CreateAsync(); await db.InitializeAsync(); await db.ExecuteAsync(change);
+        await using var db = await Fixtures.BookDatabaseFixture.CreateAsync();
+        await db.InitializeAsync();
+        await db.ExecuteAsync(change);
         Assert.IsFalse((await Service().TestAsync(db.Settings)).IsSuccess);
     }
     [TestMethod]
     public async Task UnrelatedSchemaIsNotModified()
     {
-        await using var db = await Fixtures.BookDatabaseFixture.CreateAsync(); await db.ExecuteAsync("CREATE TABLE dbo.Unrelated(Id int NOT NULL)");
-        var result = await db.Setup().InitializeAsync(db.Settings, new("Test", "USD", "UTC")); Assert.IsFalse(result.IsSuccess);
+        await using var db = await Fixtures.BookDatabaseFixture.CreateAsync();
+        await db.ExecuteAsync("CREATE TABLE dbo.Unrelated(Id int NOT NULL)");
+        var result = await db.Setup().InitializeAsync(db.Settings, new("Test", "USD", "UTC"));
+        Assert.IsFalse(result.IsSuccess);
         await db.ExecuteAsync("IF OBJECT_ID('dbo.Book') IS NOT NULL THROW 51001,'Unexpected schema alteration',1;");
     }
     [TestMethod]
     public async Task CompatibleSchemaWithoutBookCanFinishSetup()
     {
-        await using var db = await Fixtures.BookDatabaseFixture.CreateAsync(); await db.InitializeAsync(); await db.ExecuteAsync("DELETE dbo.Book");
+        await using var db = await Fixtures.BookDatabaseFixture.CreateAsync();
+        await db.InitializeAsync();
+        await db.ExecuteAsync("DELETE dbo.Book");
         Assert.IsFalse((await Service().TestAsync(db.Settings)).IsSuccess);
-        await db.InitializeAsync(); Assert.IsTrue((await Service().TestAsync(db.Settings)).IsSuccess);
+        await db.InitializeAsync();
+        Assert.IsTrue((await Service().TestAsync(db.Settings)).IsSuccess);
     }
 }

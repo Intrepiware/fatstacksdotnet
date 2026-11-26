@@ -13,17 +13,29 @@ public sealed class AccountBrowserItem(AccountRecord account, string path) : Obs
     public string TypeName => AccountCatalog.Types.Single(x => x.Id == Account.TypeId).Name;
     public List<AccountBrowserItem> Children { get; } = [];
     private bool isSelected;
-    public bool IsSelected { get => isSelected; set => Set(ref isSelected, value); }
+    public bool IsSelected
+    {
+        get => isSelected; set => Set(ref isSelected, value);
+    }
 }
 
 public sealed class AccountSetupViewModel : ObservableObject
 {
-    public required IAccountService Accounts { private get; init; }
-    public required BookSession Session { private get; init; }
+    public required IAccountService Accounts
+    {
+        private get; init;
+    }
+    public required BookSession Session
+    {
+        private get; init;
+    }
     // Presentation order is independent of the stored account type IDs.
     private static readonly byte[] TypeDisplayOrder = [1, 2, 3, 6, 5, 4, 7, 8, 9, 10, 11];
 
-    public IReadOnlyList<AccountType> Types { get; } = Array.AsReadOnly(TypeDisplayOrder
+    public IReadOnlyList<AccountType> Types
+    {
+        get;
+    } = Array.AsReadOnly(TypeDisplayOrder
         .Select(id => AccountCatalog.Types.Single(type => type.Id == id))
         .ToArray());
     public IReadOnlyList<string> Groups => ["Default from type", .. AccountCatalog.Groups.Take(5)];
@@ -32,22 +44,37 @@ public sealed class AccountSetupViewModel : ObservableObject
     public IReadOnlyList<AccountBrowserItem> VisibleAccounts { get; private set; } = [];
     public IReadOnlyList<AccountBrowserItem> AccountTree { get; private set; } = [];
     private string search = "";
-    public string Search { get => search; set { if (Set(ref search, value)) RebuildBrowser(); } }
+    public string Search
+    {
+        get => search; set
+        {
+            if (Set(ref search, value))
+                RebuildBrowser();
+        }
+    }
     private bool isTreeView = true;
     public bool IsTreeView
     {
         get => isTreeView;
         set => UpdateBrowser(() =>
         {
-            if (Set(ref isTreeView, value)) Changed(nameof(IsAlphabeticalView));
+            if (Set(ref isTreeView, value))
+                Changed(nameof(IsAlphabeticalView));
         });
     }
-    public bool IsAlphabeticalView { get => !IsTreeView; set => IsTreeView = !value; }
+    public bool IsAlphabeticalView
+    {
+        get => !IsTreeView; set => IsTreeView = !value;
+    }
     private bool updatingBrowser;
     public AccountBrowserItem? SelectedBrowserItem
     {
         get => VisibleAccounts.FirstOrDefault(x => x.Account.AccountId == Selected?.AccountId);
-        set { if (value is not null && VisibleAccounts.Contains(value)) SelectBrowserItem(value); }
+        set
+        {
+            if (value is not null && VisibleAccounts.Contains(value))
+                SelectBrowserItem(value);
+        }
     }
     public void SelectBrowserItem(AccountBrowserItem item)
     {
@@ -61,10 +88,12 @@ public sealed class AccountSetupViewModel : ObservableObject
         get => selected;
         set
         {
-            if (!Set(ref selected, value)) return;
+            if (!Set(ref selected, value))
+                return;
             UpdateBrowser(() =>
             {
-                foreach (var item in BrowserItems()) item.IsSelected = item.Account.AccountId == value?.AccountId;
+                foreach (var item in BrowserItems())
+                    item.IsSelected = item.Account.AccountId == value?.AccountId;
                 Changed(nameof(SelectedBrowserItem));
             });
             Edit(value);
@@ -86,14 +115,17 @@ public sealed class AccountSetupViewModel : ObservableObject
         foreach (var match in VisibleAccounts)
         {
             var parent = match.Account.ParentAccountId;
-            while (parent is { } id && included.Add(id)) parent = byId[id].Account.ParentAccountId;
+            while (parent is { } id && included.Add(id))
+                parent = byId[id].Account.ParentAccountId;
         }
         var roots = new List<AccountBrowserItem>();
         foreach (var item in items.Where(x => included.Contains(x.Account.AccountId)))
         {
             item.IsSelected = item.Account.AccountId == Selected?.AccountId;
-            if (item.Account.ParentAccountId is { } id && byId.TryGetValue(id, out var parent)) parent.Children.Add(item);
-            else roots.Add(item);
+            if (item.Account.ParentAccountId is { } id && byId.TryGetValue(id, out var parent))
+                parent.Children.Add(item);
+            else
+                roots.Add(item);
         }
         // A branch belongs to its root's type so mixed-type descendants stay with their parent.
         var rootsByType = roots.ToLookup(item => item.Account.TypeId);
@@ -110,31 +142,75 @@ public sealed class AccountSetupViewModel : ObservableObject
     {
         // WPF can raise selection events while applying a new item source or highlight.
         updatingBrowser = true;
-        try { update(); }
+        try
+        {
+            update();
+        }
         finally { updatingBrowser = false; }
     }
 
-    private string name = ""; public string Name { get => name; set => Set(ref name, value); }
-    private AccountType type = AccountCatalog.Types[0]; public AccountType Type { get => type; set { if (Set(ref type, value)) Changed(nameof(ClassName)); } }
+    private string name = ""; public string Name
+    {
+        get => name; set => Set(ref name, value);
+    }
+    private AccountType type = AccountCatalog.Types[0]; public AccountType Type
+    {
+        get => type; set
+        {
+            if (Set(ref type, value))
+                Changed(nameof(ClassName));
+        }
+    }
     public string ClassName => Type.ClassName;
     public bool CanChangeType => Selected is null;
-    private long? parent; public long? ParentId { get => parent; set => Set(ref parent, value); }
-    private int group; public int GroupIndex { get => group; set => Set(ref group, value); }
-    private DateTime open; public DateTime Open { get => open; set => Set(ref open, value); }
-    private DateTime? close; public DateTime? Close { get => close; set => Set(ref close, value); }
-    private string status = ""; public string Status { get => status; private set => Set(ref status, value); }
-    private bool busy; public bool Busy { get => busy; private set { Set(ref busy, value); Changed(nameof(Idle)); } }
+    private long? parent; public long? ParentId
+    {
+        get => parent; set => Set(ref parent, value);
+    }
+    private int group; public int GroupIndex
+    {
+        get => group; set => Set(ref group, value);
+    }
+    private DateTime open; public DateTime Open
+    {
+        get => open; set => Set(ref open, value);
+    }
+    private DateTime? close; public DateTime? Close
+    {
+        get => close; set => Set(ref close, value);
+    }
+    private string status = ""; public string Status
+    {
+        get => status; private set => Set(ref status, value);
+    }
+    private bool busy; public bool Busy
+    {
+        get => busy; private set
+        {
+            Set(ref busy, value);
+            Changed(nameof(Idle));
+        }
+    }
     public bool Idle => !Busy;
-    public void New() { Selected = null; Edit(null); }
+    public void New()
+    {
+        Selected = null;
+        Edit(null);
+    }
     private void Edit(AccountRecord? value)
     {
-        Name = value?.Name ?? ""; Type = Types.Single(x => x.Id == (value?.TypeId ?? 1)); ParentId = value?.ParentAccountId;
-        GroupIndex = value?.GroupId ?? 0; Open = (value?.OpenDate ?? new BookCalendar(Session.Book.TimeZoneId).Today).ToDateTime(TimeOnly.MinValue);
-        Close = value?.CloseDate?.ToDateTime(TimeOnly.MinValue); Changed(nameof(CanChangeType));
+        Name = value?.Name ?? "";
+        Type = Types.Single(x => x.Id == (value?.TypeId ?? 1));
+        ParentId = value?.ParentAccountId;
+        GroupIndex = value?.GroupId ?? 0;
+        Open = (value?.OpenDate ?? new BookCalendar(Session.Book.TimeZoneId).Today).ToDateTime(TimeOnly.MinValue);
+        Close = value?.CloseDate?.ToDateTime(TimeOnly.MinValue);
+        Changed(nameof(CanChangeType));
     }
     public async Task LoadAsync()
     {
-        if (Busy) return;
+        if (Busy)
+            return;
         Busy = true;
         try
         {
@@ -157,13 +233,16 @@ public sealed class AccountSetupViewModel : ObservableObject
     }
     public async Task<bool> SaveAsync()
     {
-        if (Busy) return false; Busy = true;
+        if (Busy)
+            return false;
+        Busy = true;
         try
         {
             using var write = Session.BeginWrite();
             var result = await Accounts.SaveAsync(new(Selected?.AccountId, ParentId, Name, Type.Id, GroupIndex == 0 ? null : (byte)GroupIndex, DateOnly.FromDateTime(Open), Close is { } date ? DateOnly.FromDateTime(date) : null));
             Status = result.Message;
-            if (!result.IsSuccess) return false;
+            if (!result.IsSuccess)
+                return false;
             try
             {
                 await ReadAccountsAsync();
@@ -182,7 +261,8 @@ public sealed class AccountSetupViewModel : ObservableObject
         catch (OperationCanceledException) { Status = "Account load cancelled."; return false; }
         catch (InvalidOperationException ex)
         {
-            if (!Session.Reads.IsCancellationRequested) DatabaseErrors.TraceFailure("AccountSave", ex);
+            if (!Session.Reads.IsCancellationRequested)
+                DatabaseErrors.TraceFailure("AccountSave", ex);
             Status = "The book is disconnecting.";
             return false;
         }

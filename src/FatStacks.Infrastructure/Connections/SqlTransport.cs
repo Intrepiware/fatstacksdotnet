@@ -10,13 +10,15 @@ public sealed class SqlTransport
     public async Task<OpenSqlConnection> OpenAsync(ConnectionSettings settings, CancellationToken cancellationToken = default)
     {
         var builder = new SqlConnectionStringBuilder(settings.ConnectionString);
-        if (string.IsNullOrWhiteSpace(builder.InitialCatalog)) throw new ArgumentException("A database is required.");
+        if (string.IsNullOrWhiteSpace(builder.InitialCatalog))
+            throw new ArgumentException("A database is required.");
         builder.ConnectTimeout = Math.Min(builder.ConnectTimeout, 15);
         var connection = await OpenWithFallbackAsync(builder, ConnectAsync, cancellationToken);
         try
         {
             var warnings = new List<string>();
-            if (builder.TrustServerCertificate) warnings.Add("SQL certificate trust is not verified. Self-signed or expired certificates are permitted; the server identity is not authenticated.");
+            if (builder.TrustServerCertificate)
+                warnings.Add("SQL certificate trust is not verified. Self-signed or expired certificates are permitted; the server identity is not authenticated.");
             if (builder.Encrypt == SqlConnectionEncryptOption.Optional)
             {
                 bool? encrypted = null;
@@ -29,9 +31,13 @@ public sealed class SqlTransport
                         : string.Equals(value, "FALSE", StringComparison.OrdinalIgnoreCase) ? false : null;
                 }
                 catch (SqlException) { /* The runtime identity need not have server diagnostic privileges. */ }
-                if (encrypted != true) warnings.Add(encrypted == false ? "SQL transport is not encrypted." : "SQL encryption is optional. Encrypted transport could not be confirmed.");
+                if (encrypted != true)
+                    warnings.Add(encrypted == false ? "SQL transport is not encrypted." : "SQL encryption is optional. Encrypted transport could not be confirmed.");
             }
-            return new(connection, new() { ConnectionString = builder.ConnectionString }, warnings);
+            return new(connection, new()
+            {
+                ConnectionString = builder.ConnectionString
+            }, warnings);
         }
         catch { await connection.DisposeAsync(); throw; }
     }
@@ -39,11 +45,15 @@ public sealed class SqlTransport
         Func<SqlConnectionStringBuilder, CancellationToken, Task<SqlConnection>> connect, CancellationToken cancellationToken)
     {
         // Optional permits fallback; it must not prevent the first attempt from using TLS.
-        if (builder.Encrypt == SqlConnectionEncryptOption.Optional) builder.Encrypt = SqlConnectionEncryptOption.Mandatory;
+        if (builder.Encrypt == SqlConnectionEncryptOption.Optional)
+            builder.Encrypt = SqlConnectionEncryptOption.Mandatory;
         while (true)
         {
             cancellationToken.ThrowIfCancellationRequested();
-            try { return await connect(builder, cancellationToken); }
+            try
+            {
+                return await connect(builder, cancellationToken);
+            }
             catch (SqlException ex) when (builder.Encrypt != SqlConnectionEncryptOption.Strict && !builder.TrustServerCertificate && CertificateFailure(ex))
             {
                 builder.TrustServerCertificate = true;
@@ -60,7 +70,11 @@ public sealed class SqlTransport
     private static async Task<SqlConnection> ConnectAsync(SqlConnectionStringBuilder builder, CancellationToken cancellationToken)
     {
         var connection = new SqlConnection(builder.ConnectionString);
-        try { await connection.OpenAsync(cancellationToken); return connection; }
+        try
+        {
+            await connection.OpenAsync(cancellationToken);
+            return connection;
+        }
         catch { await connection.DisposeAsync(); throw; }
     }
 }

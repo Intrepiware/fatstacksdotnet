@@ -13,7 +13,10 @@ namespace FatStacks.WindowsChecks;
 [DoNotParallelize]
 public sealed class RegisterPerformanceTests
 {
-    public required TestContext TestContext { get; init; }
+    public required TestContext TestContext
+    {
+        get; init;
+    }
 
     [TestMethod]
     public async Task RepresentativeRegisterMeetsWindowsResponseTarget()
@@ -91,7 +94,8 @@ public sealed class RegisterPerformanceTests
             var withinTarget = timings.Count(milliseconds => milliseconds <= 2000);
             TestContext.WriteLine($"{operation} (ms): {string.Join(", ", timings.Select(value => value.ToString("F0", CultureInfo.InvariantCulture)))}");
             TestContext.WriteLine($"{operation} within two seconds: {withinTarget}/20");
-            if (withinTarget < 19) failures.Add(operation);
+            if (withinTarget < 19)
+                failures.Add(operation);
         }
     }
 
