@@ -15,16 +15,25 @@ public sealed class ProfileConnectionEditTests
         var path = Path.Combine(folder, "profiles.json");
         try
         {
-            var original = new ConnectionProfile(Guid.NewGuid(), "Personal", new() { ConnectionString = "Server=original;Database=First;Integrated Security=True" }, Guid.NewGuid());
+            var original = new ConnectionProfile(Guid.NewGuid(), "Personal", new()
+            {
+                ConnectionString = "Server=original;Database=First;Integrated Security=True"
+            }, Guid.NewGuid());
             var store = new ProfileStore(path, new TestProtector());
             Assert.IsTrue((await store.SaveAsync(new(1, [original], original.ProfileId))).IsSuccess);
             var loaded = (await store.LoadAsync()).Value!;
             var edited = loaded.Profiles.Single() with
             {
                 FriendlyName = "Renamed",
-                Settings = new() { ConnectionString = "Server=changed;Database=Second;Integrated Security=True" }
+                Settings = new()
+                {
+                    ConnectionString = "Server=changed;Database=Second;Integrated Security=True"
+                }
             };
-            Assert.IsTrue((await store.SaveAsync(loaded with { Profiles = [edited] })).IsSuccess);
+            Assert.IsTrue((await store.SaveAsync(loaded with
+            {
+                Profiles = [edited]
+            })).IsSuccess);
             var reloaded = await new ProfileStore(path, new TestProtector()).LoadAsync();
             Assert.IsTrue(reloaded.IsSuccess);
             var profile = reloaded.Value!.Profiles.Single();

@@ -8,3 +8,10 @@ trim_trailing_whitespace = true
 indent_style = space
 indent_size = 4
 csharp_style_namespace_declarations = file_scoped:warning
+
+# Do not preserve multiple statements on a single line
+csharp_preserve_single_line_statements = false
+csharp_preserve_single_line_blocks = false
+
+# Enforce formatting rules
+dotnet_diagnostic.IDE0055.severity = warning

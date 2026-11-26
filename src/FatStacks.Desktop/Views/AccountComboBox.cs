@@ -13,18 +13,25 @@ internal sealed class AccountComboBox : UserControl
     public static readonly DependencyProperty AccountPathsProperty = DependencyProperty.Register(
         nameof(AccountPaths), typeof(IEnumerable<string>), typeof(AccountComboBox),
         new PropertyMetadata(null, (sender, args) => ((AccountComboBox)sender).UpdateAccounts((IEnumerable<string>?)args.NewValue)));
-    public IEnumerable<string>? AccountPaths { get => (IEnumerable<string>?)GetValue(AccountPathsProperty); set => SetValue(AccountPathsProperty, value); }
+    public IEnumerable<string>? AccountPaths
+    {
+        get => (IEnumerable<string>?)GetValue(AccountPathsProperty); set => SetValue(AccountPathsProperty, value);
+    }
     private void UpdateAccounts(IEnumerable<string>? paths)
     {
         accounts = (paths ?? []).Order(StringComparer.Ordinal).ToArray();
-        if (popup.IsOpen) ShowSuggestions(showAll: editor.Text.Length == 0);
+        if (popup.IsOpen)
+            ShowSuggestions(showAll: editor.Text.Length == 0);
     }
     private readonly TextBox editor;
     private readonly ListBox suggestions;
     private readonly Popup popup;
     private bool committing;
     private Window? owner;
-    public string Text { get => editor.Text; set => editor.SetCurrentValue(TextBox.TextProperty, value); }
+    public string Text
+    {
+        get => editor.Text; set => editor.SetCurrentValue(TextBox.TextProperty, value);
+    }
     public event EventHandler? SuggestionAccepted;
 
     public AccountComboBox(IEnumerable<string> accounts)
@@ -51,12 +58,14 @@ internal sealed class AccountComboBox : UserControl
         Content = layout;
         editor.TextChanged += (_, _) =>
         {
-            if (!committing && editor.IsKeyboardFocused) ShowSuggestions(showAll: false);
+            if (!committing && editor.IsKeyboardFocused)
+                ShowSuggestions(showAll: false);
         };
         editor.GotKeyboardFocus += (_, _) => editor.SelectAll();
         editor.PreviewMouseLeftButtonDown += (_, e) =>
         {
-            if (editor.IsKeyboardFocused) return;
+            if (editor.IsKeyboardFocused)
+                return;
             e.Handled = true;
             editor.Focus();
         };
@@ -65,7 +74,10 @@ internal sealed class AccountComboBox : UserControl
         {
             bool open = popup.IsOpen;
             editor.Focus();
-            if (open) popup.IsOpen = false; else ShowSuggestions(showAll: true);
+            if (open)
+                popup.IsOpen = false;
+            else
+                ShowSuggestions(showAll: true);
         };
         suggestions.PreviewMouseLeftButtonDown += (_, e) =>
         {
@@ -112,7 +124,8 @@ internal sealed class AccountComboBox : UserControl
 
     private void OutsideClicked(object sender, MouseButtonEventArgs e)
     {
-        if (!IsMouseOver && !suggestions.IsMouseOver) popup.IsOpen = false;
+        if (!IsMouseOver && !suggestions.IsMouseOver)
+            popup.IsOpen = false;
     }
     private void OwnerDeactivated(object? sender, EventArgs e) => popup.IsOpen = false;
 
@@ -129,7 +142,8 @@ internal sealed class AccountComboBox : UserControl
 
     private void CommitSuggestion()
     {
-        if (suggestions.SelectedItem is not string account) return;
+        if (suggestions.SelectedItem is not string account)
+            return;
         committing = true;
         try
         {
@@ -147,10 +161,12 @@ internal sealed class AccountComboBox : UserControl
         {
             if (e.Key is Key.Down or Key.Up)
             {
-                if (!popup.IsOpen) ShowSuggestions(showAll: editor.Text.Length == 0);
+                if (!popup.IsOpen)
+                    ShowSuggestions(showAll: editor.Text.Length == 0);
                 else if (suggestions.Items.Count > 0)
                     suggestions.SelectedIndex = Math.Clamp(suggestions.SelectedIndex + (e.Key == Key.Down ? 1 : -1), 0, suggestions.Items.Count - 1);
-                if (suggestions.SelectedItem is { } item) suggestions.ScrollIntoView(item);
+                if (suggestions.SelectedItem is { } item)
+                    suggestions.ScrollIntoView(item);
                 e.Handled = true;
             }
             else if (e.Key == Key.Enter && popup.IsOpen && suggestions.SelectedItem is not null)

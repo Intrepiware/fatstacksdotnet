@@ -16,4 +16,6 @@ public interface IJournalStore
     Task<OperationResult<JournalSaveResult>> SaveAsync(JournalRequest request, CancellationToken ct = default);
     Task<OperationResult<bool>> DeleteAsync(DeleteJournalRequest request, CancellationToken ct = default);
 }
-public interface IJournalService : IJournalStore { }
+public interface IJournalService : IJournalStore
+{
+}

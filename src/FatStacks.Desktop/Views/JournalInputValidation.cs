@@ -18,7 +18,8 @@ public static class JournalInputValidation
 
     private static void ErrorChanged(DependencyObject sender, DependencyPropertyChangedEventArgs args)
     {
-        if (sender is not Control control) return;
+        if (sender is not Control control)
+            return;
         if (string.IsNullOrEmpty((string?)args.OldValue) && !string.IsNullOrEmpty((string?)args.NewValue))
             control.SetValue(OriginalToolTipProperty, control.ToolTip);
         Apply(control);
@@ -63,11 +64,15 @@ public static class JournalInputValidation
                 control.SetCurrentValue(FrameworkElement.ToolTipProperty, control.GetValue(OriginalToolTipProperty));
         }
         // Preserve the amount text edge when the error border becomes thicker.
-        if (control is TextBox) control.SetCurrentValue(Control.PaddingProperty, new Thickness(invalid ? 5 : 6, invalid ? 3 : 4, invalid ? 5 : 6, invalid ? 3 : 4));
+        if (control is TextBox)
+            control.SetCurrentValue(Control.PaddingProperty, new Thickness(invalid ? 5 : 6, invalid ? 3 : 4, invalid ? 5 : 6, invalid ? 3 : 4));
         var binding = control.GetBindingExpression(control is DatePicker ? DatePicker.SelectedDateProperty : TextBox.TextProperty);
-        if (binding is null) return;
+        if (binding is null)
+            return;
         Validation.SetErrorTemplate(control, null);
-        if (invalid) Validation.MarkInvalid(binding, new ValidationError(new ExceptionValidationRule(), binding, message, null));
-        else Validation.ClearInvalid(binding);
+        if (invalid)
+            Validation.MarkInvalid(binding, new ValidationError(new ExceptionValidationRule(), binding, message, null));
+        else
+            Validation.ClearInvalid(binding);
     }
 }

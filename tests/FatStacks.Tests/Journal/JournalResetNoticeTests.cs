@@ -21,25 +21,37 @@ public sealed class JournalResetNoticeTests
         var accounts = JournalEditorViewModelTests.Accounts.Select(x => x.AccountId == 1 ? x with { Name = "Checking", ParentAccountId = 900 } : x)
             .Append(new FatStacks.Core.Accounts.AccountRecord(900, 1, null, "Assets", 1, 1, new(2000, 1, 1), null)).ToArray();
         model.Initialize(Entry(), accounts, "USD", new(2026, 11, 21));
-        var pending = model.SaveAsync(continueEntry); service.Complete(FatStacks.Core.Contracts.Outcome.Success); Assert.IsTrue(await pending);
-        if (resetCount == 0) Assert.AreEqual("Entry saved.", model.Status);
+        var pending = model.SaveAsync(continueEntry);
+        service.Complete(FatStacks.Core.Contracts.Outcome.Success);
+        Assert.IsTrue(await pending);
+        if (resetCount == 0)
+            Assert.AreEqual("Entry saved.", model.Status);
         else
         {
             StringAssert.Contains(model.Status, "Line 1 (Assets:Checking)");
-            if (resetCount == 2) StringAssert.Contains(model.Status, "Line 2 (Equity)"); else Assert.IsFalse(model.Status.Contains("Equity", StringComparison.Ordinal));
-            Assert.IsFalse(model.Status.Contains("101", StringComparison.Ordinal)); Assert.IsFalse(model.Status.Contains("202", StringComparison.Ordinal));
+            if (resetCount == 2)
+                StringAssert.Contains(model.Status, "Line 2 (Equity)");
+            else
+                Assert.IsFalse(model.Status.Contains("Equity", StringComparison.Ordinal));
+            Assert.IsFalse(model.Status.Contains("101", StringComparison.Ordinal));
+            Assert.IsFalse(model.Status.Contains("202", StringComparison.Ordinal));
         }
     }
     [TestMethod]
     public async Task MainWindowUsesRefreshedAccountPathsInResetNotice()
     {
-        var (sessions, session) = await RegisterJourneyTests.OpenAsync(); using var owned = session;
+        var (sessions, session) = await RegisterJourneyTests.OpenAsync();
+        using var owned = session;
         using var model = new MainWindowViewModel { Session = session, Sessions = sessions, Accounts = new RegisterJourneyTests.Accounts(), Register = new Register() };
-        await model.RefreshAsync(); await model.JournalSavedAsync(new(Entry(), [101, 202]));
-        StringAssert.Contains(model.SaveNotice, "Line 1 (Bank)"); StringAssert.Contains(model.SaveNotice, "Line 2 (Bank:Closed counter)");
+        await model.RefreshAsync();
+        await model.JournalSavedAsync(new(Entry(), [101, 202]));
+        StringAssert.Contains(model.SaveNotice, "Line 1 (Bank)");
+        StringAssert.Contains(model.SaveNotice, "Line 2 (Bank:Closed counter)");
         Assert.IsFalse(model.SaveNotice.Contains("101", StringComparison.Ordinal));
         Assert.IsTrue(model.HasSaveNotice);
-        model.DismissSaveNotice(); Assert.IsFalse(model.HasSaveNotice); Assert.AreEqual("", model.SaveNotice);
+        model.DismissSaveNotice();
+        Assert.IsFalse(model.HasSaveNotice);
+        Assert.AreEqual("", model.SaveNotice);
     }
     [TestMethod]
     [DataRow((byte)1)]
@@ -48,9 +60,13 @@ public sealed class JournalResetNoticeTests
     {
         var model = JournalEditorViewModelTests.Editor(new JournalEditorViewModelTests.FakeJournal());
         var entry = Entry();
-        model.Initialize(entry with { Lines = entry.Lines.Select(line => line with { Status = status }).ToArray() }, JournalEditorViewModelTests.Accounts, "USD", new(2026, 11, 21));
+        model.Initialize(entry with
+        {
+            Lines = entry.Lines.Select(line => line with { Status = status }).ToArray()
+        }, JournalEditorViewModelTests.Accounts, "USD", new(2026, 11, 21));
         Assert.IsFalse(model.HasResetWarning);
-        model.Payee = "Changed payee"; model.Description = "Changed description";
+        model.Payee = "Changed payee";
+        model.Description = "Changed description";
         model.Lines[0].Debit = "25.00";
         Assert.IsFalse(model.HasResetWarning, "Text changes and equivalent formatting must not trigger the warning.");
         model.Lines[0].Debit = "26";
@@ -58,7 +74,8 @@ public sealed class JournalResetNoticeTests
         Assert.IsFalse(model.ResetWarning.Contains("Line 2", StringComparison.Ordinal));
         model.Lines[1].Credit = "26";
         StringAssert.Contains(model.ResetWarning, "Line 2 (Equity)");
-        model.Lines[0].Debit = "25"; model.Lines[1].Credit = "25";
+        model.Lines[0].Debit = "25";
+        model.Lines[1].Credit = "25";
         Assert.IsFalse(model.HasResetWarning);
         model.Lines[0].AccountText = "Equity";
         Assert.IsTrue(model.HasResetWarning, "Changing the account must warn even when the amount is unchanged.");

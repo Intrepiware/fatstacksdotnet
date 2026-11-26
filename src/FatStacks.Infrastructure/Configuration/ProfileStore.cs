@@ -23,11 +23,16 @@ public sealed class ProfileStore(string path, ISecretProtector protector) : IPro
             var stored = JsonSerializer.Deserialize<StoredConfiguration>(await File.ReadAllTextAsync(path, cancellationToken));
             if (stored is null || stored.FormatVersion != 1 || stored.Profiles is null ||
                 stored.Profiles.Any(x => x is null || x.ProfileId == Guid.Empty ||
-                    string.IsNullOrWhiteSpace(x.FriendlyName) || string.IsNullOrWhiteSpace(x.ProtectedConnection))) throw new JsonException();
+                    string.IsNullOrWhiteSpace(x.FriendlyName) || string.IsNullOrWhiteSpace(x.ProtectedConnection)))
+                throw new JsonException();
             var profiles = stored.Profiles.Select(x => new ConnectionProfile(x!.ProfileId, x.FriendlyName,
-                new() { ConnectionString = protector.Unprotect(x.ProtectedConnection) }, x.ExpectedBookIdentifier)).ToArray();
+                new()
+                {
+                    ConnectionString = protector.Unprotect(x.ProtectedConnection)
+                }, x.ExpectedBookIdentifier)).ToArray();
             var configuration = new ProfileConfiguration(1, profiles, stored.LastSuccessfulProfileId);
-            if (!Valid(configuration)) throw new JsonException();
+            if (!Valid(configuration))
+                throw new JsonException();
             unreadable = false;
             return OperationResult<ProfileConfiguration>.Success(configuration);
         }
@@ -40,11 +45,13 @@ public sealed class ProfileStore(string path, ISecretProtector protector) : IPro
     }
     public async Task<OperationResult<bool>> SaveAsync(ProfileConfiguration configuration, CancellationToken cancellationToken = default)
     {
-        if (!Valid(configuration)) return OperationResult<bool>.Fail("Profile names and IDs must be unique and nonempty.", Outcome.ValidationFailure);
+        if (!Valid(configuration))
+            return OperationResult<bool>.Fail("Profile names and IDs must be unique and nonempty.", Outcome.ValidationFailure);
         await gate.WaitAsync(cancellationToken);
         try
         {
-            if (unreadable) return OperationResult<bool>.Fail("Resolve the unreadable saved profiles before replacing them.");
+            if (unreadable)
+                return OperationResult<bool>.Fail("Resolve the unreadable saved profiles before replacing them.");
             var stored = new StoredConfiguration(1, configuration.Profiles.Select(x => new StoredProfile(x.ProfileId,
                 x.FriendlyName.Trim(), protector.Protect(x.Settings.ConnectionString), x.ExpectedBookIdentifier)).Cast<StoredProfile?>().ToList(), configuration.LastSuccessfulProfileId);
             Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(path))!);
@@ -54,7 +61,9 @@ public sealed class ProfileStore(string path, ISecretProtector protector) : IPro
             return OperationResult<bool>.Success(true);
         }
         catch (Exception ex) when (IsStorageFailure(ex))
-        { return OperationResult<bool>.Fail("Profiles were not saved. Check the settings folder and Windows credential protection."); }
+        {
+            return OperationResult<bool>.Fail("Profiles were not saved. Check the settings folder and Windows credential protection.");
+        }
         finally { gate.Release(); }
     }
     private static bool Valid(ProfileConfiguration c) => c.FormatVersion == 1 &&

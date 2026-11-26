@@ -11,7 +11,8 @@ public sealed class TransportTests
     public async Task UnverifiedCertificateConnectsWithWarning()
     {
         await using var fixture = await Fixtures.BookDatabaseFixture.CreateAsync();
-        var result = await new SqlTransport().OpenAsync(fixture.Settings); await using var connection = result.Connection;
+        var result = await new SqlTransport().OpenAsync(fixture.Settings);
+        await using var connection = result.Connection;
         Assert.IsTrue(result.Warnings.Any(x => x.Contains("certificate", StringComparison.OrdinalIgnoreCase)));
     }
     [TestMethod]
@@ -19,8 +20,12 @@ public sealed class TransportTests
     {
         await using var fixture = await Fixtures.BookDatabaseFixture.CreateAsync();
         var b = new SqlConnectionStringBuilder(fixture.Settings.ConnectionString) { IntegratedSecurity = false, UserID = "FatStacks_Invalid_Test_Login", Password = "private-password-sentinel", ConnectTimeout = 3 };
-        var result = await new ConnectionService { Transport = new() }.TestAsync(new() { ConnectionString = b.ConnectionString });
-        Assert.IsFalse(result.IsSuccess); Assert.IsFalse(result.Message.Contains("private-password-sentinel", StringComparison.Ordinal));
+        var result = await new ConnectionService { Transport = new() }.TestAsync(new()
+        {
+            ConnectionString = b.ConnectionString
+        });
+        Assert.IsFalse(result.IsSuccess);
+        Assert.IsFalse(result.Message.Contains("private-password-sentinel", StringComparison.Ordinal));
     }
     [TestMethod]
     [DataRow("VALID_TLS", false)]
@@ -49,7 +54,13 @@ public sealed class TransportTests
         }
 
         OpenSqlConnection opened;
-        try { opened = await new SqlTransport().OpenAsync(new() { ConnectionString = builder.ConnectionString }); }
+        try
+        {
+            opened = await new SqlTransport().OpenAsync(new()
+            {
+                ConnectionString = builder.ConnectionString
+            });
+        }
         catch (SqlException ex) { Assert.Fail($"Transport fixture {scenario} failed (SQL category {ex.Number})."); return; }
         await using var connection = opened.Connection;
         await using var command = connection.CreateCommand();
@@ -59,7 +70,8 @@ public sealed class TransportTests
         var effective = new SqlConnectionStringBuilder(opened.Settings.ConnectionString);
         Assert.AreEqual(scenario == "PLAINTEXT" ? SqlConnectionEncryptOption.Optional : SqlConnectionEncryptOption.Mandatory, effective.Encrypt);
         Assert.AreEqual(scenario is "SELF_SIGNED" or "EXPIRED", effective.TrustServerCertificate);
-        if (scenario == "VALID_TLS") Assert.AreEqual(0, opened.Warnings.Count);
+        if (scenario == "VALID_TLS")
+            Assert.AreEqual(0, opened.Warnings.Count);
         else if (scenario == "PLAINTEXT")
         {
             CollectionAssert.AreEqual(new[] { "SQL transport is not encrypted." }, opened.Warnings.ToArray());
@@ -86,7 +98,10 @@ public sealed class TransportTests
         builder.Password = "private-password-sentinel";
         var failure = await Assert.ThrowsExactlyAsync<SqlException>(() => new SqlTransport().OpenAsync(new() { ConnectionString = builder.ConnectionString }));
         Assert.IsTrue(failure.Errors.Cast<SqlError>().Any(x => x.Number == 18456), "Expected a preserved login failure after transport negotiation.");
-        var result = await new ConnectionService { Transport = new() }.TestAsync(new() { ConnectionString = builder.ConnectionString });
+        var result = await new ConnectionService { Transport = new() }.TestAsync(new()
+        {
+            ConnectionString = builder.ConnectionString
+        });
         Assert.IsFalse(result.IsSuccess);
         Assert.IsFalse(result.Message.Contains("private-password-sentinel", StringComparison.Ordinal));
     }
@@ -94,7 +109,8 @@ public sealed class TransportTests
     private static SqlConnectionStringBuilder DedicatedFixture(string scenario)
     {
         var value = Environment.GetEnvironmentVariable("FATSTACKS_SQL_" + scenario);
-        if (string.IsNullOrWhiteSpace(value)) Assert.Inconclusive($"Transport fixture {scenario} was not configured.");
+        if (string.IsNullOrWhiteSpace(value))
+            Assert.Inconclusive($"Transport fixture {scenario} was not configured.");
         var builder = new SqlConnectionStringBuilder(value);
         Assert.IsFalse(builder.TrustServerCertificate, "Dedicated fixtures must start with certificate checking enabled.");
         Assert.IsTrue(string.IsNullOrEmpty(builder.ServerCertificate), "Dedicated fixtures must not pin a certificate to bypass the intended validation condition.");

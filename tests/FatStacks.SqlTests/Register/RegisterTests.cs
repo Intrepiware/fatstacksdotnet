@@ -11,7 +11,8 @@ public sealed class RegisterTests
     [TestMethod]
     public async Task RegisterReturnsPayeeWithOptionalDescriptionWithoutChangingBalances()
     {
-        await using var fixture = await BookDatabaseFixture.CreateAsync(); await fixture.InitializeAsync();
+        await using var fixture = await BookDatabaseFixture.CreateAsync();
+        await fixture.InitializeAsync();
         await fixture.ExecuteAsync("""
             INSERT dbo.Account(BookId,Name,AccountTypeId,DisplayGroupId,OpenDate)
             VALUES(1,N'Bank',1,1,'19000101'),(1,N'Equity',9,5,'19000101');
@@ -35,19 +36,24 @@ public sealed class RegisterTests
             """);
         var service = new RegisterService { Database = new(fixture.Settings), Procedures = new() { Database = new(fixture.Settings) } };
         var result = await service.ReadAsync(1, new(2026, 11, 21), "");
-        Assert.HasCount(3, result.Rows); Assert.AreEqual(75m, result.CurrentBalance);
+        Assert.HasCount(3, result.Rows);
+        Assert.AreEqual(75m, result.CurrentBalance);
         var opening = result.Rows.Single(x => x.Payee == "American Express: Opening Balance");
-        Assert.AreEqual("", opening.Description); Assert.AreEqual(opening.Payee, opening.SummaryText);
+        Assert.AreEqual("", opening.Description);
+        Assert.AreEqual(opening.Payee, opening.SummaryText);
         var groceries = result.Rows.Single(x => x.Payee == "O'Brien [%_]");
         Assert.AreEqual("O'Brien [%_] — Groceries", groceries.SummaryText);
         Assert.AreEqual("Description only", result.Rows.Single(x => x.Payee is null).SummaryText);
         var filtered = await service.ReadAsync(1, new(2026, 11, 21), "groceries");
-        Assert.HasCount(1, filtered.Rows); Assert.AreEqual(groceries.Balance, filtered.Rows[0].Balance); Assert.AreEqual(75m, filtered.CurrentBalance);
+        Assert.HasCount(1, filtered.Rows);
+        Assert.AreEqual(groceries.Balance, filtered.Rows[0].Balance);
+        Assert.AreEqual(75m, filtered.CurrentBalance);
     }
     [TestMethod]
     public async Task WindowIncludesCutoffAndTodayWithOlderBalanceAndExcludesFuture()
     {
-        await using var fixture = await BookDatabaseFixture.CreateAsync(); await fixture.InitializeAsync();
+        await using var fixture = await BookDatabaseFixture.CreateAsync();
+        await fixture.InitializeAsync();
         await fixture.ExecuteAsync("""
             BEGIN TRANSACTION;
             INSERT dbo.Account(BookId,Name,AccountTypeId,DisplayGroupId,OpenDate) VALUES(1,'Bank',1,1,'2020-01-01'),(1,'Equity',9,5,'2020-01-01');
@@ -71,30 +77,41 @@ public sealed class RegisterTests
         await using var db = database.CreateContext();
         var bank = await Microsoft.EntityFrameworkCore.EntityFrameworkQueryableExtensions.SingleAsync(db.Accounts.Where(x => x.Name == "Bank"));
         var result = await new StoredProcedureRepository { Database = database }.ReadAccountRegisterAsync(bank.AccountId, new(2026, 11, 18), "");
-        Assert.AreEqual(1075m, result.CurrentBalance); Assert.AreEqual(2, result.Rows.Count);
+        Assert.AreEqual(1075m, result.CurrentBalance);
+        Assert.AreEqual(2, result.Rows.Count);
         Assert.AreEqual(new DateOnly(2026, 11, 18).AddDays(-89), result.Rows[0].Date);
-        Assert.AreEqual(100m, result.Rows[0].Deposit); Assert.AreEqual(1100m, result.Rows[0].Balance);
-        Assert.AreEqual(25m, result.Rows[1].Payment); Assert.AreEqual(1075m, result.Rows[1].Balance);
+        Assert.AreEqual(100m, result.Rows[0].Deposit);
+        Assert.AreEqual(1100m, result.Rows[0].Balance);
+        Assert.AreEqual(25m, result.Rows[1].Payment);
+        Assert.AreEqual(1075m, result.Rows[1].Balance);
     }
     [TestMethod]
     public async Task FullHistoryBeforeLiteralSearchAndDateFiltersWithSplitsAndClosedDescendants()
     {
-        await using var fixture = await BookDatabaseFixture.CreateAsync(); await fixture.InitializeAsync();
+        await using var fixture = await BookDatabaseFixture.CreateAsync();
+        await fixture.InitializeAsync();
         var database = new BookDatabase(fixture.Settings);
         long bank, closed, first, zero;
         await using (var db = database.CreateContext())
         {
             await using var transaction = await db.Database.BeginTransactionAsync();
             var parent = new AccountEntity { BookId = 1, Name = "Parent", AccountTypeId = 1, DisplayGroupId = 1, OpenDate = new(2020, 1, 1) };
-            db.Accounts.Add(parent); await db.SaveChangesAsync();
+            db.Accounts.Add(parent);
+            await db.SaveChangesAsync();
             var child = new AccountEntity { BookId = 1, ParentAccountId = parent.AccountId, Name = "Closed child", AccountTypeId = 1, DisplayGroupId = 1, OpenDate = new(2020, 1, 1), CloseDate = new(2026, 11, 18) };
             var equity = new AccountEntity { BookId = 1, Name = "Counter[%_]", AccountTypeId = 9, DisplayGroupId = 5, OpenDate = new(2020, 1, 1) };
-            db.Accounts.AddRange(child, equity); await db.SaveChangesAsync(); bank = parent.AccountId; closed = child.AccountId;
+            db.Accounts.AddRange(child, equity);
+            await db.SaveChangesAsync();
+            bank = parent.AccountId;
+            closed = child.AccountId;
             async Task<long> Entry(DateOnly date, string description, params (long account, decimal debit, decimal credit)[] lines)
             {
-                var entry = new JournalEntryEntity { BookId = 1, AccountingDate = date, Description = description }; db.JournalEntries.Add(entry); await db.SaveChangesAsync();
+                var entry = new JournalEntryEntity { BookId = 1, AccountingDate = date, Description = description };
+                db.JournalEntries.Add(entry);
+                await db.SaveChangesAsync();
                 db.JournalEntryLines.AddRange(lines.Select((x, i) => new JournalEntryLineEntity { JournalEntryId = entry.JournalEntryId, AccountId = x.account, LineOrder = i + 1, Debit = x.debit, Credit = x.credit, ReconciliationStatus = (byte)(i % 3) }));
-                await db.SaveChangesAsync(); return entry.JournalEntryId;
+                await db.SaveChangesAsync();
+                return entry.JournalEntryId;
             }
             await Entry(new(2020, 1, 1), "Old opening", (bank, 99999999.99m, 0), (equity.AccountId, 0, 99999999.99m));
             await Entry(new(2020, 1, 2), "Old opening", (bank, 99999999.99m, 0), (equity.AccountId, 0, 99999999.99m));
@@ -105,13 +122,20 @@ public sealed class RegisterTests
         }
         var service = new RegisterService { Database = database, Procedures = new() { Database = database } };
         var all = await service.ReadAsync(bank, new(2026, 11, 18), "");
-        Assert.AreEqual(199999974.98m, all.CurrentBalance); Assert.AreEqual(2, all.Rows.Count);
-        Assert.AreEqual(first, all.Rows[0].EntryId); Assert.AreEqual(zero, all.Rows[1].EntryId);
-        Assert.AreEqual(25m, all.Rows[0].Payment); Assert.IsNull(all.Rows[1].Payment); Assert.IsNull(all.Rows[1].Deposit); Assert.AreEqual("Mixed", all.Rows[1].Status);
+        Assert.AreEqual(199999974.98m, all.CurrentBalance);
+        Assert.AreEqual(2, all.Rows.Count);
+        Assert.AreEqual(first, all.Rows[0].EntryId);
+        Assert.AreEqual(zero, all.Rows[1].EntryId);
+        Assert.AreEqual(25m, all.Rows[0].Payment);
+        Assert.IsNull(all.Rows[1].Payment);
+        Assert.IsNull(all.Rows[1].Deposit);
+        Assert.AreEqual("Mixed", all.Rows[1].Status);
         foreach (var search in new[] { "split", "counter[%_]", "[%_]" })
         {
             var filtered = await service.ReadAsync(bank, new(2026, 11, 18), search);
-            Assert.AreEqual(1, filtered.Rows.Count); Assert.AreEqual(all.Rows[0].Balance, filtered.Rows[0].Balance); Assert.AreEqual(all.CurrentBalance, filtered.CurrentBalance);
+            Assert.AreEqual(1, filtered.Rows.Count);
+            Assert.AreEqual(all.Rows[0].Balance, filtered.Rows[0].Balance);
+            Assert.AreEqual(all.CurrentBalance, filtered.CurrentBalance);
         }
         const string joinedNames = "Counter[%_], Parent:Closed child";
         Assert.AreEqual(joinedNames, all.Rows[0].CounterAccounts);
@@ -119,7 +143,11 @@ public sealed class RegisterTests
         Assert.AreEqual(0, crossAccountMatch.Rows.Count);
         Assert.AreEqual(all.CurrentBalance, crossAccountMatch.CurrentBalance);
         Assert.AreEqual(0, (await service.ReadAsync(bank, new(2026, 11, 18), "absent")).Rows.Count);
-        var details = await service.DetailsAsync(first); Assert.AreEqual(3, details.Count); Assert.IsTrue(details.Any(x => x.AccountId == closed));
-        var totals = await service.BalancesAsync(new(2026, 11, 18)); Assert.AreEqual(199999979.98m, totals[bank]); Assert.AreEqual(5m, totals[closed]);
+        var details = await service.DetailsAsync(first);
+        Assert.AreEqual(3, details.Count);
+        Assert.IsTrue(details.Any(x => x.AccountId == closed));
+        var totals = await service.BalancesAsync(new(2026, 11, 18));
+        Assert.AreEqual(199999979.98m, totals[bank]);
+        Assert.AreEqual(5m, totals[closed]);
     }
 }

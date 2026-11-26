@@ -9,20 +9,31 @@ public sealed class ProfileTests
 {
     private string folder = null!;
     [TestInitialize] public void Initialize() => folder = Path.Combine(Path.GetTempPath(), "FatStacks", Guid.NewGuid().ToString());
-    [TestCleanup] public void Cleanup() { if (Directory.Exists(folder)) Directory.Delete(folder, true); }
+    [TestCleanup]
+    public void Cleanup()
+    {
+        if (Directory.Exists(folder))
+            Directory.Delete(folder, true);
+    }
     private ProfileStore Store(ISecretProtector? protector = null) => new(Path.Combine(folder, "profiles.json"), protector ?? new TestProtector());
     private static ConnectionProfile Profile(string name = "Personal") => new(Guid.NewGuid(), name, new() { ConnectionString = "Server=test;Password=private-sentinel" });
     [TestMethod]
     public async Task MissingConfigurationIsFirstUse()
     {
-        var result = await Store().LoadAsync(); Assert.IsTrue(result.IsSuccess); Assert.AreEqual(0, result.Value!.Profiles.Count);
+        var result = await Store().LoadAsync();
+        Assert.IsTrue(result.IsSuccess);
+        Assert.AreEqual(0, result.Value!.Profiles.Count);
     }
     [TestMethod]
     public async Task ProfilesAndStartupIdentitySurviveRename()
     {
-        var store = Store(); var original = Profile();
+        var store = Store();
+        var original = Profile();
         Assert.IsTrue((await store.SaveAsync(new(1, [original], original.ProfileId))).IsSuccess);
-        var renamed = original with { FriendlyName = "Renamed" };
+        var renamed = original with
+        {
+            FriendlyName = "Renamed"
+        };
         Assert.IsTrue((await store.SaveAsync(new(1, [renamed], original.ProfileId))).IsSuccess);
         var loaded = (await store.LoadAsync()).Value!;
         Assert.AreEqual(original.ProfileId, loaded.Profiles.Single().ProfileId);
@@ -33,7 +44,9 @@ public sealed class ProfileTests
     [TestMethod]
     public async Task DuplicateAndEmptyNamesAreRejectedWithoutOverwriting()
     {
-        var store = Store(); var original = Profile(); await store.SaveAsync(new(1, [original], null));
+        var store = Store();
+        var original = Profile();
+        await store.SaveAsync(new(1, [original], null));
         foreach (var profiles in new[] { new[] { original, Profile("personal") }, new[] { Profile(" ") } })
             Assert.AreEqual(Outcome.ValidationFailure, (await store.SaveAsync(new(1, profiles, null))).Outcome);
         Assert.AreEqual(original.ProfileId, (await store.LoadAsync()).Value!.Profiles.Single().ProfileId);
@@ -41,20 +54,26 @@ public sealed class ProfileTests
     [TestMethod]
     public async Task CorruptionIsReportedAndPreserved()
     {
-        Directory.CreateDirectory(folder); var path = Path.Combine(folder, "profiles.json"); await File.WriteAllTextAsync(path, "broken");
-        Assert.IsFalse((await Store().LoadAsync()).IsSuccess); Assert.AreEqual("broken", await File.ReadAllTextAsync(path));
+        Directory.CreateDirectory(folder);
+        var path = Path.Combine(folder, "profiles.json");
+        await File.WriteAllTextAsync(path, "broken");
+        Assert.IsFalse((await Store().LoadAsync()).IsSuccess);
+        Assert.AreEqual("broken", await File.ReadAllTextAsync(path));
     }
     [TestMethod]
     public async Task ProtectionFailurePreservesLastSavedFile()
     {
-        var original = Profile(); await Store().SaveAsync(new(1, [original], null));
+        var original = Profile();
+        await Store().SaveAsync(new(1, [original], null));
         Assert.IsFalse((await Store(new BrokenProtector()).SaveAsync(new(1, [Profile("New")], null))).IsSuccess);
         Assert.AreEqual(original.ProfileId, (await Store().LoadAsync()).Value!.Profiles.Single().ProfileId);
     }
     [TestMethod]
     public async Task FailedReplacementPreservesLastSavedFile()
     {
-        var original = Profile(); var store = Store(); await store.SaveAsync(new(1, [original], null));
+        var original = Profile();
+        var store = Store();
+        await store.SaveAsync(new(1, [original], null));
         Directory.CreateDirectory(Path.Combine(folder, "profiles.json.tmp"));
         Assert.IsFalse((await store.SaveAsync(new(1, [Profile("New")], null))).IsSuccess);
         Assert.AreEqual(original.ProfileId, (await store.LoadAsync()).Value!.Profiles.Single().ProfileId);
@@ -86,8 +105,10 @@ public sealed class ProfileTests
         await File.WriteAllTextAsync(path, "broken");
         var store = Store();
         Assert.IsFalse((await store.LoadAsync()).IsSuccess);
-        if (removeFile) File.Delete(path);
-        else await File.WriteAllTextAsync(path, "{\"FormatVersion\":1,\"Profiles\":[]}");
+        if (removeFile)
+            File.Delete(path);
+        else
+            await File.WriteAllTextAsync(path, "{\"FormatVersion\":1,\"Profiles\":[]}");
         Assert.IsTrue((await store.LoadAsync()).IsSuccess);
         Assert.IsTrue((await store.SaveAsync(new(1, [Profile()], null))).IsSuccess);
         Assert.AreEqual(1, (await store.LoadAsync()).Value!.Profiles.Count);

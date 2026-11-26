@@ -15,50 +15,83 @@ public sealed class JournalEditorViewModelTests
     {
         var model = new JournalEditorViewModel { Journal = service, Calendar = new("UTC", new FixedClock(new(2026, 11, 21, 12, 0, 0, TimeSpan.Zero))) };
         model.Initialize(null, Accounts, "USD", Day, 1);
-        model.Lines[0].Debit = "1000"; model.Lines[1].AccountText = "Equity"; model.Lines[1].Credit = "1000";
+        model.Lines[0].Debit = "1000";
+        model.Lines[1].AccountText = "Equity";
+        model.Lines[1].Credit = "1000";
         return model;
     }
     [TestMethod]
     public async Task SaveBusyExcludesDuplicateAndContinueRetainsDate()
     {
-        var service = new FakeJournal(); var model = Editor(service); var pending = model.SaveAsync(true);
-        await model.SaveAsync(false); Assert.AreEqual(1, service.Calls); Assert.IsTrue(model.IsBusy);
-        Assert.IsFalse(model.ApplyDateShortcut('+')); Assert.AreEqual(Day.ToDateTime(TimeOnly.MinValue), model.AccountingDate);
-        service.Complete(Outcome.Success); await pending;
-        Assert.AreEqual(Day.ToDateTime(TimeOnly.MinValue), model.AccountingDate); Assert.AreEqual("", model.Lines[0].Debit); Assert.IsFalse(model.IsBusy);
+        var service = new FakeJournal();
+        var model = Editor(service);
+        var pending = model.SaveAsync(true);
+        await model.SaveAsync(false);
+        Assert.AreEqual(1, service.Calls);
+        Assert.IsTrue(model.IsBusy);
+        Assert.IsFalse(model.ApplyDateShortcut('+'));
+        Assert.AreEqual(Day.ToDateTime(TimeOnly.MinValue), model.AccountingDate);
+        service.Complete(Outcome.Success);
+        await pending;
+        Assert.AreEqual(Day.ToDateTime(TimeOnly.MinValue), model.AccountingDate);
+        Assert.AreEqual("", model.Lines[0].Debit);
+        Assert.IsFalse(model.IsBusy);
     }
     [TestMethod]
     [DataRow(Outcome.Failed)]
     [DataRow(Outcome.Conflict)]
     public async Task InvalidFieldsAndUnconfirmedCommitRetainDraft(Outcome outcome)
     {
-        var service = new FakeJournal(); var model = Editor(service); model.Lines[0].Debit = "invalid";
-        await model.SaveAsync(false); Assert.AreEqual(0, service.Calls); Assert.IsNotEmpty(model.Errors);
-        model.Lines[0].Debit = "1000"; var pending = model.SaveAsync(false); service.Complete(outcome); await pending;
-        Assert.AreEqual("1000", model.Lines[0].Debit); Assert.IsNull(model.LastSaved); Assert.IsFalse(model.ShouldClose);
-        model.Cancel(); Assert.IsTrue(model.ShouldClose); Assert.AreEqual(1, service.Calls);
+        var service = new FakeJournal();
+        var model = Editor(service);
+        model.Lines[0].Debit = "invalid";
+        await model.SaveAsync(false);
+        Assert.AreEqual(0, service.Calls);
+        Assert.IsNotEmpty(model.Errors);
+        model.Lines[0].Debit = "1000";
+        var pending = model.SaveAsync(false);
+        service.Complete(outcome);
+        await pending;
+        Assert.AreEqual("1000", model.Lines[0].Debit);
+        Assert.IsNull(model.LastSaved);
+        Assert.IsFalse(model.ShouldClose);
+        model.Cancel();
+        Assert.IsTrue(model.ShouldClose);
+        Assert.AreEqual(1, service.Calls);
     }
     [TestMethod]
     public async Task CommittedSaveDoesNotDependOnProfilePreferences()
     {
-        var service = new FakeJournal(); var model = Editor(service); var pending = model.SaveAsync(false); service.Complete(Outcome.Success); await pending;
-        Assert.IsNotNull(model.LastSaved); Assert.IsTrue(model.ShouldClose); // Journal has no profile-store dependency.
+        var service = new FakeJournal();
+        var model = Editor(service);
+        var pending = model.SaveAsync(false);
+        service.Complete(Outcome.Success);
+        await pending;
+        Assert.IsNotNull(model.LastSaved);
+        Assert.IsTrue(model.ShouldClose); // Journal has no profile-store dependency.
     }
     [TestMethod]
     public void DateShortcutsCrossMonthYearAndLeapDayWithoutChangingTheOtherDate()
     {
         var model = Editor(new FakeJournal());
-        model.AccountingDate = new(2024, 3, 1); model.BankPostingDate = new(2026, 1, 1);
-        Assert.IsTrue(model.ApplyDateShortcut('-')); Assert.AreEqual(new DateTime(2024, 2, 29), model.AccountingDate);
-        Assert.IsTrue(model.ApplyDateShortcut('+')); Assert.AreEqual(new DateTime(2024, 3, 1), model.AccountingDate);
-        Assert.IsTrue(model.ApplyDateShortcut('-', true)); Assert.AreEqual(new DateTime(2025, 12, 31), model.BankPostingDate);
+        model.AccountingDate = new(2024, 3, 1);
+        model.BankPostingDate = new(2026, 1, 1);
+        Assert.IsTrue(model.ApplyDateShortcut('-'));
+        Assert.AreEqual(new DateTime(2024, 2, 29), model.AccountingDate);
+        Assert.IsTrue(model.ApplyDateShortcut('+'));
+        Assert.AreEqual(new DateTime(2024, 3, 1), model.AccountingDate);
+        Assert.IsTrue(model.ApplyDateShortcut('-', true));
+        Assert.AreEqual(new DateTime(2025, 12, 31), model.BankPostingDate);
         Assert.AreEqual(new DateTime(2024, 3, 1), model.AccountingDate);
         model.BankPostingDate = null;
-        Assert.IsTrue(model.ApplyDateShortcut('+', true)); Assert.AreEqual(new DateTime(2026, 11, 22), model.BankPostingDate);
+        Assert.IsTrue(model.ApplyDateShortcut('+', true));
+        Assert.AreEqual(new DateTime(2026, 11, 22), model.BankPostingDate);
         model.AccountingDate = DateTime.MinValue;
-        Assert.IsFalse(model.ApplyDateShortcut('-')); Assert.AreEqual(DateTime.MinValue, model.AccountingDate);
+        Assert.IsFalse(model.ApplyDateShortcut('-'));
+        Assert.AreEqual(DateTime.MinValue, model.AccountingDate);
         model.AccountingDate = DateTime.MaxValue.Date;
-        Assert.IsFalse(model.ApplyDateShortcut('+')); Assert.AreEqual(DateTime.MaxValue.Date, model.AccountingDate);
+        Assert.IsFalse(model.ApplyDateShortcut('+'));
+        Assert.AreEqual(DateTime.MaxValue.Date, model.AccountingDate);
     }
     [TestMethod]
     public void TodayShortcutUsesCurrentBookDayEvenAfterContinueRetainsAnOlderDate()
@@ -66,21 +99,26 @@ public sealed class JournalEditorViewModelTests
         var clock = new FixedClock(new(2026, 11, 22, 7, 30, 0, TimeSpan.Zero));
         var model = new JournalEditorViewModel { Journal = new FakeJournal(), Calendar = new("Pacific Standard Time", clock) };
         model.Initialize(null, Accounts, "USD", new(2020, 1, 1));
-        Assert.IsTrue(model.ApplyDateShortcut('t')); Assert.AreEqual(new DateTime(2026, 11, 21), model.AccountingDate);
+        Assert.IsTrue(model.ApplyDateShortcut('t'));
+        Assert.AreEqual(new DateTime(2026, 11, 21), model.AccountingDate);
         clock.Utc = new(2026, 11, 22, 8, 30, 0, TimeSpan.Zero);
-        Assert.IsTrue(model.ApplyDateShortcut('T', true)); Assert.AreEqual(new DateTime(2026, 11, 22), model.BankPostingDate);
+        Assert.IsTrue(model.ApplyDateShortcut('T', true));
+        Assert.AreEqual(new DateTime(2026, 11, 22), model.BankPostingDate);
         Assert.AreEqual(new DateTime(2026, 11, 21), model.AccountingDate);
     }
     [TestMethod]
     public void PostingNumbersFollowRowsWithoutChangingControlIdentity()
     {
         var model = Editor(new FakeJournal());
-        model.AddLine(); model.AddLine();
-        var retained = model.Lines[3]; var id = retained.AccountControlId;
+        model.AddLine();
+        model.AddLine();
+        var retained = model.Lines[3];
+        var id = retained.AccountControlId;
         model.RemoveLine(model.Lines[1]);
         CollectionAssert.AreEqual(new[] { 1, 2, 3 }, model.Lines.Select(x => x.LineNumber).ToArray());
         Assert.AreEqual(id, retained.AccountControlId);
-        Assert.IsTrue(model.Lines[1].IsEvenRow); Assert.IsFalse(retained.IsEvenRow);
+        Assert.IsTrue(model.Lines[1].IsEvenRow);
+        Assert.IsFalse(retained.IsEvenRow);
     }
     [TestMethod]
     public void FootingNamesShortSideAndHidesTotalsForInvalidText()
@@ -89,13 +127,17 @@ public sealed class JournalEditorViewModelTests
         Assert.AreEqual("Balanced", model.BalanceStatus);
         model.Lines[0].Debit = "1001";
         StringAssert.StartsWith(model.BalanceStatus, "Credits short by ");
-        Assert.IsTrue(model.DebitOver); Assert.IsFalse(model.CreditOver);
+        Assert.IsTrue(model.DebitOver);
+        Assert.IsFalse(model.CreditOver);
         model.Lines[0].Debit = "999";
         StringAssert.StartsWith(model.BalanceStatus, "Debits short by ");
-        Assert.IsTrue(model.CreditOver); Assert.IsFalse(model.DebitOver);
+        Assert.IsTrue(model.CreditOver);
+        Assert.IsFalse(model.DebitOver);
         model.Lines[0].Debit = "bad";
-        Assert.AreEqual("", model.DebitTotal); Assert.AreEqual("", model.CreditTotal);
-        Assert.IsFalse(model.DebitOver); Assert.IsFalse(model.CreditOver);
+        Assert.AreEqual("", model.DebitTotal);
+        Assert.AreEqual("", model.CreditTotal);
+        Assert.IsFalse(model.DebitOver);
+        Assert.IsFalse(model.CreditOver);
         Assert.AreEqual("Enter valid amounts to check the balance.", model.BalanceStatus);
         Assert.IsTrue(model.Lines[0].HasErrors);
     }
@@ -103,18 +145,23 @@ public sealed class JournalEditorViewModelTests
     public async Task CorrectionsClearOnlyResolvedErrorsAndKeepTheirRowIdentity()
     {
         var model = Editor(new FakeJournal());
-        model.AddLine(); model.Lines[2].AccountText = "missing"; model.Lines[2].Debit = "bad";
+        model.AddLine();
+        model.Lines[2].AccountText = "missing";
+        model.Lines[2].Debit = "bad";
         model.Lines[0].Debit = "100000000";
         Assert.IsFalse(await model.SaveAsync(false));
         Assert.IsNotEmpty(model.Lines[0].DebitError);
         var invalid = model.Lines[2];
         model.Lines[0].Debit = "1000";
-        Assert.AreEqual("", model.Lines[0].DebitError); Assert.IsTrue(invalid.HasErrors);
+        Assert.AreEqual("", model.Lines[0].DebitError);
+        Assert.IsTrue(invalid.HasErrors);
         model.RemoveLine(model.Lines[1]);
         Assert.AreEqual(2, invalid.LineNumber);
         Assert.IsTrue(model.Errors.Any(x => x.LineOrder == 2 && x.Field == "Account"));
-        invalid.AccountText = "Equity"; invalid.Credit = "1000";
-        Assert.IsEmpty(model.Errors); Assert.IsFalse(invalid.HasErrors);
+        invalid.AccountText = "Equity";
+        invalid.Credit = "1000";
+        Assert.IsEmpty(model.Errors);
+        Assert.IsFalse(invalid.HasErrors);
         Assert.AreEqual("Balanced", model.BalanceStatus);
     }
     [TestMethod]
@@ -147,11 +194,14 @@ public sealed class JournalEditorViewModelTests
     public void CorrectingEitherDateClearsItsErrorWithoutClearingTheOther()
     {
         var model = Editor(new FakeJournal());
-        model.SetDateError(false, "Invalid accounting date."); model.SetDateError(true, "Invalid bank date.");
+        model.SetDateError(false, "Invalid accounting date.");
+        model.SetDateError(true, "Invalid bank date.");
         model.AccountingDate = model.AccountingDate;
-        Assert.AreEqual("", model.AccountingDateError); Assert.IsNotEmpty(model.BankPostingDateError);
+        Assert.AreEqual("", model.AccountingDateError);
+        Assert.IsNotEmpty(model.BankPostingDateError);
         model.BankPostingDate = null;
-        Assert.AreEqual("", model.BankPostingDateError); Assert.IsEmpty(model.Errors);
+        Assert.AreEqual("", model.BankPostingDateError);
+        Assert.IsEmpty(model.Errors);
     }
     [TestMethod]
     public void ResetMarkersTrackReconciledEditsAndReversion()
@@ -159,10 +209,13 @@ public sealed class JournalEditorViewModelTests
         var model = Editor(new FakeJournal());
         var lines = new[] { new JournalLine(1, new byte[8], 1, 1, 1000, 0, "USD", 2), new JournalLine(2, new byte[8], 2, 2, 0, 1000, "USD", 1) };
         model.Initialize(new(1, 1, new byte[8], Day, null, "", "", 0, lines, lines.Select(x => new LineVersion(x.LineId!.Value, x.Version!)).ToArray()), Accounts, "USD", Day);
-        model.Lines[0].Debit = "1001"; model.Lines[1].AccountText = "Bank";
+        model.Lines[0].Debit = "1001";
+        model.Lines[1].AccountText = "Bank";
         Assert.IsTrue(model.Lines.All(x => x.WillReset));
-        model.Lines[0].Debit = "1000"; model.Lines[1].AccountText = "Equity";
-        Assert.IsTrue(model.Lines.All(x => !x.WillReset)); Assert.IsFalse(model.HasResetWarning);
+        model.Lines[0].Debit = "1000";
+        model.Lines[1].AccountText = "Equity";
+        Assert.IsTrue(model.Lines.All(x => !x.WillReset));
+        Assert.IsFalse(model.HasResetWarning);
     }
     private sealed class FixedClock(DateTimeOffset utc) : TimeProvider
     {
@@ -186,10 +239,14 @@ public sealed class JournalEditorViewModelTests
         {
             System.Globalization.CultureInfo.CurrentCulture = System.Globalization.CultureInfo.GetCultureInfo(culture);
             var line = Editor(new FakeJournal()).Lines[0];
-            line.Credit = "other draft"; line.Debit = input; line.FormatAmount(false);
+            line.Credit = "other draft";
+            line.Debit = input;
+            line.FormatAmount(false);
             Assert.AreEqual(expected, line.Debit);
             Assert.AreEqual(string.IsNullOrWhiteSpace(input) ? "other draft" : "", line.Credit);
-            line.Debit = "other draft"; line.Credit = input; line.FormatAmount(true);
+            line.Debit = "other draft";
+            line.Credit = input;
+            line.FormatAmount(true);
             Assert.AreEqual(expected, line.Credit);
             Assert.AreEqual(string.IsNullOrWhiteSpace(input) ? "other draft" : "", line.Debit);
         }
@@ -199,17 +256,22 @@ public sealed class JournalEditorViewModelTests
     public void OppositeAmountClearsAndBalanceUpdatesAsRowsChange()
     {
         var model = Editor(new FakeJournal());
-        Assert.IsTrue(model.CanSave); Assert.IsFalse(model.IsUnbalanced);
+        Assert.IsTrue(model.CanSave);
+        Assert.IsFalse(model.IsUnbalanced);
         model.Lines[0].Credit = "25";
         Assert.AreEqual("", model.Lines[0].Debit);
-        Assert.IsTrue(model.IsUnbalanced); Assert.IsFalse(model.CanSave);
+        Assert.IsTrue(model.IsUnbalanced);
+        Assert.IsFalse(model.CanSave);
         StringAssert.Contains(model.BalanceSummary, "Out of balance:");
         model.Lines[0].Debit = "1000";
         Assert.AreEqual("", model.Lines[0].Credit);
-        Assert.IsFalse(model.IsUnbalanced); Assert.IsTrue(model.CanSave);
-        model.AddLine(); model.Lines[2].Debit = "25";
+        Assert.IsFalse(model.IsUnbalanced);
+        Assert.IsTrue(model.CanSave);
+        model.AddLine();
+        model.Lines[2].Debit = "25";
         Assert.IsFalse(model.CanSave);
-        model.RemoveLine(model.Lines[2]); Assert.IsTrue(model.CanSave);
+        model.RemoveLine(model.Lines[2]);
+        Assert.IsTrue(model.CanSave);
         model.Lines[0].Debit = "invalid";
         StringAssert.Contains(model.BalanceSummary, "Enter valid amounts");
     }
@@ -224,12 +286,16 @@ public sealed class JournalEditorViewModelTests
         try
         {
             System.Globalization.CultureInfo.CurrentCulture = System.Globalization.CultureInfo.InvariantCulture;
-            var service = new FakeJournal(); var model = Editor(service);
+            var service = new FakeJournal();
+            var model = Editor(service);
             const string amount = "1.000000000000000000000000000001";
-            model.Lines[0].Debit = amount; model.Lines[1].Credit = "1";
-            if (formatBeforeSave) model.Lines[0].FormatAmount(false);
+            model.Lines[0].Debit = amount;
+            model.Lines[1].Credit = "1";
+            if (formatBeforeSave)
+                model.Lines[0].FormatAmount(false);
             var pending = model.SaveAsync(continueEntry);
-            if (service.Calls > 0) service.Complete(Outcome.Failed);
+            if (service.Calls > 0)
+                service.Complete(Outcome.Failed);
             Assert.IsFalse(await pending);
             Assert.AreEqual(0, service.Calls, "Invalid precision must be rejected before any write.");
             Assert.AreEqual(amount, model.Lines[0].Debit);
@@ -246,13 +312,16 @@ public sealed class JournalEditorViewModelTests
         try
         {
             System.Globalization.CultureInfo.CurrentCulture = System.Globalization.CultureInfo.GetCultureInfo(culture);
-            var service = new FakeJournal(); var model = Editor(service);
-            model.Lines[0].Debit = input; model.Lines[1].Credit = credit;
+            var service = new FakeJournal();
+            var model = Editor(service);
+            model.Lines[0].Debit = input;
+            model.Lines[1].Credit = credit;
             var pending = model.SaveAsync(false);
             Assert.AreEqual(1, service.Calls);
             Assert.AreEqual(1.23m, service.SavedRequest!.Lines[0].Debit);
             Assert.AreEqual(1.23m, service.SavedRequest.Lines[1].Credit);
-            service.Complete(Outcome.Success); Assert.IsTrue(await pending);
+            service.Complete(Outcome.Success);
+            Assert.IsTrue(await pending);
         }
         finally { System.Globalization.CultureInfo.CurrentCulture = oldCulture; }
     }
@@ -646,13 +715,21 @@ public sealed class JournalEditorViewModelTests
 #endif
     public sealed class FakeJournal : IJournalService
     {
-        public int Calls { get; private set; }
+        public int Calls
+        {
+            get; private set;
+        }
         private JournalRequest? request;
         public JournalRequest? SavedRequest => request;
         public IReadOnlyList<long> ResetLineIds { get; set; } = [];
         private readonly TaskCompletionSource<OperationResult<JournalSaveResult>> completion = new();
         public void Complete(Outcome outcome) => completion.SetResult(outcome == Outcome.Success ? OperationResult<JournalSaveResult>.Success(new(request! with { EntryId = 1, Version = new byte[8] }, ResetLineIds)) : OperationResult<JournalSaveResult>.Fail("Save unconfirmed.", outcome));
-        public Task<OperationResult<JournalSaveResult>> SaveAsync(JournalRequest value, CancellationToken ct = default) { Calls++; request = value; return completion.Task; }
+        public Task<OperationResult<JournalSaveResult>> SaveAsync(JournalRequest value, CancellationToken ct = default)
+        {
+            Calls++;
+            request = value;
+            return completion.Task;
+        }
         public Task<JournalRequest?> LoadAsync(long id, CancellationToken ct = default) => Task.FromResult<JournalRequest?>(null);
         public Task<OperationResult<bool>> DeleteAsync(DeleteJournalRequest value, CancellationToken ct = default) => Task.FromResult(OperationResult<bool>.Success(true));
     }

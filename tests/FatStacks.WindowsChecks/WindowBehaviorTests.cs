@@ -24,7 +24,8 @@ public sealed class WindowBehaviorTests
             _ => throw new AssertFailedException("Preview must not delete an entry."));
         try
         {
-            window.Show(); Pump();
+            window.Show();
+            Pump();
             Assert.AreEqual("U3 Shop", ((System.Windows.Documents.Run)window.FindName("PayeeText")).Text);
             Assert.AreEqual(" — ", ((System.Windows.Documents.Run)window.FindName("SeparatorText")).Text);
             Assert.AreEqual("J07 expense", ((System.Windows.Documents.Run)window.FindName("DescriptionText")).Text);
@@ -65,7 +66,8 @@ public sealed class WindowBehaviorTests
                 _ => throw new AssertFailedException("Preview must not delete an entry."));
             try
             {
-                window.Show(); Pump();
+                window.Show();
+                Pump();
                 Assert.AreEqual("", ((System.Windows.Documents.Run)window.FindName("SeparatorText")).Text);
                 Assert.AreEqual(expected, System.Windows.Automation.AutomationProperties.GetName((TextBlock)window.FindName("Preview")));
             }
@@ -167,7 +169,10 @@ public sealed class WindowBehaviorTests
     public void ClosingMainWindowWithAnActiveBookDoesNotCloseInsideTheClosingEvent()
     {
         var model = Model();
-        var profile = new ConnectionProfile(Guid.NewGuid(), "Test", new() { ConnectionString = "Server=unused;Database=Test;Integrated Security=True" });
+        var profile = new ConnectionProfile(Guid.NewGuid(), "Test", new()
+        {
+            ConnectionString = "Server=unused;Database=Test;Integrated Security=True"
+        });
         model.Sessions.SwitchAsync(profile, () => Task.FromResult(UnsavedDecision.Discard), () => Task.FromResult(true)).GetAwaiter().GetResult();
         var startupStore = new MemoryStore();
         startupStore.SaveAsync(new(1, [profile], profile.ProfileId)).GetAwaiter().GetResult();
@@ -210,7 +215,10 @@ public sealed class WindowBehaviorTests
     public void StartupCancellationPreservesPreferenceAndLeavesConnectionsUsable()
     {
         var store = new MemoryStore();
-        var profile = new ConnectionProfile(Guid.NewGuid(), "Pending", new() { ConnectionString = "Server=unused;Database=Test;Integrated Security=True" });
+        var profile = new ConnectionProfile(Guid.NewGuid(), "Pending", new()
+        {
+            ConnectionString = "Server=unused;Database=Test;Integrated Security=True"
+        });
         store.SaveAsync(new(1, [profile], profile.ProfileId)).GetAwaiter().GetResult();
         var connections = new PendingConnections();
         var sessions = new BookSessionCoordinator(connections, store);
@@ -228,7 +236,8 @@ public sealed class WindowBehaviorTests
         var window = new ConnectionWindow(model);
         try
         {
-            window.Show(); Pump();
+            window.Show();
+            Pump();
             Assert.IsTrue(model.Idle);
             Assert.IsTrue(model.TestCommand.CanExecute(null));
             Assert.IsTrue(model.OpenCommand.CanExecute(null));
@@ -241,7 +250,10 @@ public sealed class WindowBehaviorTests
     public void ClosingDuringStartupCancelsOpenAndClosesWithoutConnectionDialog()
     {
         var store = new MemoryStore();
-        var profile = new ConnectionProfile(Guid.NewGuid(), "Pending", new() { ConnectionString = "Server=unused;Database=Test;Integrated Security=True" });
+        var profile = new ConnectionProfile(Guid.NewGuid(), "Pending", new()
+        {
+            ConnectionString = "Server=unused;Database=Test;Integrated Security=True"
+        });
         store.SaveAsync(new(1, [profile], profile.ProfileId)).GetAwaiter().GetResult();
         var connections = new PendingConnections();
         var sessions = new BookSessionCoordinator(connections, store);
@@ -251,7 +263,8 @@ public sealed class WindowBehaviorTests
         window.Closed += (_, _) => closed = true;
         try
         {
-            window.Show(); Pump();
+            window.Show();
+            Pump();
             Assert.IsTrue(connections.Started);
             window.Close();
             PumpUntil(() => closed);
@@ -267,7 +280,10 @@ public sealed class WindowBehaviorTests
     public void MainWindowCloseWaitsForOutstandingWrite()
     {
         var model = Model();
-        var profile = new ConnectionProfile(Guid.NewGuid(), "Test", new() { ConnectionString = "Server=unused;Database=Test;Integrated Security=True" });
+        var profile = new ConnectionProfile(Guid.NewGuid(), "Test", new()
+        {
+            ConnectionString = "Server=unused;Database=Test;Integrated Security=True"
+        });
         model.Sessions.SwitchAsync(profile, () => Task.FromResult(UnsavedDecision.Discard), () => Task.FromResult(true)).GetAwaiter().GetResult();
         var active = model.Sessions.Active!;
         var reads = active.Reads.Token;
@@ -278,11 +294,13 @@ public sealed class WindowBehaviorTests
         window.Closed += (_, _) => closed = true;
         try
         {
-            window.Show(); Pump();
+            window.Show();
+            Pump();
             active = model.Sessions.Active!;
             using var displayedWrite = active.BeginWrite();
             reads = active.Reads.Token;
-            window.Close(); Pump();
+            window.Close();
+            Pump();
             Assert.IsFalse(closed);
             Assert.AreSame(active, model.Sessions.Active);
             displayedWrite.Dispose();
@@ -302,7 +320,11 @@ public sealed class WindowBehaviorTests
         var dialog = new Window { Content = input };
         try
         {
-            owner.Show(); dialog.Owner = owner; dialog.Show(); input.Focus(); Pump();
+            owner.Show();
+            dialog.Owner = owner;
+            dialog.Show();
+            input.Focus();
+            Pump();
             System.Windows.Input.ApplicationCommands.Close.Execute(null, input);
             Pump();
             Assert.IsFalse(dialog.IsVisible);
@@ -320,7 +342,8 @@ public sealed class WindowBehaviorTests
         var window = new JournalEditorWindow(model);
         try
         {
-            window.Show(); Pump();
+            window.Show();
+            Pump();
             var pending = model.SaveAsync(false);
             System.Windows.Input.ApplicationCommands.Close.Execute(null, (TextBox)window.FindName("DescriptionInput"));
             Pump();
@@ -342,13 +365,18 @@ public sealed class WindowBehaviorTests
     {
         WindowShortcuts.Register();
         var model = Model();
-        var profile = new ConnectionProfile(Guid.NewGuid(), "Test", new() { ConnectionString = "Server=unused;Database=Test;Integrated Security=True" });
+        var profile = new ConnectionProfile(Guid.NewGuid(), "Test", new()
+        {
+            ConnectionString = "Server=unused;Database=Test;Integrated Security=True"
+        });
         model.Sessions.SwitchAsync(profile, () => Task.FromResult(UnsavedDecision.Discard), () => Task.FromResult(true)).GetAwaiter().GetResult();
-        var store = new MemoryStore(); store.SaveAsync(new(1, [profile], profile.ProfileId)).GetAwaiter().GetResult();
+        var store = new MemoryStore();
+        store.SaveAsync(new(1, [profile], profile.ProfileId)).GetAwaiter().GetResult();
         var window = new MainWindow { Connections = model, Startup = new() { Store = store, Sessions = model.Sessions }, Sessions = model.Sessions };
         try
         {
-            window.Show(); Pump();
+            window.Show();
+            Pump();
             System.Windows.Input.ApplicationCommands.Close.Execute(null, window);
             PumpUntil(() => !window.IsVisible);
             Assert.IsNull(model.Sessions.Active);
@@ -367,7 +395,9 @@ public sealed class WindowBehaviorTests
         try
         {
             var row = new FatStacks.Core.Register.RegisterRow(1, new(2026, 11, 21), "Weekly groceries", "Expenses:Groceries", 25, null, 75, "Uncleared", "Synthetic Store");
-            text.DataContext = row; host.Show(); Pump();
+            text.DataContext = row;
+            host.Show();
+            Pump();
             var runs = text.Inlines.OfType<System.Windows.Documents.Run>().ToArray();
             foreach (var run in runs)
                 Assert.AreEqual(System.Windows.Data.BindingMode.OneWay, System.Windows.Data.BindingOperations.GetBinding(run, System.Windows.Documents.Run.TextProperty)!.Mode);
@@ -375,8 +405,18 @@ public sealed class WindowBehaviorTests
             Assert.AreEqual(FontStyles.Normal, runs[0].FontStyle);
             Assert.AreEqual(FontStyles.Italic, runs[2].FontStyle);
             Assert.AreEqual(row.SummaryText, text.ToolTip);
-            text.DataContext = row with { Description = "" }; Pump(); Assert.AreEqual("Synthetic Store", text.Text);
-            text.DataContext = row with { Payee = null }; Pump(); Assert.AreEqual("Weekly groceries", text.Text);
+            text.DataContext = row with
+            {
+                Description = ""
+            };
+            Pump();
+            Assert.AreEqual("Synthetic Store", text.Text);
+            text.DataContext = row with
+            {
+                Payee = null
+            };
+            Pump();
+            Assert.AreEqual("Weekly groceries", text.Text);
         }
         finally { host.Close(); shell.Close(); Pump(); }
     }
@@ -390,15 +430,21 @@ public sealed class WindowBehaviorTests
         var entry = new FatStacks.Core.Journal.JournalRequest(1, 1, new byte[8], new(2026, 11, 21), null, secret, secret, 0,
             [new(1, new byte[8], 1, 1, 25, 0, "USD"), new(2, new byte[8], 2, 2, 0, 25, "USD")], [new(1, new byte[8]), new(2, new byte[8])]);
         var window = new DeleteEntryWindow(entry, JournalEditorViewModelTests.Accounts, _ => Task.FromException<OperationResult<bool>>(cancelled ? new OperationCanceledException(secret) : new InvalidOperationException(secret)));
-        using var output = new System.IO.StringWriter(); using var listener = new System.Diagnostics.TextWriterTraceListener(output);
+        using var output = new System.IO.StringWriter();
+        using var listener = new System.Diagnostics.TextWriterTraceListener(output);
         System.Diagnostics.Trace.Listeners.Add(listener);
         try
         {
-            window.Show(); Pump();
+            window.Show();
+            Pump();
             ((StackPanel)window.FindName("Actions")).Children.OfType<Button>().Single(x => System.Windows.Automation.AutomationProperties.GetAutomationId(x) == "ConfirmDelete").RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
-            Pump(); listener.Flush(); Assert.IsTrue(window.IsVisible);
-            if (cancelled) Assert.AreEqual("", output.ToString());
-            else StringAssert.Contains(output.ToString(), "operation=JournalDelete category=InvalidOperation");
+            Pump();
+            listener.Flush();
+            Assert.IsTrue(window.IsVisible);
+            if (cancelled)
+                Assert.AreEqual("", output.ToString());
+            else
+                StringAssert.Contains(output.ToString(), "operation=JournalDelete category=InvalidOperation");
             Assert.IsFalse(output.ToString().Contains(secret, StringComparison.Ordinal));
         }
         finally { window.Close(); System.Diagnostics.Trace.Listeners.Remove(listener); }
@@ -407,19 +453,32 @@ public sealed class WindowBehaviorTests
     private static void PumpUntil(Func<bool> condition)
     {
         var timeout = System.Diagnostics.Stopwatch.StartNew();
-        while (!condition() && timeout.Elapsed < TimeSpan.FromSeconds(5)) { Pump(); Thread.Sleep(1); }
+        while (!condition() && timeout.Elapsed < TimeSpan.FromSeconds(5))
+        {
+            Pump();
+            Thread.Sleep(1);
+        }
         Assert.IsTrue(condition(), "Window did not finish closing before timeout.");
     }
 
     private sealed class PendingConnections : IBookConnectionService
     {
-        public bool Started { get; private set; }
-        public bool Cancelled { get; private set; }
+        public bool Started
+        {
+            get; private set;
+        }
+        public bool Cancelled
+        {
+            get; private set;
+        }
         public Task<OperationResult<BookInfo>> TestAsync(ConnectionSettings settings, CancellationToken cancellationToken = default) => throw new NotSupportedException();
         public async Task<OperationResult<BookInfo>> OpenAsync(ConnectionProfile profile, CancellationToken cancellationToken = default)
         {
             Started = true;
-            try { await Task.Delay(Timeout.Infinite, cancellationToken); }
+            try
+            {
+                await Task.Delay(Timeout.Infinite, cancellationToken);
+            }
             catch (OperationCanceledException) { Cancelled = true; throw; }
             throw new InvalidOperationException("Pending connection unexpectedly completed.");
         }
@@ -468,6 +527,9 @@ public sealed class WindowBehaviorTests
         private ProfileConfiguration state = ProfileConfiguration.Empty;
         public Task<OperationResult<ProfileConfiguration>> LoadAsync(CancellationToken cancellationToken = default) => Task.FromResult(OperationResult<ProfileConfiguration>.Success(state));
         public Task<OperationResult<bool>> SaveAsync(ProfileConfiguration configuration, CancellationToken cancellationToken = default)
-        { state = configuration; return Task.FromResult(OperationResult<bool>.Success(true)); }
+        {
+            state = configuration;
+            return Task.FromResult(OperationResult<bool>.Success(true));
+        }
     }
 }

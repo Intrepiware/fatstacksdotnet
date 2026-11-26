@@ -5,9 +5,18 @@ namespace FatStacks.Core.Journal;
 
 public sealed class JournalService : IJournalService
 {
-    public required IJournalStore Store { private get; init; }
-    public required IAccountService Accounts { private get; init; }
-    public required BookSession Session { private get; init; }
+    public required IJournalStore Store
+    {
+        private get; init;
+    }
+    public required IAccountService Accounts
+    {
+        private get; init;
+    }
+    public required BookSession Session
+    {
+        private get; init;
+    }
     public Task<JournalRequest?> LoadAsync(long entryId, CancellationToken ct = default) => Store.LoadAsync(entryId, ct);
     public async Task<OperationResult<JournalSaveResult>> SaveAsync(JournalRequest request, CancellationToken ct = default)
     {
@@ -26,19 +35,25 @@ public sealed class JournalService : IJournalService
                     return OperationResult<JournalSaveResult>.Fail("This entry changed. Reload it before retrying; your draft has been retained.", Outcome.Conflict);
             }
             var errors = JournalValidation.Validate(request, Session.Book.CurrencyCode, accounts, original?.Lines);
-            if (errors.Count > 0) return new(Outcome.ValidationFailure, Message: "Correct the indicated fields and lines.", Errors: errors);
+            if (errors.Count > 0)
+                return new(Outcome.ValidationFailure, Message: "Correct the indicated fields and lines.", Errors: errors);
             return await Store.SaveAsync(request, ct);
         }
         catch (Exception ex) when (ex is not OutOfMemoryException) { TraceFailure("JournalSave", ex); return OperationResult<JournalSaveResult>.Fail("Save was not confirmed. Retain this draft and reload the entry before retrying."); }
     }
     public async Task<OperationResult<bool>> DeleteAsync(DeleteJournalRequest request, CancellationToken ct = default)
     {
-        try { using var write = Session.BeginWrite(); return await Store.DeleteAsync(request, ct); }
+        try
+        {
+            using var write = Session.BeginWrite();
+            return await Store.DeleteAsync(request, ct);
+        }
         catch (Exception ex) when (ex is not OutOfMemoryException) { TraceFailure("JournalDelete", ex); return OperationResult<bool>.Fail("Deletion was not confirmed. Reload before retrying."); }
     }
     private static void TraceFailure(string operation, Exception error)
     {
-        if (error is OperationCanceledException) return;
+        if (error is OperationCanceledException)
+            return;
         var category = error switch
         {
             System.Data.Common.DbException => "DatabaseFailure",

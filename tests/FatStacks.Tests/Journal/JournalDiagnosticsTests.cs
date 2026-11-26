@@ -21,45 +21,63 @@ public sealed class JournalDiagnosticsTests
     [DataRow("delete")]
     public async Task ServiceFailuresAreTracedOnceWithoutPrivateValues(string stage)
     {
-        using var trace = new Capture(); using var session = Session();
+        using var trace = new Capture();
+        using var session = Session();
         var service = new JournalService { Session = session, Accounts = new Accounts(stage == "accounts" ? new InvalidOperationException(Private) : null), Store = new Store { Error = new InvalidOperationException(Private) } };
-        if (stage == "delete") Assert.AreEqual(Outcome.Failed, (await service.DeleteAsync(new(1, 1, new byte[8], []))).Outcome);
-        else Assert.AreEqual(Outcome.Failed, (await service.SaveAsync(Draft())).Outcome);
+        if (stage == "delete")
+            Assert.AreEqual(Outcome.Failed, (await service.DeleteAsync(new(1, 1, new byte[8], []))).Outcome);
+        else
+            Assert.AreEqual(Outcome.Failed, (await service.SaveAsync(Draft())).Outcome);
         trace.AssertSingle(stage == "delete" ? "JournalDelete" : "JournalSave");
     }
     [TestMethod]
     public async Task AlreadyReportedRepositoryFailureDoesNotProduceAnotherEvent()
     {
-        using var trace = new Capture(); using var session = Session();
+        using var trace = new Capture();
+        using var session = Session();
         var service = new JournalService { Session = session, Accounts = new Accounts(null), Store = new Store { ReportedResult = true } };
-        Assert.AreEqual(Outcome.Failed, (await service.SaveAsync(Draft())).Outcome); trace.AssertSingle("JournalSave");
+        Assert.AreEqual(Outcome.Failed, (await service.SaveAsync(Draft())).Outcome);
+        trace.AssertSingle("JournalSave");
     }
     [TestMethod]
     public async Task CancelledAccountReadDoesNotProduceFailureTrace()
     {
-        using var trace = new Capture(); using var session = Session();
+        using var trace = new Capture();
+        using var session = Session();
         var service = new JournalService { Session = session, Accounts = new Accounts(new OperationCanceledException(Private)), Store = new Store() };
-        await service.SaveAsync(Draft()); Assert.AreEqual("", trace.Text);
+        await service.SaveAsync(Draft());
+        Assert.AreEqual("", trace.Text);
     }
     [TestMethod]
     [DataRow(false)]
     [DataRow(true)]
     public async Task EditorFailureIsTracedButCancellationIsNot(bool cancelled)
     {
-        using var trace = new Capture(); var editor = JournalEditorViewModelTests.Editor(new ThrowingJournal(cancelled));
-        Assert.IsFalse(await editor.SaveAsync(false)); Assert.AreEqual("1000", editor.Lines[0].Debit);
-        if (cancelled) Assert.AreEqual("", trace.Text); else trace.AssertSingle("JournalEditorSave");
+        using var trace = new Capture();
+        var editor = JournalEditorViewModelTests.Editor(new ThrowingJournal(cancelled));
+        Assert.IsFalse(await editor.SaveAsync(false));
+        Assert.AreEqual("1000", editor.Lines[0].Debit);
+        if (cancelled)
+            Assert.AreEqual("", trace.Text);
+        else
+            trace.AssertSingle("JournalEditorSave");
     }
     [TestMethod]
     [DataRow(false)]
     [DataRow(true)]
     public async Task JournalLoadFailureIsTracedButCancellationIsNot(bool cancelled)
     {
-        using var trace = new Capture(); var (sessions, session) = await RegisterJourneyTests.OpenAsync(); using var owned = session;
+        using var trace = new Capture();
+        var (sessions, session) = await RegisterJourneyTests.OpenAsync();
+        using var owned = session;
         using var model = new MainWindowViewModel { Session = session, Sessions = sessions, Accounts = new RegisterJourneyTests.Accounts(), Register = new Register(), Journal = new ThrowingJournal(cancelled) };
-        await model.RefreshAsync(); model.Selected = model.Rows.Single();
+        await model.RefreshAsync();
+        model.Selected = model.Rows.Single();
         Assert.IsNull(await model.LoadSelectedEntryAsync());
-        if (cancelled) Assert.AreEqual("", trace.Text); else trace.AssertSingle("JournalLoad");
+        if (cancelled)
+            Assert.AreEqual("", trace.Text);
+        else
+            trace.AssertSingle("JournalLoad");
     }
     [TestMethod]
     public async Task JournalWriteRefreshesRegisterOnce()
@@ -117,13 +135,21 @@ public sealed class JournalDiagnosticsTests
     }
     private sealed class Store : IJournalStore
     {
-        public Exception? Error { get; init; }
-        public bool ReportedResult { get; init; }
+        public Exception? Error
+        {
+            get; init;
+        }
+        public bool ReportedResult
+        {
+            get; init;
+        }
         public Task<JournalRequest?> LoadAsync(long id, CancellationToken ct = default) => Task.FromResult<JournalRequest?>(null);
         public Task<OperationResult<JournalSaveResult>> SaveAsync(JournalRequest request, CancellationToken ct = default)
         {
-            if (Error is not null) return Task.FromException<OperationResult<JournalSaveResult>>(Error);
-            if (ReportedResult) DatabaseErrors.TraceFailure("JournalSave", new InvalidOperationException(Private));
+            if (Error is not null)
+                return Task.FromException<OperationResult<JournalSaveResult>>(Error);
+            if (ReportedResult)
+                DatabaseErrors.TraceFailure("JournalSave", new InvalidOperationException(Private));
             return Task.FromResult(OperationResult<JournalSaveResult>.Fail("Save was not confirmed."));
         }
         public Task<OperationResult<bool>> DeleteAsync(DeleteJournalRequest request, CancellationToken ct = default) => Task.FromException<OperationResult<bool>>(Error!);
@@ -150,14 +176,30 @@ public sealed class JournalDiagnosticsTests
     {
         private readonly StringWriter output = new();
         private readonly TextWriterTraceListener listener;
-        public Capture() { listener = new(output); Trace.Listeners.Add(listener); }
-        public string Text { get { listener.Flush(); return output.ToString(); } }
+        public Capture()
+        {
+            listener = new(output);
+            Trace.Listeners.Add(listener);
+        }
+        public string Text
+        {
+            get
+            {
+                listener.Flush();
+                return output.ToString();
+            }
+        }
         public void AssertSingle(string operation)
         {
             StringAssert.Contains(Text, $"operation={operation} category=");
             Assert.AreEqual(1, Text.Split("operation=", StringSplitOptions.None).Length - 1);
             Assert.IsFalse(Text.Contains(Private, StringComparison.Ordinal));
         }
-        public void Dispose() { Trace.Listeners.Remove(listener); listener.Dispose(); output.Dispose(); }
+        public void Dispose()
+        {
+            Trace.Listeners.Remove(listener);
+            listener.Dispose();
+            output.Dispose();
+        }
     }
 }

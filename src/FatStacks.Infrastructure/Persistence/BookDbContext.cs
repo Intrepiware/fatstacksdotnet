@@ -62,8 +62,10 @@ public sealed class BookDbContext(DbContextOptions<BookDbContext> options) : DbC
         {
             foreach (var property in entity.GetProperties())
             {
-                if (property.ClrType == typeof(DateOnly) || property.ClrType == typeof(DateOnly?)) property.SetColumnType("date");
-                if (property.ClrType == typeof(DateTime)) property.SetColumnType("datetime2(7)");
+                if (property.ClrType == typeof(DateOnly) || property.ClrType == typeof(DateOnly?))
+                    property.SetColumnType("date");
+                if (property.ClrType == typeof(DateTime))
+                    property.SetColumnType("datetime2(7)");
             }
         }
     }
