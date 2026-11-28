@@ -25,6 +25,32 @@ public sealed class JournalWriteTests
         return result.Value!.Entry;
     }
     [TestMethod]
+    public async Task ExplicitStatusesRoundTripAndStaleStatusEditPreservesMoneyAndStates()
+    {
+        await using var fixture = await BookDatabaseFixture.CreateAsync();
+        await SeedAsync(fixture);
+        var service = Service(fixture.Settings);
+        var draft = Draft(1, 2, 25);
+        var saved = Saved(await service.SaveAsync(draft with
+        {
+            Lines = [draft.Lines[0] with { Status = 1 }, draft.Lines[1] with { Status = 2 }]
+        }));
+        var loaded = (await service.LoadAsync(saved.EntryId!.Value))!;
+        CollectionAssert.AreEqual(new byte[] { 1, 2 }, loaded.Lines.Select(x => x.Status).ToArray());
+        var edit = loaded with
+        {
+            Lines = [loaded.Lines[0] with { Status = 0 }, loaded.Lines[1]]
+        };
+        var result = await service.SaveAsync(edit);
+        Assert.IsTrue(result.IsSuccess, result.Message);
+        Assert.HasCount(0, result.Value!.ResetLineIds);
+        Assert.AreEqual(Outcome.Conflict, (await service.SaveAsync(loaded)).Outcome);
+        var current = (await service.LoadAsync(saved.EntryId.Value))!;
+        CollectionAssert.AreEqual(new byte[] { 0, 2 }, current.Lines.Select(x => x.Status).ToArray());
+        CollectionAssert.AreEqual(loaded.Lines.Select(x => (x.LineId, x.AccountId, x.Debit, x.Credit)).ToArray(),
+            current.Lines.Select(x => (x.LineId, x.AccountId, x.Debit, x.Credit)).ToArray());
+    }
+    [TestMethod]
     public async Task ExactReferenceSplitStableIdentityAndPhysicalDelete()
     {
         await using var fixture = await BookDatabaseFixture.CreateAsync();

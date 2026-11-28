@@ -60,6 +60,32 @@ public sealed class JournalEditorViewModelTests
         Assert.AreEqual(1, service.Calls);
     }
     [TestMethod]
+    [DataRow(Outcome.Failed)]
+    [DataRow(Outcome.Conflict)]
+    public async Task FailedStatusEditRetainsDraftUntilSuccessfulContinue(Outcome failure)
+    {
+        var service = new FakeJournal();
+        var model = Editor(service);
+        var entry = new JournalRequest(1, 10, new byte[8], Day, null, null, "Existing", 0,
+            [new(101, new byte[8], 1, 1, 25, 0, "USD"), new(202, new byte[8], 2, 2, 0, 25, "USD")],
+            [new(101, new byte[8]), new(202, new byte[8])]);
+        model.Initialize(entry, Accounts, "USD", Day);
+        model.Lines[0].Status = 2;
+        var first = model.SaveAsync(true);
+        service.Complete(failure);
+        Assert.IsFalse(await first);
+        Assert.IsTrue(model.HasSaveError);
+        Assert.AreEqual("Save unconfirmed.", model.Status);
+        Assert.AreEqual((byte)2, model.Lines[0].Status);
+        Assert.IsNull(model.LastSaved);
+
+        var retry = model.SaveAsync(true);
+        service.Complete(Outcome.Success);
+        Assert.IsTrue(await retry);
+        Assert.IsFalse(model.HasSaveError);
+        Assert.AreEqual("Entry saved.", model.Status);
+    }
+    [TestMethod]
     public async Task CommittedSaveDoesNotDependOnProfilePreferences()
     {
         var service = new FakeJournal();
@@ -511,6 +537,7 @@ public sealed class JournalEditorViewModelTests
     [STATestMethod]
     [DataRow(Outcome.Success)]
     [DataRow(Outcome.Failed)]
+    [DataRow(Outcome.Conflict)]
     public void ContinueFocusesDateOnlyAfterSuccessfulSaveAndKeepsEnteredDate(Outcome outcome)
     {
         var service = new FakeJournal();
@@ -529,6 +556,10 @@ public sealed class JournalEditorViewModelTests
             description.Focus();
             Descendants(window).OfType<System.Windows.Controls.Button>().Single(x => System.Windows.Automation.AutomationProperties.GetAutomationId(x) == "ContinueJournal").RaiseEvent(new System.Windows.RoutedEventArgs(System.Windows.Controls.Button.ClickEvent));
             Assert.IsTrue(model.IsBusy);
+            Pump();
+            var status = Descendants(window).OfType<System.Windows.Controls.Button>()
+                .Single(x => System.Windows.Automation.AutomationProperties.GetAutomationId(x) == model.Lines[0].StatusControlId);
+            Assert.IsFalse(status.IsEnabled);
             service.Complete(outcome);
             var timer = System.Diagnostics.Stopwatch.StartNew();
             while (model.IsBusy && timer.Elapsed < TimeSpan.FromSeconds(5))
@@ -539,6 +570,12 @@ public sealed class JournalEditorViewModelTests
             Pump();
             Assert.IsFalse(model.IsBusy);
             Assert.AreEqual(new DateTime(2026, 10, 23), model.AccountingDate);
+            var notice = Descendants(window).OfType<System.Windows.Controls.TextBlock>()
+                .Single(x => System.Windows.Automation.AutomationProperties.GetAutomationId(x) == "JournalStatus");
+            Assert.IsTrue(notice.IsVisible);
+            Assert.AreEqual(model.Status, notice.Text);
+            Assert.AreEqual(outcome != Outcome.Success, ((System.Windows.Media.SolidColorBrush)notice.Foreground).Color ==
+                System.Windows.Media.Color.FromRgb(0xB4, 0x23, 0x18));
             Assert.AreEqual(outcome == Outcome.Success, date.IsKeyboardFocusWithin);
             Assert.AreEqual(outcome == Outcome.Success ? "" : "1000", model.Lines[0].Debit);
         }
@@ -573,6 +610,11 @@ public sealed class JournalEditorViewModelTests
             Pump();
             Assert.IsTrue(enter.Handled);
             Assert.AreEqual("Equity", model.Lines[0].AccountText);
+            var status = Descendants(window).OfType<System.Windows.Controls.Button>()
+                .Single(x => System.Windows.Automation.AutomationProperties.GetAutomationId(x) == model.Lines[0].StatusControlId);
+            Assert.AreSame(status, System.Windows.Input.Keyboard.FocusedElement);
+            Assert.IsTrue(status.MoveFocus(new(System.Windows.Input.FocusNavigationDirection.Next)));
+            Pump();
             Assert.AreSame(debit, System.Windows.Input.Keyboard.FocusedElement);
             Assert.IsNotNull(account.GetBindingExpression(System.Windows.Controls.TextBox.TextProperty));
             description.Focus();
@@ -757,18 +799,27 @@ public sealed class JournalEditorViewModelTests
             var controls = Descendants(window).OfType<System.Windows.Controls.TextBox>().ToArray();
             System.Windows.Controls.TextBox Input(string id) => controls.Single(x => System.Windows.Automation.AutomationProperties.GetAutomationId(x) == id);
             var firstAccount = Input(model.Lines[0].AccountControlId);
+            var status = Descendants(window).OfType<System.Windows.Controls.Button>().Single(x => System.Windows.Automation.AutomationProperties.GetAutomationId(x) == model.Lines[0].StatusControlId);
+            Assert.AreEqual("Uncleared", status.ToolTip);
+            status.RaiseEvent(new System.Windows.RoutedEventArgs(System.Windows.Controls.Button.ClickEvent));
+            Assert.AreEqual("Reconciling", status.ToolTip);
+            foreach (var (key, name) in new[] { (System.Windows.Input.Key.C, "Cleared"), (System.Windows.Input.Key.C, "Uncleared"), (System.Windows.Input.Key.R, "Reconciling"), (System.Windows.Input.Key.U, "Uncleared"), (System.Windows.Input.Key.Space, "Reconciling") })
+            {
+                status.RaiseEvent(new System.Windows.Input.KeyEventArgs(System.Windows.Input.Keyboard.PrimaryDevice, System.Windows.PresentationSource.FromVisual(window), 0, key) { RoutedEvent = System.Windows.Input.Keyboard.PreviewKeyDownEvent });
+                Assert.AreEqual(name, System.Windows.Automation.AutomationProperties.GetName(status));
+            }
             var firstDebit = Input(model.Lines[0].DebitControlId);
             var firstCredit = Input(model.Lines[0].CreditControlId);
             var secondAccount = Input(model.Lines[1].AccountControlId);
             description.Focus();
             Pump();
-            foreach (var expected in new[] { firstAccount, firstDebit, firstCredit, secondAccount })
+            foreach (var expected in new System.Windows.UIElement[] { firstAccount, status, firstDebit, firstCredit, secondAccount })
             {
                 Assert.IsTrue(((System.Windows.UIElement)System.Windows.Input.Keyboard.FocusedElement).MoveFocus(new(System.Windows.Input.FocusNavigationDirection.Next)));
                 Pump();
                 Assert.AreSame(expected, System.Windows.Input.Keyboard.FocusedElement);
             }
-            foreach (var expected in new[] { firstCredit, firstDebit, firstAccount, description })
+            foreach (var expected in new System.Windows.UIElement[] { firstCredit, firstDebit, status, firstAccount, description })
             {
                 Assert.IsTrue(((System.Windows.UIElement)System.Windows.Input.Keyboard.FocusedElement).MoveFocus(new(System.Windows.Input.FocusNavigationDirection.Previous)));
                 Pump();
@@ -804,11 +855,13 @@ public sealed class JournalEditorViewModelTests
         private JournalRequest? request;
         public JournalRequest? SavedRequest => request;
         public IReadOnlyList<long> ResetLineIds { get; set; } = [];
-        private readonly TaskCompletionSource<OperationResult<JournalSaveResult>> completion = new();
+        private TaskCompletionSource<OperationResult<JournalSaveResult>> completion = new();
         public void Complete(Outcome outcome) => completion.SetResult(outcome == Outcome.Success ? OperationResult<JournalSaveResult>.Success(new(request! with { EntryId = 1, Version = new byte[8] }, ResetLineIds)) : OperationResult<JournalSaveResult>.Fail("Save unconfirmed.", outcome));
         public Task<OperationResult<JournalSaveResult>> SaveAsync(JournalRequest value, CancellationToken ct = default)
         {
             Calls++;
+            if (completion.Task.IsCompleted)
+                completion = new();
             request = value;
             return completion.Task;
         }

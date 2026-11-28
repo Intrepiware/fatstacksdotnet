@@ -36,7 +36,19 @@
        </TextBlock>
       </Border>
       <ContentControl Grid.Column="1" Focusable="False" IsTabStop="False" Loaded="AccountHostLoaded" Margin="0,4,8,4"/>
-      <TextBlock Grid.Column="2" Text="{Binding StatusSymbol}" ToolTip="{Binding StatusName}" AutomationProperties.Name="{Binding StatusName}" Background="Transparent" TextAlignment="Center" VerticalAlignment="Center"/>
+      <Button Grid.Column="2" Width="24" Height="24" HorizontalAlignment="Center" VerticalAlignment="Center"
+              AutomationProperties.AutomationId="{Binding StatusControlId}" Content="{Binding StatusSymbol}" ToolTip="{Binding StatusName}" AutomationProperties.Name="{Binding StatusName}"
+              Click="CycleStatus" PreviewKeyDown="StatusKeyDown">
+       <Button.Style>
+        <Style TargetType="Button">
+         <Setter Property="Background" Value="White"/>
+         <Style.Triggers>
+          <DataTrigger Binding="{Binding Status}" Value="1"><Setter Property="Background" Value="#FFE3A3"/></DataTrigger>
+          <DataTrigger Binding="{Binding Status}" Value="2"><Setter Property="Background" Value="#B9E8BE"/></DataTrigger>
+         </Style.Triggers>
+        </Style>
+       </Button.Style>
+      </Button>
       <TextBox Grid.Column="3" Background="White" Padding="6,4" TextAlignment="Right" Text="{Binding Debit,UpdateSourceTrigger=PropertyChanged}" local:JournalInputValidation.Error="{Binding DebitError}" LostKeyboardFocus="DebitLostFocus" Margin="0,4,8,4" AutomationProperties.Name="Debit" AutomationProperties.AutomationId="{Binding DebitControlId}"/>
       <TextBox Grid.Column="4" Background="White" Padding="6,4" TextAlignment="Right" Text="{Binding Credit,UpdateSourceTrigger=PropertyChanged}" local:JournalInputValidation.Error="{Binding CreditError}" LostKeyboardFocus="CreditLostFocus" Margin="0,4,8,4" PreviewKeyDown="CreditKeyDown" AutomationProperties.Name="Credit" AutomationProperties.AutomationId="{Binding CreditControlId}"/>
       <Button Grid.Column="5" Content="×" Width="32" Height="32" Margin="0,4" VerticalAlignment="Center" Padding="0" FontSize="18" IsTabStop="False" IsEnabled="{Binding DataContext.CanRemoveLine,RelativeSource={RelativeSource AncestorType=Window}}" Click="RemoveClicked" ToolTip="Remove posting (Ctrl+Shift+Delete; at least two required)" AutomationProperties.Name="Remove posting"/>
@@ -59,7 +71,15 @@
    <Button Content="+ Add posting" HorizontalAlignment="Left" Click="AddClicked" IsEnabled="{Binding Idle}" AutomationProperties.AutomationId="AddJournalLine" Margin="0,12"/>
    <ScrollViewer x:Name="ErrorScroll" MaxHeight="100" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Focusable="False" IsTabStop="False"><ItemsControl Focusable="False" IsTabStop="False" ItemsSource="{Binding Errors}" AutomationProperties.AutomationId="JournalErrors"><ItemsControl.ItemTemplate><DataTemplate><TextBlock Foreground="#B42318" TextWrapping="Wrap"><Run><Run.Style><Style TargetType="Run"><Setter Property="Text" Value="{Binding LineOrder,StringFormat='Line {0} · '}"/><Style.Triggers><DataTrigger Binding="{Binding LineOrder}" Value="{x:Null}"><Setter Property="Text" Value=""/></DataTrigger></Style.Triggers></Style></Run.Style></Run><Run Text="{Binding Field}"/><Run Text=": "/><Run Text="{Binding Message}"/></TextBlock></DataTemplate></ItemsControl.ItemTemplate></ItemsControl></ScrollViewer>
    <Grid Margin="0,12,0,0"><Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-    <TextBlock Text="{Binding Status}" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,16,0" AutomationProperties.AutomationId="JournalStatus"/>
+    <TextBlock Text="{Binding Status}" TextWrapping="Wrap" VerticalAlignment="Center" Margin="0,0,16,0" AutomationProperties.AutomationId="JournalStatus">
+     <TextBlock.Style>
+      <Style TargetType="TextBlock">
+       <Style.Triggers>
+        <DataTrigger Binding="{Binding HasSaveError}" Value="True"><Setter Property="Foreground" Value="#B42318"/></DataTrigger>
+       </Style.Triggers>
+      </Style>
+     </TextBlock.Style>
+    </TextBlock>
     <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" IsEnabled="{Binding Idle}">
      <Button Content="Cancel" Margin="0" Click="CancelClicked" AutomationProperties.AutomationId="CancelJournal"/>
      <Button Content="_Continue" Margin="8,0,0,0" IsEnabled="{Binding CanSave}" Click="ContinueClicked" AutomationProperties.AutomationId="ContinueJournal" ToolTip="Save and start another entry with the same date"/>

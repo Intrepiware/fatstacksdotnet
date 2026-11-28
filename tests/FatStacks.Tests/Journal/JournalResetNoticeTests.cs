@@ -70,6 +70,10 @@ public sealed class JournalResetNoticeTests
         model.Lines[0].Debit = "25.00";
         Assert.IsFalse(model.HasResetWarning, "Text changes and equivalent formatting must not trigger the warning.");
         model.Lines[0].Debit = "26";
+        Assert.IsTrue(model.Lines[0].WillReset);
+        Assert.AreEqual("Uncleared", model.Lines[0].StatusName);
+        Assert.AreEqual("", model.Lines[0].StatusSymbol);
+        Assert.AreEqual(status, model.Lines[1].Status);
         StringAssert.Contains(model.ResetWarning, "Line 1 (Bank)");
         Assert.IsFalse(model.ResetWarning.Contains("Line 2", StringComparison.Ordinal));
         model.Lines[1].Credit = "26";
@@ -81,8 +85,26 @@ public sealed class JournalResetNoticeTests
         Assert.IsTrue(model.HasResetWarning, "Changing the account must warn even when the amount is unchanged.");
         model.Lines[0].AccountText = "Bank";
         Assert.IsFalse(model.HasResetWarning);
+        Assert.AreEqual(status, model.Lines[0].Status);
+        Assert.IsFalse(model.Lines[0].WillReset);
         model.Lines[0].Debit = "invalid";
         Assert.IsFalse(model.HasResetWarning, "Invalid input has its own validation and cannot be saved.");
+    }
+    [TestMethod]
+    public async Task NewLineKeepsChosenStatusThroughFinancialEditsAndSave()
+    {
+        var service = new JournalEditorViewModelTests.FakeJournal();
+        var model = JournalEditorViewModelTests.Editor(service);
+        var line = model.Lines[0];
+        line.Status = 2;
+        line.AccountText = "Equity";
+        line.Debit = "50";
+        model.Lines[1].Credit = "50";
+        Assert.IsFalse(model.HasResetWarning);
+        var save = model.SaveAsync(false);
+        Assert.AreEqual((byte)2, service.SavedRequest!.Lines[0].Status);
+        service.Complete(FatStacks.Core.Contracts.Outcome.Success);
+        Assert.IsTrue(await save);
     }
     private static JournalRequest Entry() => new(1, 10, new byte[8], new(2026, 11, 21), null, null, "Edited", 0,
         [new(101, new byte[8], 1, 1, 25, 0, "USD", 2), new(202, new byte[8], 2, 2, 0, 25, "USD", 2)], [new(101, new byte[8]), new(202, new byte[8])]);

@@ -75,6 +75,34 @@ public partial class JournalEditorWindow : Window
         else
             AccountingDateInput.Focus();
     }));
+    private void CycleStatus(object sender, RoutedEventArgs e)
+    {
+        if (Model.Idle && sender is Button { DataContext: JournalLineViewModel line })
+            line.Status = (byte)((line.Status + 1) % 3);
+    }
+    private void StatusKeyDown(object sender, KeyEventArgs e)
+    {
+        if (!Model.Idle || Keyboard.Modifiers != ModifierKeys.None || sender is not Button { DataContext: JournalLineViewModel line })
+            return;
+        switch (e.Key)
+        {
+            case Key.Space:
+                CycleStatus(sender, e);
+                break;
+            case Key.R:
+                line.Status = line.Status == 1 ? (byte)0 : (byte)1;
+                break;
+            case Key.C:
+                line.Status = line.Status == 2 ? (byte)0 : (byte)2;
+                break;
+            case Key.U:
+                line.Status = 0;
+                break;
+            default:
+                return;
+        }
+        e.Handled = true;
+    }
     private void DebitLostFocus(object sender, KeyboardFocusChangedEventArgs e)
     {
         if (sender is FrameworkElement { DataContext: JournalLineViewModel line })

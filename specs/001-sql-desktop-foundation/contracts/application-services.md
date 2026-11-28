@@ -87,7 +87,7 @@ The procedure uses one serializable database transaction:
 1. Load the target book, current entry/lines, referenced accounts, and affected holding history.
 2. For edits, compare the expected header version, complete original line set, and line versions.
 3. Validate the complete final entry, account dates, same-book references, and EntryKind rules.
-4. Preserve existing line IDs. Apply additions/removals and reset financially changed statuses.
+4. Preserve existing line IDs. Apply additions and removals with the supplied statuses. Reset a previously reconciled line to Uncleared when its financial values change. A status-only edit preserves financial values and produces no reset ID.
 5. Validate the resulting affected security histories, including later entries.
 6. Set CurrencyLocked on the first save and commit.
 

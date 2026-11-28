@@ -591,3 +591,43 @@ outside the register’s 90-day window. Both cases timed out waiting for the ini
 invoking Edit or Delete. The fixture now posts on the UTC book’s current accounting date.
 The register-window SQL regression passed on SQL Server 2022. The owner confirmed that both corrected
 Windows cases passed on rerun, closing the Edit and Delete checks for T122.
+
+## T124–T126 verification
+
+The full solution cross-built on Linux with .NET SDK 10.0.115 and zero warnings.
+All 112 portable tests passed. All 12 journal SQL tests passed on isolated SQL Server 2022.
+The new SQL case reloaded distinct line statuses after creation, changed one status,
+and verified both statuses and financial values after a rejected stale save. Editor model
+tests covered draft status retention and restoration after reversing a financial edit.
+
+The Windows interaction, accessibility, tab order, and busy-state checks compiled.
+Execution on Windows remains pending.
+
+## T127–T128 verification
+
+The solution cross-built on Linux x64 with zero warnings and zero errors. All 114 portable
+tests passed. Both cases of `FailedStatusEditRetainsDraftUntilSuccessfulContinue` passed.
+They covered a conflict and an unconfirmed save, retention of the edited status and service
+message, and clearing the error after a subsequent successful Continue.
+
+The Windows test assembly compiled. The focused launch stopped before discovery because the
+Linux host lacks Microsoft.WindowsDesktop.App. Zero Windows cases executed. T128 remains open.
+Run the editor suite from an unlocked Windows desktop at the repository root:
+
+```powershell
+dotnet test --project tests/FatStacks.WindowsChecks/FatStacks.WindowsChecks.csproj --filter "FullyQualifiedName~JournalEditorViewModelTests"
+```
+
+The suite includes status input, accessible names, tab traversal, disabled controls during
+save, and reset presentation. The Continue cases also check the displayed message and its color
+for successful, failed, and conflicting saves. Record Windows results and any focused reruns here.
+
+The owner ran the focused editor suite on Windows x64. Of 44 cases, 43 passed and one
+failed, with zero skipped. After accepting an account suggestion, the failing test expected
+Debit to have focus. The current posting order puts the row’s C button next. The corrected
+test identifies that specific button and checks that forward navigation then reaches Debit.
+The WindowsChecks project cross-built with zero warnings and errors. T128 awaits a Windows
+rerun of AccountFocusSelectsItsTextAndAmountFocusLossFormatsOnlyExactValues.
+
+The owner confirmed that the corrected focus test passed on Windows. Together with the
+43 passes in the original run, this covers all 44 focused editor cases and closes T128.

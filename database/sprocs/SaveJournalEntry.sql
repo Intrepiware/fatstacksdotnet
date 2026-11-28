@@ -82,8 +82,7 @@ BEGIN
                              OR Quantity IS NOT NULL
                              OR ReconciliationStatus > 2
                              OR (LineId IS NULL
-                                 AND (Version IS NOT NULL
-                                      OR ReconciliationStatus <> 0)))
+                                 AND Version IS NOT NULL))
            OR (SELECT SUM(CAST (Debit AS DECIMAL (28, 2)))
                FROM   @Lines) <> (SELECT SUM(CAST (Credit AS DECIMAL (28, 2)))
                                   FROM   @Lines)
@@ -114,13 +113,6 @@ BEGIN
                                    OR old.AccountId <> a.AccountId
                                    OR @AccountingDate >= a.CloseDate)))
             THROW 51001, 'Choose eligible accounts and dates.', 1;
-        IF EXISTS (SELECT 1
-                   FROM   @Lines AS l
-                          INNER JOIN
-                          dbo.JournalEntryLine AS old
-                          ON old.JournalEntryLineId = l.LineId
-                   WHERE  l.ReconciliationStatus <> old.ReconciliationStatus)
-            THROW 51001, 'Use reconciliation to change line states.', 1;
         DECLARE @Reset TABLE (
             LineId BIGINT PRIMARY KEY);
         DECLARE @Now AS DATETIME2 (7) = SYSUTCDATETIME();
@@ -178,9 +170,8 @@ BEGIN
                        LineOrder            = l.LineOrder,
                        Debit                = l.Debit,
                        Credit               = l.Credit,
-                       ReconciliationStatus = CASE WHEN old.AccountId <> l.AccountId
-                                                        OR old.Debit <> l.Debit
-                                                        OR old.Credit <> l.Credit THEN 0 ELSE old.ReconciliationStatus END,
+                       ReconciliationStatus = CASE WHEN EXISTS (SELECT 1 FROM @Reset AS r WHERE r.LineId = old.JournalEntryLineId)
+                                                       THEN 0 ELSE l.ReconciliationStatus END,
                        UpdateDate           = @Now
                 FROM   dbo.JournalEntryLine AS old
                        INNER JOIN
@@ -201,7 +192,7 @@ BEGIN
                LineOrder,
                CAST (Debit AS DECIMAL (10, 2)),
                CAST (Credit AS DECIMAL (10, 2)),
-               0
+               ReconciliationStatus
         FROM   @Lines
         WHERE  LineId IS NULL;
         UPDATE dbo.Book

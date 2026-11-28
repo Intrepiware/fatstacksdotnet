@@ -57,8 +57,8 @@ public static class JournalValidation
                 errors.Add(new JournalAccountDateError(account, $"This account opens on {account.OpenDate:yyyy-MM-dd}. Use that date or later.", line.Order));
             else if (account.CloseDate is { } close && (!retainedReference || request.AccountingDate >= close))
                 errors.Add(new JournalAccountDateError(account, retainedReference ? $"This account closed on {close:yyyy-MM-dd}. Its historical reference must stay before this date." : "This account is closed. New references are not allowed.", line.Order));
-            if (line.Status > 2 || line.LineId is null && line.Status != 0)
-                Error("Status", "New lines start Uncleared; change existing states through reconciliation.", line.Order);
+            if (line.Status > 2)
+                Error("Status", "Choose Uncleared, Reconciling, or Cleared.", line.Order);
             if (line.SecurityId is not null || line.Quantity is not null)
                 Error("Security", "Security entries are not available in this editor.", line.Order);
             try

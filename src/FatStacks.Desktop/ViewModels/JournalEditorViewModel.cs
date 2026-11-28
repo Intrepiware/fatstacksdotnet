@@ -51,7 +51,16 @@ public sealed class JournalLineViewModel : ObservableObject
     private bool willReset;
     public bool WillReset
     {
-        get => willReset; internal set => Set(ref willReset, value);
+        get => willReset;
+        internal set
+        {
+            if (Set(ref willReset, value))
+            {
+                if (value)
+                    chosenStatus = Original!.Status;
+                NotifyStatus();
+            }
+        }
     }
     private string accountError = "", debitError = "", creditError = "";
     public string AccountError => accountError;
@@ -79,6 +88,7 @@ public sealed class JournalLineViewModel : ObservableObject
         Changed(nameof(AccountPaths));
     }
     public string AccountControlId => $"JournalAccount_{Key}";
+    public string StatusControlId => $"JournalStatus_{Key}";
     public string DebitControlId => $"JournalDebit_{Key}";
     public string CreditControlId => $"JournalCredit_{Key}";
     private string accountText = ""; public string AccountText
@@ -119,8 +129,27 @@ public sealed class JournalLineViewModel : ObservableObject
         else
             Debit = formatted;
     }
-    public string StatusName => Original?.Status switch { 1 => "Reconciling", 2 => "Cleared", _ => "Uncleared" };
-    public string StatusSymbol => Original?.Status switch { 1 => "R", 2 => "✓", _ => "" };
+    private byte chosenStatus;
+    public byte Status
+    {
+        get => WillReset ? (byte)0 : chosenStatus;
+        set
+        {
+            if (!WillReset && chosenStatus != value)
+            {
+                chosenStatus = value;
+                NotifyStatus();
+            }
+        }
+    }
+    private void NotifyStatus()
+    {
+        Changed(nameof(Status));
+        Changed(nameof(StatusName));
+        Changed(nameof(StatusSymbol));
+    }
+    public string StatusName => Status switch { 1 => "Reconciling", 2 => "Cleared", _ => "Uncleared" };
+    public string StatusSymbol => Status switch { 1 => "R", 2 => "✓", _ => "" };
     public string Name => $"Line {LineNumber}: posting to {(AccountText.Length == 0 ? "unselected account" : AccountText)}";
 }
 public sealed class JournalEditorViewModel : ObservableObject
@@ -202,6 +231,12 @@ public sealed class JournalEditorViewModel : ObservableObject
             if (Set(ref description, value))
                 RefreshValidation();
         }
+    }
+    private bool hasSaveError;
+    public bool HasSaveError
+    {
+        get => hasSaveError;
+        private set => Set(ref hasSaveError, value);
     }
     private string status = ""; public string Status
     {
@@ -297,7 +332,7 @@ public sealed class JournalEditorViewModel : ObservableObject
     }
     private JournalLineViewModel NewLine(JournalLine? line = null)
     {
-        var item = new JournalLineViewModel { Accounts = suggestions, Original = line, AccountText = suggestions.FirstOrDefault(x => x.Id == line?.AccountId)?.Path ?? "", Debit = line?.Debit > 0 ? line.Debit.ToString(CultureInfo.CurrentCulture) : "", Credit = line?.Credit > 0 ? line.Credit.ToString(CultureInfo.CurrentCulture) : "" };
+        var item = new JournalLineViewModel { Accounts = suggestions, Original = line, Status = line?.Status ?? 0, AccountText = suggestions.FirstOrDefault(x => x.Id == line?.AccountId)?.Path ?? "", Debit = line?.Debit > 0 ? line.Debit.ToString(CultureInfo.CurrentCulture) : "", Credit = line?.Credit > 0 ? line.Credit.ToString(CultureInfo.CurrentCulture) : "" };
         UpdateEligibility(item);
         item.PropertyChanged += LineChanged;
         return item;
@@ -382,7 +417,7 @@ public sealed class JournalEditorViewModel : ObservableObject
             }
             var debit = Parse(line.Debit, "Debit");
             var credit = Parse(line.Credit, "Credit");
-            lines.Add(new(line.Original?.LineId, line.Original?.Version, line.AccountId, lines.Count + 1, debit, credit, Currency, line.Original?.Status ?? 0, line.Original?.SecurityId, line.Original?.Quantity));
+            lines.Add(new(line.Original?.LineId, line.Original?.Version, line.AccountId, lines.Count + 1, debit, credit, Currency, line.Status, line.Original?.SecurityId, line.Original?.Quantity));
         }
         var request = new JournalRequest(1, original?.EntryId, original?.Version, AccountingDate is { } day ? DateOnly.FromDateTime(day) : Calendar.Today, BankPostingDate is { } bank ? DateOnly.FromDateTime(bank) : null, Payee, Description, original?.EntryKind ?? 0, lines, original?.OriginalLines ?? []);
         var invalidTextRows = errors.Where(error => error.Field is "Debit" or "Credit").Select(error => error.LineOrder).ToHashSet();
@@ -470,6 +505,7 @@ public sealed class JournalEditorViewModel : ObservableObject
         var request = Request([]);
         if (request is null || Errors.Count > 0)
         {
+            HasSaveError = true;
             Status = "Correct the fields below.";
             return false;
         }
@@ -479,6 +515,7 @@ public sealed class JournalEditorViewModel : ObservableObject
             var result = await Journal.SaveAsync(request);
             if (!result.IsSuccess || result.Value is null)
             {
+                HasSaveError = true;
                 Status = result.Message;
                 foreach (var error in result.Errors ?? [])
                 {
@@ -502,6 +539,7 @@ public sealed class JournalEditorViewModel : ObservableObject
                 RefreshValidation();
                 return false;
             }
+            HasSaveError = false;
             LastSaved = result.Value;
             Status = JournalSaveNotice.Describe(result.Value, accounts);
             if (continueEntry)
@@ -513,7 +551,13 @@ public sealed class JournalEditorViewModel : ObservableObject
             }
             return true;
         }
-        catch (Exception ex) when (ex is not OutOfMemoryException) { DatabaseErrors.TraceFailure("JournalEditorSave", ex); Status = "Save was not confirmed. Keep this draft and reload before retrying."; return false; }
+        catch (Exception ex) when (ex is not OutOfMemoryException)
+        {
+            DatabaseErrors.TraceFailure("JournalEditorSave", ex);
+            HasSaveError = true;
+            Status = "Save was not confirmed. Keep this draft and reload before retrying.";
+            return false;
+        }
         finally { IsBusy = false; }
     }
     public void Cancel()

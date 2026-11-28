@@ -56,19 +56,24 @@ from details and contribute to totals.
 
 Keep N, E, Delete, F5, Ctrl+O, and Ctrl+Enter behavior with text-input typing guards. Keep account
 suggestions and split-line keyboard workflows. Tab from Description focuses the first posting
-account input, then traverses Account, Debit, Credit for each posting row. Shift+Tab reverses
+account input, then traverses Account, C, Debit, Credit for each posting row. Shift+Tab reverses
 this order. Keep add/remove posting and save actions keyboard accessible; noninteractive
 layout and error areas must not interrupt data-entry focus. Ctrl+Shift+Delete removes the
 focused posting when more than two lines remain, then focuses an adjacent posting account. Bind line view models to controls with stable
 automation IDs. Give errors field and line context. Do not parse English messages to control Save.
 
-Use a six-column posting grid: 1-based line number, Account, read-only C (blank, R, or checkmark
+Use a six-column posting grid: 1-based line number, Account, interactive C (white blank, amber R, or green checkmark
 with full status in tooltip and accessibility name), centered Debit and Credit headings with
 right-aligned amount inputs, and Remove (`×`). Share column alignment and scrollbar-gutter space
 across the header, scrollable posting rows, and totals footing so columns and totals stay
 vertically aligned whether or not the vertical scrollbar is visible. Shade even posting rows with
 a continuous `#F0F8FC` register stripe and highlight the hovered or keyboard-focused posting row
 in `#DDEBFA`, while keeping the Account, Debit, and Credit input boxes crisp white (`#FFFFFF`).
+
+Click C or press Space to cycle through the three states. R and C toggle their respective states.
+U sets Uncleared. Disable the control during a pending save. Keep a new line’s chosen status
+through account and amount edits. For an existing reconciled line, display Uncleared while a
+financial edit requires a reset. Restore the saved status when the original values return.
 
 Place the totals footing directly beneath the posting rows under a top border. In the Account
 column of the footing, display a semi-bold `Totals:` prefix in `#23384E` followed by muted
