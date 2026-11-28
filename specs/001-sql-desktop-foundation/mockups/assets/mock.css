@@ -17,3 +17,16 @@
 
 /* Anchor the footing row label with primary text color and semi-bold weight. */
 .posting-footing .foot-label{color:#23384e;font-weight:600;margin-right:6px}
+
+/* US4: compact 3-state C controls in the upper account register and journal editor; read-only C in entry details. */
+button.c-toggle{width:24px;height:22px;padding:0;border:1px solid #b8c6d4;border-radius:3px;background:#fff;color:#23384e;font-size:12px;font-weight:600;line-height:20px;text-align:center;vertical-align:middle}
+button.c-toggle:hover{background:#e5eff8;border-color:#225b88}
+button.c-toggle[data-status="1"]{background:#fef4d6;border-color:#d9a441;color:#945800}
+button.c-toggle[data-status="1"]:hover{background:#fde8b2;border-color:#b7791f}
+button.c-toggle[data-status="2"]{background:#e6f4ea;border-color:#84c197;color:#166534}
+button.c-toggle[data-status="2"]:hover{background:#d3ecd9;border-color:#2e7d47}
+.posting-row button.c-toggle{width:28px;height:26px;line-height:24px;justify-self:center;align-self:center}
+.state-symbol{display:inline-block;width:24px;height:20px;line-height:18px;border-radius:3px;text-align:center;font-size:12px;font-weight:600;color:#23384e}
+.state-symbol[data-status="1"]{background:#fef4d6;border:1px solid #e7c677;color:#945800}
+.state-symbol[data-status="2"]{background:#e6f4ea;border:1px solid #a3d3b1;color:#166534}
+.register-area>.notice.error-notice{background:#fdecea;color:var(--red)}

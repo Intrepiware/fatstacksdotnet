@@ -122,13 +122,17 @@ edit and delete them, restart, and compare balances with known expected results.
 - A line with both a debit and credit, a negative amount, no nonzero amount, or a mismatched
   currency is rejected with a field-specific explanation (FR-014, FR-020).
 - Typing a nonempty Debit clears that row's Credit, and typing a nonempty Credit clears its
-  Debit. Amount inputs are right-aligned. The read-only C column sits between Account and
-  Debit and uses blank, R, or a checkmark for Uncleared, Reconciling, or Cleared. Each
+  Debit. Amount inputs are right-aligned. An interactive three-state C control sits between
+  Account and Debit and uses a neutral white blank box for Uncleared, an amber R badge for
+  Reconciling, and a green checkmark badge for Cleared.
+  Clicking C cycles through the three states, and pressing R, C, or U while C is focused
+  toggles Reconciling, Cleared, or Uncleared. Editing an unsaved new line's account or amount
+  preserves its chosen C status. Each
   posting row shows a 1-based line number on the left, alternate rows use the register's
   stripe color, and the hovered or focused row uses the register's selected-row band while
   posting text inputs keep white backgrounds. The header, scrollable posting rows, and
   totals footing remain vertically aligned whether or not the posting scrollbar is shown
-  (FR-013, FR-015).
+  (FR-013, FR-015, FR-021).
 - The journal editor places a totals footing directly under the posting rows. It shows
   `Totals:` on the left followed by `Balanced` when equal, or names the short side and
   difference in red (`Credits short by ...` or `Debits short by ...`) when unequal. It shows
@@ -146,16 +150,18 @@ edit and delete them, restart, and compare balances with known expected results.
   save using Ctrl+Enter. Continue saves one entry and clears it for the next while retaining
   the entered date within that entry session (FR-013, FR-016).
 - In the journal editor, pressing Tab from Description focuses the first posting account
-  input. Further Tab presses follow Account, Debit, Credit, then the next posting row;
+  input. Further Tab presses follow Account, C, Debit, Credit, then the next posting row;
   Shift+Tab reverses that order. Adding/removing postings and saving remain keyboard
   accessible, and noninteractive layout/error areas do not interrupt data entry (FR-013).
 - A failed save preserves the draft. A repeated Save action during a pending save creates no
   duplicate entry (FR-016, FR-017).
 - Editing an existing entry preserves its identity and unaffected line statuses. A conflicting
   external change is reported without overwriting the newer version (FR-017).
-- Editing a Cleared or Reconciling line's account or monetary amount shows a yellow warning
-  before Save and highlights each affected row's line number in bold amber. Both cues name
-  or mark each affected line and disappear if the original values are restored.
+- When editing an already-saved entry, changing a Cleared or Reconciling line's account or
+  monetary amount clears its C status to Uncleared, shows a yellow warning before Save, and
+  highlights each affected row's line number in bold amber. Both cues name or mark each
+  affected line; if the original values are restored, the saved C status returns and both cues
+  disappear.
   After Save, the main register shows a dismissible confirmation of the lines reset to
   Uncleared. Continue keeps the editor open and shows the reset result there (FR-023).
 - Delete shows the date, payee when present, description, and affected lines in a gray
@@ -191,17 +197,26 @@ for the same account. Change their statuses independently and reopen the book.
 
 **Acceptance Criteria**:
 
-- New lines start Uncleared. Each line can be changed to Reconciling or Cleared and can be
-  explicitly corrected back to either other state (FR-021).
+- New lines start Uncleared. In the upper account register, pressing Up or Down Arrow moves
+  selection between transaction rows, and clicking a row's compact three-state C control
+  cycles Uncleared (neutral blank), Reconciling (amber R), and Cleared (green ✓) for that
+  line. While a register row is selected, pressing R toggles Reconciling, pressing C toggles
+  Cleared, and pressing U sets Uncleared. Users can also set or change each line's three-state
+  C control directly in the journal editor (FR-013, FR-021, FR-022).
 - Marking the bank line Cleared leaves the credit-card line Uncleared after refresh and restart
   (FR-021, FR-022).
-- An entry with multiple lines for the selected account shows each line's status in its details.
-  A register summary identifies mixed statuses without introducing a fourth stored status
-  (FR-022).
+- An entry with multiple lines for the selected account displays each of those lines as a
+  separate row in the upper account register, each with its own running balance and interactive
+  three-state C control. The lower entry-details pane shows a compact read-only C column
+  between Account and Debit (FR-009, FR-022).
 - Changing only reconciliation status leaves dates, amounts, account assignments, and balances
-  unchanged (FR-021).
-- Editing a Cleared line's account, monetary values, or security quantity resets that line to
-  Uncleared and tells the user. Unchanged lines retain their statuses (FR-023).
+  unchanged and does not show the amber reset warning or a reset confirmation. A stale or
+  unconfirmed status update keeps the previous status and all financial values unchanged and
+  shows a red error notice (FR-017, FR-021).
+- When editing an already-saved entry, changing a Cleared or Reconciling line's account,
+  monetary values, or security quantity clears that line to Uncleared and tells the user,
+  whereas editing an unsaved new line preserves its chosen C status. Unchanged lines retain
+  their statuses (FR-013, FR-023).
 
 ### User Story 5 - Keep One Currency per Book and Track Basic Securities (Priority: P2)
 
@@ -313,10 +328,11 @@ opening quantity and carrying amount and transfer part of that holding between a
 - **FR-009**: Phase 1 MUST retain the source UI capabilities and design elements marked Retain
   or Adapt in [the parity baseline](ui-parity.md). Each material departure MUST be documented
   with its reason and verification consequence before acceptance.
-  The account register MUST retain Payment and Deposit columns: net credits to the selected
-  account appear as positive Payments and net debits as positive Deposits. Zero net movements
-  leave both blank. Tooltips MUST explain this mapping. Entry details and the editor MUST
-  retain explicit Debit/Credit fields; persisted accounting values MUST NOT change.
+  The account register MUST display one row per journal entry line for the selected account and
+  retain Payment and Deposit columns: credits to the selected account appear as positive
+  Payments and debits as positive Deposits. Tooltips MUST explain this mapping. Entry details
+  and the editor MUST retain explicit Debit/Credit fields; persisted accounting values MUST NOT
+  change.
   Register rows and the selected-entry summary MUST display the payee followed by the
   description in italic text when provided. Either field MUST display independently when
   the other is empty, with no empty separator.
@@ -339,9 +355,13 @@ opening quantity and carrying amount and transfer part of that holding between a
   input MUST format valid values with two decimal places without rounding away invalid
   excess precision or replacing invalid draft text. Debit and Credit inputs MUST be
   right-aligned. Entering nonempty text in either amount input MUST clear the opposite
-  amount on the same row. A read-only C column between Account and Debit MUST use blank,
-  R, and a checkmark for Uncleared, Reconciling, and Cleared, with full status names in
-  tooltips and accessibility text. Each posting row MUST show a 1-based line number before
+  amount on the same row. An interactive three-state C control between Account and Debit MUST
+  use a neutral white blank box for Uncleared, an amber R badge for Reconciling, and a green
+  checkmark badge for Cleared, with full status names in tooltips and accessibility text.
+  Clicking C (or pressing Space) MUST cycle through Uncleared, Reconciling, and Cleared;
+  pressing R or C MUST toggle Reconciling or Cleared; and pressing U MUST set Uncleared. On an
+  unsaved new line, changing Account, Debit, or Credit MUST NOT clear the line's chosen C
+  status. Each posting row MUST show a 1-based line number before
   Account. Alternate posting rows MUST use a continuous register stripe (`#F0F8FC`), and a
   hovered or keyboard-focused posting row MUST highlight the full row in the register's
   selected-row color (`#DDEBFA`) while keeping posting text inputs white (`#FFFFFF`). The
@@ -352,7 +372,7 @@ opening quantity and carrying amount and transfer part of that holding between a
   identification does not depend on color alone. Correcting an invalid input MUST immediately
   clear its inline visual cues and corresponding error entry. Keyboard navigation MUST
   move directly from Description to the first posting account input, then through each row
-  in Account, Debit, Credit order. Shift+Tab MUST reverse the sequence. Users MUST be able
+  in Account, C, Debit, Credit order. Shift+Tab MUST reverse the sequence. Users MUST be able
   to complete entry creation, split-line changes, and saving without a mouse.
 - **FR-014**: Every monetary line MUST contain nonnegative debit and credit amounts with exactly
   one positive side and the other zero. Invalid range, currency precision, or column precision
@@ -376,8 +396,9 @@ opening quantity and carrying amount and transfer part of that holding between a
   Creation and amendment MUST persist the whole balanced entry atomically. Opening monetary
   balances MUST be represented by balanced journal entries, not independent balance overrides.
 - **FR-016**: The editor MUST retain drafts on failures and prevent duplicate submissions during
-  a pending save. Continue MUST save and start another entry with the date retained for that
-  session and return keyboard focus to the accounting-date input after a successful save.
+  a pending save. The reconciliation C control MUST be disabled while a save is pending.
+  Continue MUST save and start another entry with the date retained for that session and return
+  keyboard focus to the accounting-date input after a successful save.
   A newly opened creation dialog MUST default to book-local today; editing an entry retains
   its stored date. Cancel MUST NOT save the current draft.
 - **FR-017**: This requirement applies only to JournalEntry and JournalEntryLine operations.
@@ -401,17 +422,32 @@ opening quantity and carrying amount and transfer part of that holding between a
   exchange conversion or mixed-currency journal entry is included in phase 1.
 - **FR-021**: Each journal entry line MUST have exactly one reconciliation status: Uncleared,
   Reconciling, or Cleared. New lines MUST default to Uncleared. Explicit status changes MUST be
-  independent of other lines and MUST NOT change financial values.
-- **FR-022**: The UI MUST expose line reconciliation and show a summary based only on the
-  selected account's lines. When those statuses differ, the summary MUST indicate mixed
-  statuses and expose the individual values; mixed is not a stored reconciliation state.
-- **FR-023**: Changing a reconciled line's account, money, currency, or security quantity MUST
-  reset that line to Uncleared with a visible explanation. The journal editor MUST warn before
-  Save when an account or monetary edit would reset a Cleared or Reconciling line. The warning
-  MUST name the affected lines, highlight each affected row's line number in bold amber, and
-  update or clear when edits are restored. After Save closes the editor,
-  the register MUST show a visible, dismissible confirmation that names the lines reset to
-  Uncleared. Continue MUST show the reset result in the open editor. Unchanged lines MUST
+  independent of other lines and MUST NOT change financial values. Status-only changes MUST NOT
+  show the FR-023 reset warning or reset confirmation. A stale or unconfirmed status update MUST
+  leave the previous status and all financial values unchanged and MUST show a visible red error
+  notice.
+- **FR-022**: The UI MUST expose line reconciliation through a compact, color-coded three-state
+  C control (neutral white blank for Uncleared, amber R for Reconciling, and green checkmark
+  for Cleared) rather than a full-word dropdown, with full status names in tooltips and
+  accessibility text. In the main window, each journal entry line for the selected account MUST
+  appear as its own row in the upper account register with its own running balance and
+  three-state C control. Pressing Up or Down Arrow MUST move selection between rows in the
+  upper account register, update the lower entry details, and keep the selected row visible.
+  The user MUST be able to reconcile the selected row's line by clicking its C control (or
+  pressing Space while it has focus) to cycle states, or by pressing R (toggle Reconciling), C
+  (toggle Cleared), or U (Uncleared).
+  The lower entry-details pane MUST display a compact read-only C column between Account and
+  Debit using the same status markers, colors, and accessible full names. Status MUST NOT be
+  conveyed by color alone.
+- **FR-023**: When editing an already-saved entry, changing a reconciled line's account, money,
+  currency, or security quantity MUST clear that line's C status to Uncleared with a visible
+  explanation. Editing an unsaved new line before its initial save MUST NOT clear its chosen C
+  status. The journal editor MUST warn before Save when an account or monetary edit to an
+  already-saved Cleared or Reconciling line resets it to Uncleared. The warning MUST name the
+  affected lines, highlight each affected row's line number in bold amber, and restore the
+  saved status and clear the warning if the original values are restored. After Save closes the
+  editor, the register MUST show a visible, dismissible confirmation that names the lines reset
+  to Uncleared. Continue MUST show the reset result in the open editor. Unchanged lines MUST
   retain status.
 - **FR-024**: The application’s code and database MUST represent accounting class, account type, UI group, currency, and security as separate concepts. The documentation MUST list all five accounting classes and the supported account types. It MUST explain that securities are instruments held within accounts, not a sixth accounting class.
 - **FR-025**: Phase 1 MUST support security definitions, opening quantities with explicit book-

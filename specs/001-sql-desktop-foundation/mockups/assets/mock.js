@@ -1,7 +1,7 @@
 /* Review-only fixtures and UI simulation. No application API, database, or financial persistence. */
 'use strict';
 const MOCK = {
-  date: '2026-11-23', revision: 'US3 · 2026-11-23 · footing + row tracking',
+  date: '2026-11-23', revision: 'US4 · 2026-11-27 · line reconciliation',
   accounts: [
     {path:'Assets:Checking',group:'Banks',icon:'account_balance'},
     {path:'Assets:Savings',group:'Banks',icon:'savings'},
@@ -43,15 +43,30 @@ MOCK.entries = fixtureRows.map((r,i)=>({id:i+1,date:r[0],bankDate:'',payee:r[1],
   {account:r[3],debit:r[4]<0?-r[4]:0,credit:r[4]>0?r[4]:0,status:0}
 ]}));
 MOCK.entries[7].lines=[{account:'Expenses:Groceries',debit:2000,credit:0,status:2},{account:'Expenses:Dining',debit:500,credit:0,status:1},{account:'Assets:Checking',debit:0,credit:2500,status:2}];
+// US4: one side of this transfer is Cleared; its counter-line stays Uncleared.
+MOCK.entries.find(e=>e.id===12).lines[0].status=2;
+// US4: an entry with two Checking lines renders as two separate register rows, each with its own C control.
+MOCK.entries.push({id:19,date:'2026-11-23',bankDate:'',payee:'Northwind Payroll',description:'Split payroll deposit',lines:[
+  {account:'Assets:Checking',debit:10000,credit:0,status:2},
+  {account:'Assets:Checking',debit:5000,credit:0,status:1},
+  {account:'Income:Salary',debit:0,credit:15000,status:0}
+]});
 const params = new URLSearchParams(location.search);
 const $ = id => document.getElementById(id);
 const money = cents => (cents/100).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
 const escapeHtml = value => String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const statusName = n => ['Uncleared','Reconciling','Cleared'][n] || 'Uncleared';
 const symbol = n => ['', 'R', '✓'][n] || '';
+const nextStatus = (current, key) => {
+  const k = (key || '').toLowerCase();
+  if (k === 'r') return current === 1 ? 0 : 1;
+  if (k === 'c') return current === 2 ? 0 : 2;
+  if (k === 'u') return 0;
+  return (current + 1) % 3;
+};
 const summary = entry => `${escapeHtml(entry.payee)}${entry.payee && entry.description ? ' — ' : ''}${entry.description?`<em>${escapeHtml(entry.description)}</em>`:''}`;
 const stateLinks = {
-  main:[['main.html','Populated register'],['main.html?state=empty','Empty register'],['main.html?state=loading','Loading'],['main.html?state=error','Read failure'],['main.html?state=reset','Reset confirmation']],
+  main:[['main.html','Populated register'],['main.html?state=empty','Empty register'],['main.html?state=loading','Loading'],['main.html?state=error','Read failure'],['main.html?state=reset','Reset confirmation'],['main.html?entry=12&state=reconciled','Independent transfer statuses'],['main.html?entry=19','Same-account split lines'],['main.html?entry=12&state=status-conflict','Status conflict'],['main.html?entry=12&state=status-error','Status update failure']],
   journal:[['journal.html','New entry'],['journal.html?preset=split','Balanced split'],['journal.html?preset=unbalanced','Out of balance'],['journal.html?preset=invalid','Validation errors'],['journal.html?preset=edit','Edit cleared lines'],['journal.html?preset=warning','Reset warning'],['journal.html?preset=conflict','Save conflict'],['journal.html?preset=error','Unconfirmed save'],['journal.html?preset=busy','Pending save'],['journal.html?preset=long','Long split']]
 };
 function installReviewChrome(screen){
@@ -59,7 +74,10 @@ function installReviewChrome(screen){
   bar.innerHTML=`<strong>HTML mock-up · ${MOCK.revision}</strong><span>Synthetic data, simulated operations</span><a href="index.html">Review index</a>`;
   const controls=document.createElement('details');controls.className='mock-controls';
   const links=screen==='index'?[...stateLinks.main,...stateLinks.journal]:stateLinks[screen];
-  controls.innerHTML=`<summary>Mock controls — not part of design</summary><div class="controls"><label>Review state <select id="review-state"><option value="">Choose a state…</option>${links.map(([url,label])=>`<option value="${url}">${label}</option>`).join('')}</select></label>${screen==='journal'?'<label>Next save outcome <select id="outcome"><option value="success">Success</option><option value="conflict">Conflict</option><option value="error">Unconfirmed failure</option></select></label>':''}<span>Persona: book owner · USD · UTC · fixed review date ${MOCK.date}</span></div><p>New and Edit open the journal page. Save and Cancel return to the register. Continue retains the date. Operations use fixtures only; changing pages resets the synthetic data.</p>`;
+  const outcomeLabel=screen==='journal'?'Next save outcome':'Next status outcome';
+  const outcome=screen==='index'?'':`<label>${outcomeLabel} <select id="outcome"><option value="success">Success</option><option value="conflict">Conflict</option><option value="error">Unconfirmed failure</option></select></label>`;
+  const help=screen==='main'?'Click C in the register—or select a row and press R, C, or U—to reconcile that line. Each selected-account line is its own register row; the lower entry details C column is read-only. Reload retains changes made on this page.':screen==='journal'?'New and Edit open the journal page. Click C (or press Space, R, C, or U) on any posting line to set its status. Changing an unsaved new line keeps its C state; changing an already-saved Cleared or Reconciling line clears its C state to Uncleared.':'Open a review state directly. Use the compact 3-state C control in the upper account register or journal editor.';
+  controls.innerHTML=`<summary>Mock controls — not part of design</summary><div class="controls"><label>Review state <select id="review-state"><option value="">Choose a state…</option>${links.map(([url,label])=>`<option value="${url}">${label}</option>`).join('')}</select></label>${outcome}<span>Persona: book owner · USD · UTC · fixed review date ${MOCK.date}</span></div><p>${help} Operations use fixtures only; changing pages resets the synthetic data.</p>`;
   document.body.prepend(controls);document.body.prepend(bar);
   $('review-state').onchange=e=>{if(e.target.value)location.href=e.target.value;};
 }
@@ -68,13 +86,33 @@ function frameTitle(title){return `<div class="titlebar"><span class="material-s
 function renderMain(){
   installReviewChrome('main');
   let current=MOCK.accounts.find(a=>a.path===params.get('account')) || MOCK.accounts[0];
-  let selected=+(params.get('entry') || 8), state=params.get('state') || 'default';
+  let selectedEntry=+(params.get('entry') || 8), selectedLine=params.get('line')!==null?+params.get('line'):null, state=params.get('state') || 'default';
+  let selectedOutcome=state==='status-conflict'?'conflict':state==='status-error'?'error':'success';
+  const registerStates=['default','reset','saved','reconciled','status-conflict','status-error'];
   $('app-title').innerHTML=frameTitle('Personal demo — Fat Stacks.NET');
+  $('outcome').value=selectedOutcome;$('outcome').onchange=e=>selectedOutcome=e.target.value;
+  function showNotice(message,kind='success'){
+    $('save-notice').hidden=false;$('save-notice').classList.toggle('error-notice',kind==='error');
+    $('save-notice').setAttribute('role',kind==='error'?'alert':'status');$('save-notice-text').textContent=message;
+  }
   function rowsForAccount(){let balance=0;return MOCK.entries.flatMap(e=>{
-    const lines=e.lines.filter(l=>l.account===current.path);if(!lines.length)return [];
-    const delta=lines.reduce((s,l)=>s+l.debit-l.credit,0);balance+=delta;
-    return [{...e,delta,balance,counter:e.lines.filter(l=>l.account!==current.path).map(l=>l.account).join('; '),status:lines.every(l=>l.status===lines[0].status)?lines[0].status:3}];
+    const counter=e.lines.filter(l=>l.account!==current.path).map(l=>l.account).join('; ');
+    return e.lines.flatMap((l,lineIndex)=>{
+      if(l.account!==current.path)return [];
+      const delta=l.debit-l.credit;balance+=delta;
+      return [{...e,rowKey:`${e.id}:${lineIndex}`,lineIndex,delta,balance,counter,status:l.status}];
+    });
   });}
+  function changeLineStatus(entry,lineIndex,next,focusSelector){
+    const line=entry.lines[lineIndex],previous=line.status,label=`Line ${lineIndex+1} (${line.account})`;
+    if(selectedOutcome==='conflict'){showNotice(`${label} was not changed: this entry changed. Reload before retrying.`,'error');return;}
+    if(selectedOutcome==='error'){showNotice(`Status update was not confirmed for ${label}. Retained ${statusName(previous)}; no financial values changed.`,'error');return;}
+    if(next===previous)return;
+    line.status=next;
+    $('save-notice').hidden=true;
+    draw();
+    if(focusSelector)document.querySelector(focusSelector)?.focus();
+  }
   function draw(){
     const groups=[['Banks','account_balance'],['Credit Cards','credit_card'],['Investments','pie_chart'],['Loans Payable','description'],['Other','folder']];
     $('account-tabs').innerHTML=groups.map(([g,icon])=>`<a href="main.html?account=${encodeURIComponent(MOCK.accounts.find(a=>a.group===g).path)}" title="${g}" aria-label="${g}" class="${current.group===g?'active':''}"><span class="material-symbols-outlined" aria-hidden="true">${icon}</span></a>`).join('');
@@ -84,31 +122,93 @@ function renderMain(){
     $('account-title').textContent=current.path.split(':').at(-1);$('account-path').textContent=current.path;
     const all=rowsForAccount(), query=$('search').value.toLowerCase();
     const rows=all.filter(e=>e.description.toLowerCase().includes(query)||e.counter.toLowerCase().includes(query));
+    const entry=rows.find(e=>e.id===selectedEntry&&(selectedLine===null||e.lineIndex===selectedLine)) || rows.find(e=>e.id===selectedEntry);
+    if(entry){selectedEntry=entry.id;selectedLine=entry.lineIndex;}
     $('current-balance').textContent=`USD ${money(state==='empty'?0:(all.at(-1)?.balance || 0))}`;
-    $('transaction-count').textContent=`${state==='empty'?0:rows.length} transactions`;
-    $('register-body').innerHTML=state==='default'||state==='reset'||state==='saved'?rows.map(e=>`<tr tabindex="0" data-entry="${e.id}" class="${e.id===selected?'selected':''}" aria-selected="${e.id===selected}"><td>${e.date}</td><td><div class="summary-text" title="${escapeHtml(e.payee+' — '+e.description)}">${summary(e)}</div></td><td title="${escapeHtml(e.counter)}">${escapeHtml(e.counter)}</td><td class="center" aria-label="${e.status===3?'Mixed':statusName(e.status)}" title="${e.status===3?'Mixed':statusName(e.status)}">${e.status===3?'M':symbol(e.status)}</td><td class="num">${e.delta<0?money(-e.delta):''}</td><td class="num">${e.delta>0?money(e.delta):''}</td><td class="num">${money(e.balance)}</td></tr>`).join(''):'';
-    $('register-table').hidden=!['default','reset','saved'].includes(state);
-    $('empty-state').hidden=['default','reset','saved'].includes(state)&&rows.length>0;
+    $('transaction-count').textContent=`${state==='empty'?0:rows.length} register rows`;
+    $('register-body').innerHTML=registerStates.includes(state)?rows.map(e=>{
+      const isSelected=e.rowKey===entry?.rowKey;
+      const cCell=`<button type="button" class="c-toggle" data-status="${e.status}" data-register-toggle="${e.rowKey}" aria-label="Reconciliation status for ${escapeHtml(current.path)}, entry ${e.id}, line ${e.lineIndex+1}: ${statusName(e.status)}" title="${statusName(e.status)} — click to cycle or press R, C, or U">${symbol(e.status)}</button>`;
+      return `<tr tabindex="0" data-entry="${e.id}" data-row="${e.rowKey}" class="${isSelected?'selected':''}" aria-selected="${isSelected}"><td>${e.date}</td><td><div class="summary-text" title="${escapeHtml(e.payee+' — '+e.description)}">${summary(e)}</div></td><td title="${escapeHtml(e.counter)}">${escapeHtml(e.counter)}</td><td class="center">${cCell}</td><td class="num">${e.delta<0?money(-e.delta):''}</td><td class="num">${e.delta>0?money(e.delta):''}</td><td class="num">${money(e.balance)}</td></tr>`;
+    }).join(''):'';
+    $('register-table').hidden=!registerStates.includes(state);
+    $('empty-state').hidden=registerStates.includes(state)&&rows.length>0;
     const message=state==='loading'?['Loading transactions…','The book remains responsive.']:state==='error'?['Unable to load transactions','Check the connection and use Reload to try again.']:['No transactions to show',query?'No descriptions or counter-accounts match your search.':'Create a new entry to get started.'];
     $('empty-state').innerHTML=`<h2>${message[0]}</h2><p class="muted">${message[1]}</p>`;
-    const entry=rows.find(e=>e.id===selected);
-    $('details').hidden=!entry||!['default','reset','saved'].includes(state);
+    $('details').hidden=!entry||!registerStates.includes(state);
     if(entry){$('detail-summary').innerHTML=summary(entry)+' <span class="muted">USD</span>';$('entry-id').textContent=`Journal entry ${entry.id}`;
-      $('detail-body').innerHTML=entry.lines.map(l=>`<tr><td><a href="main.html?account=${encodeURIComponent(l.account)}&entry=${entry.id}">${escapeHtml(l.account)}</a></td><td class="num">${money(l.debit)}</td><td class="num">${money(l.credit)}</td><td>${statusName(l.status)}</td><td></td><td></td></tr>`).join('');}
+      $('detail-body').innerHTML=entry.lines.map(l=>{
+        const detailC=`<span class="state-symbol" data-status="${l.status}" aria-label="${statusName(l.status)}" title="${statusName(l.status)}">${symbol(l.status)}</span>`;
+        return `<tr><td><a href="main.html?account=${encodeURIComponent(l.account)}&entry=${entry.id}">${escapeHtml(l.account)}</a></td><td class="center">${detailC}</td><td class="num">${money(l.debit)}</td><td class="num">${money(l.credit)}</td><td></td><td></td></tr>`;
+      }).join('');}
     $('edit-entry').href=`journal.html?preset=edit&entry=${entry?.id||8}&account=${encodeURIComponent(current.path)}`;$('new-entry').href=`journal.html?account=${encodeURIComponent(current.path)}`;
     $('edit-entry').setAttribute('aria-disabled',String(!entry));
-    $('register-status').textContent=state==='error'?'Register could not be loaded. Check the connection and refresh.':state==='loading'?'Loading register…':`${state==='empty'?0:rows.length} transactions shown`;
-    document.querySelectorAll('[data-entry]').forEach(tr=>{tr.onclick=()=>{selected=+tr.dataset.entry;draw();};tr.ondblclick=()=>location.href=`journal.html?preset=edit&entry=${tr.dataset.entry}`;tr.onkeydown=e=>{if(e.key==='Enter'){selected=+tr.dataset.entry;draw();}};});
+    $('register-status').textContent=state==='error'?'Register could not be loaded. Check the connection and refresh.':state==='loading'?'Loading register…':`${state==='empty'?0:rows.length} register rows shown`;
+    document.querySelectorAll('[data-register-toggle]').forEach(btn=>{
+      btn.onclick=ev=>{
+        ev.stopPropagation();
+        const key=btn.dataset.registerToggle;
+        const row=rows.find(x=>x.rowKey===key);
+        if(!row)return;
+        selectedEntry=row.id;selectedLine=row.lineIndex;
+        changeLineStatus(row,row.lineIndex,nextStatus(row.status),`[data-register-toggle="${key}"]`);
+      };
+    });
+    document.querySelectorAll('[data-row]').forEach(tr=>{
+      const selectRow=()=>{const row=rows.find(x=>x.rowKey===tr.dataset.row);if(row){selectedEntry=row.id;selectedLine=row.lineIndex;draw();document.querySelector(`tr[data-row="${row.rowKey}"]`)?.focus();}};
+      tr.onclick=selectRow;
+      tr.ondblclick=()=>location.href=`journal.html?preset=edit&entry=${tr.dataset.entry}`;
+      tr.onkeydown=e=>{
+        if(e.target===tr&&e.key==='Enter'){selectRow();}
+      };
+    });
   }
   $('edit-entry').onclick=e=>{if($('edit-entry').getAttribute('aria-disabled')==='true')e.preventDefault();};
-  $('search').oninput=draw;$('reload').onclick=()=>{state='default';draw();};
+  function reload(){const recovering=['status-conflict','status-error'].includes(state);state='default';if(recovering){selectedOutcome='success';$('outcome').value='success';$('save-notice').hidden=true;}draw();}
+  $('search').oninput=draw;$('reload').onclick=reload;
   if(state==='reset'){
     const e=MOCK.entries[7];e.lines[0].status=0;e.lines[2].status=0;e.lines[0].debit=2100;e.lines[2].credit=2600;
-    $('save-notice').hidden=false;$('save-notice-text').textContent='Entry saved. Reset to Uncleared: Line 1 (Expenses:Groceries); Line 3 (Assets:Checking).';
+    showNotice('Entry saved. Reset to Uncleared: Line 1 (Expenses:Groceries); Line 3 (Assets:Checking).');
   }
+  if(state==='status-conflict')showNotice('Line 1 (Assets:Checking) was not changed: this entry changed. Reload before retrying.','error');
+  if(state==='status-error')showNotice('Status update was not confirmed for Line 1 (Assets:Checking). Retained Cleared; no financial values changed.','error');
   $('dismiss-notice').onclick=()=>{$('save-notice').hidden=true;};
-  document.onkeydown=e=>{if(e.target.matches('input,select,textarea'))return;if(e.key.toLowerCase()==='n')location.href=$('new-entry').href;if(e.key.toLowerCase()==='e')location.href=$('edit-entry').href;if(e.key==='F5'){e.preventDefault();state='default';draw();}if(e.ctrlKey&&e.key.toLowerCase()==='f'){e.preventDefault();$('search').focus();}};
+  document.onkeydown=e=>{
+    if(e.target.matches('input,select,textarea'))return;
+    if((e.key==='ArrowDown'||e.key==='ArrowUp')&&registerStates.includes(state)){
+      const query=$('search').value.toLowerCase();
+      const visible=rowsForAccount().filter(x=>x.description.toLowerCase().includes(query)||x.counter.toLowerCase().includes(query));
+      if(!visible.length)return;
+      e.preventDefault();
+      const currentRow=visible.find(x=>x.id===selectedEntry&&(selectedLine===null||x.lineIndex===selectedLine)) || visible.find(x=>x.id===selectedEntry);
+      const idx=visible.findIndex(x=>x.rowKey===currentRow?.rowKey);
+      const nextRow=idx<0?visible[0]:visible[idx+(e.key==='ArrowDown'?1:-1)];
+      if(nextRow){
+        selectedEntry=nextRow.id;selectedLine=nextRow.lineIndex;
+        draw();
+        const tr=document.querySelector(`tr[data-row="${nextRow.rowKey}"]`);
+        tr?.focus();tr?.scrollIntoView({block:'nearest'});
+      }
+      return;
+    }
+    if(!e.ctrlKey&&!e.altKey&&!e.metaKey&&['r','c','u'].includes(e.key.toLowerCase())){
+      const query=$('search').value.toLowerCase();
+      const visible=rowsForAccount().filter(x=>x.description.toLowerCase().includes(query)||x.counter.toLowerCase().includes(query));
+      const entry=visible.find(x=>x.id===selectedEntry&&(selectedLine===null||x.lineIndex===selectedLine)) || visible.find(x=>x.id===selectedEntry);
+      if(entry&&registerStates.includes(state)){
+        e.preventDefault();
+        const focusSel=document.activeElement?.matches('[data-register-toggle]')?`[data-register-toggle="${entry.rowKey}"]`:document.activeElement?.matches('tr[data-row]')?`tr[data-row="${entry.rowKey}"]`:null;
+        changeLineStatus(entry,entry.lineIndex,nextStatus(entry.lines[entry.lineIndex].status,e.key),focusSel);
+      }
+      return;
+    }
+    if(e.key.toLowerCase()==='n')location.href=$('new-entry').href;
+    if(e.key.toLowerCase()==='e')location.href=$('edit-entry').href;
+    if(e.key==='F5'){e.preventDefault();reload();}
+    if(e.ctrlKey&&e.key.toLowerCase()==='f'){e.preventDefault();$('search').focus();}
+  };
   draw();
+  Array.from(document.querySelectorAll(`tr[data-entry="${selectedEntry}"]`)).at(-1)?.scrollIntoView({block:'nearest'});
 }
 
 function renderJournal(){
@@ -121,7 +221,7 @@ function renderJournal(){
   else if(['edit','warning','conflict','error'].includes(preset)){draft=fromFixture();$('payee').value=fixture.payee;$('description').value=fixture.description;}
   else{draft=[{...blank(),account:'Expenses:Groceries',debit:'20.00'},{...blank(),account:'Expenses:Dining',debit:'5.00'},{...blank(),account:'Assets:Checking',credit:'25.00'}];$('payee').value='Corner Shop';$('description').value='Household split';}
   $('date').value=['edit','warning','conflict','error'].includes(preset)?fixture.date:MOCK.date;
-  if(preset==='warning'){draft[0].debit='21.00';draft[2].credit='26.00';}
+  if(preset==='warning'){draft[0].debit='21.00';draft[0].status=0;draft[2].credit='26.00';draft[2].status=0;}
   if(preset==='unbalanced')draft[2].credit='24.00';
   if(preset==='invalid'){draft[0].debit='abc';errors=['Line 1 · Debit: Enter a decimal amount with at most two decimal places; trailing zeros are allowed.','Line 1 · Amount: Enter one positive Debit or Credit.','Balance: Total Debit must equal total Credit.'];}
   if(preset==='long'){draft=Array.from({length:29},()=>({...blank(),account:MOCK.accounts[8].path,debit:'1.00'}));draft.push({...blank(),account:'Assets:Checking',credit:'29.00'});}
@@ -131,7 +231,8 @@ function renderJournal(){
   $('account-options').innerHTML=MOCK.accounts.map(a=>`<option value="${escapeHtml(a.path)}"></option>`).join('');
   const parse=text=>{if(!text.trim())return 0;const clean=text.replaceAll(',','');if(!/^\d+(?:\.\d*)?$/.test(clean))return null;const [whole,fraction='']=clean.split('.');if(/[1-9]/.test(fraction.slice(2)))return null;const n=Number(whole)*100+Number((fraction+'00').slice(0,2));return Number.isSafeInteger(n)&&n<=9999999999?n:null;};
   function totals(){let debit=0,credit=0;for(const l of draft){const d=parse(l.debit),c=parse(l.credit);if(d===null||c===null)return null;debit+=d;credit+=c;}return{debit,credit,unbalanced:debit!==credit};}
-  function resetLines(){return draft.flatMap((l,i)=>l.original&&l.original.status>0&&(l.account!==l.original.account||(parse(l.debit)!==null&&parse(l.credit)!==null&&(parse(l.debit)!==l.original.debit||parse(l.credit)!==l.original.credit)))?i:[]);}
+  const isFinanciallyEdited=l=>Boolean(l.original&&(l.account!==l.original.account||(parse(l.debit)!==null&&parse(l.credit)!==null&&(parse(l.debit)!==l.original.debit||parse(l.credit)!==l.original.credit))));
+  function resetLines(){return draft.flatMap((l,i)=>l.original&&l.original.status>0&&l.status===0&&isFinanciallyEdited(l)?i:[]);}
   function resetLabels(){return resetLines().map(i=>`Line ${i+1} (${draft[i].account||draft[i].original.account})`);}
   function update(){const t=totals();let vh,status,debitCell='',creditCell='';
     if(t){const diff=money(Math.abs(t.debit-t.credit));const word=t.debit>t.credit?'Credits':'Debits';
@@ -165,19 +266,46 @@ function renderJournal(){
       const setInvalid=(field,msg,fallbackTitle)=>{const el=row.querySelector(`[data-field="${field}"]`);if(!el)return;el.classList.toggle('invalid',Boolean(msg));if(msg){el.setAttribute('aria-invalid','true');el.title=msg;}else{el.removeAttribute('aria-invalid');if(fallbackTitle)el.title=fallbackTitle;else el.removeAttribute('title');}};
       setInvalid('account',accErr,l.account);setInvalid('debit',debErr,'');setInvalid('credit',credErr,'');
       row.querySelector('.line-no')?.classList.toggle('err',Boolean(accErr||debErr||credErr));
+      const statusBtn=row.querySelector('[data-field="status"]');
+      if(statusBtn){
+        statusBtn.textContent=symbol(l.status);
+        statusBtn.dataset.status=String(l.status);
+        statusBtn.title=`${statusName(l.status)} — click or press Space, R, C, or U`;
+        statusBtn.setAttribute('aria-label',`Reconciliation status, line ${i+1}: ${statusName(l.status)}`);
+        statusBtn.disabled=busy;
+      }
     });
     $('errors').innerHTML=errors.map(e=>`<div>${escapeHtml(e)}</div>`).join('');document.querySelectorAll('.remove-line').forEach(b=>b.disabled=busy||draft.length<=2);}
   function draw(){
-    $('postings').innerHTML=draft.map((l,i)=>`<div class="posting-row" data-line="${i}"><span class="line-no" aria-hidden="true">${i+1}</span><input data-field="account" list="account-options" autocomplete="off" aria-label="Account, line ${i+1}" title="${escapeHtml(l.account)}" value="${escapeHtml(l.account)}"><span class="state-symbol" title="${statusName(l.status)}" aria-label="${statusName(l.status)}">${symbol(l.status)}</span><input class="amount" data-field="debit" inputmode="decimal" aria-label="Debit, line ${i+1}" value="${escapeHtml(l.debit)}"><input class="amount" data-field="credit" inputmode="decimal" aria-label="Credit, line ${i+1}" value="${escapeHtml(l.credit)}"><button class="remove-line" tabindex="-1" aria-label="Remove posting ${i+1}" title="Remove posting (Ctrl+Shift+Delete; at least two required)">×</button></div>`).join('');
+    $('postings').innerHTML=draft.map((l,i)=>`<div class="posting-row" data-line="${i}"><span class="line-no" aria-hidden="true">${i+1}</span><input data-field="account" list="account-options" autocomplete="off" aria-label="Account, line ${i+1}" title="${escapeHtml(l.account)}" value="${escapeHtml(l.account)}"><button type="button" class="c-toggle" data-field="status" data-status="${l.status}" aria-label="Reconciliation status, line ${i+1}: ${statusName(l.status)}" title="${statusName(l.status)} — click or press Space, R, C, or U">${symbol(l.status)}</button><input class="amount" data-field="debit" inputmode="decimal" aria-label="Debit, line ${i+1}" value="${escapeHtml(l.debit)}"><input class="amount" data-field="credit" inputmode="decimal" aria-label="Credit, line ${i+1}" value="${escapeHtml(l.credit)}"><button type="button" class="remove-line" tabindex="-1" aria-label="Remove posting ${i+1}" title="Remove posting (Ctrl+Shift+Delete; at least two required)">×</button></div>`).join('');
     document.querySelectorAll('.posting-row').forEach(row=>{
       const i=+row.dataset.line;
+      const statusBtn=row.querySelector('[data-field="status"]');
+      statusBtn.onclick=()=>{if(busy)return;draft[i].status=nextStatus(draft[i].status);update();};
+      statusBtn.onkeydown=e=>{
+        if(e.ctrlKey&&e.shiftKey&&e.key==='Delete'){e.preventDefault();remove(i);return;}
+        if(!busy&&!e.ctrlKey&&!e.altKey&&!e.metaKey&&['r','c','u'].includes(e.key.toLowerCase())){
+          e.preventDefault();draft[i].status=nextStatus(draft[i].status,e.key);update();
+        }
+      };
       row.querySelectorAll('input').forEach(input=>{
         const field=input.dataset.field;
         input.onfocus=()=>{if(field==='account')input.select();};
-        input.oninput=()=>{draft[i][field]=input.value;if(['debit','credit'].includes(field)&&input.value.trim()){const opposite=field==='debit'?'credit':'debit';draft[i][opposite]='';row.querySelector(`[data-field="${opposite}"]`).value='';}update();};
+        input.oninput=()=>{
+          draft[i][field]=input.value;
+          if(['debit','credit'].includes(field)&&input.value.trim()){
+            const opposite=field==='debit'?'credit':'debit';
+            draft[i][opposite]='';
+            row.querySelector(`[data-field="${opposite}"]`).value='';
+          }
+          if(draft[i].original){
+            draft[i].status=isFinanciallyEdited(draft[i])?0:draft[i].original.status;
+          }
+          update();
+        };
         input.onblur=()=>{if(field!=='account'&&input.value.trim()){const n=parse(input.value);if(n!==null){draft[i][field]=money(n).replaceAll(',','');input.value=draft[i][field];}}};
         input.onkeydown=e=>{if(e.ctrlKey&&e.shiftKey&&e.key==='Delete'){e.preventDefault();remove(i);}if(field==='credit'&&i===draft.length-1&&e.key==='Tab'&&!e.shiftKey&&totals()?.unbalanced){e.preventDefault();add();}};
-      });row.querySelector('button').onclick=()=>remove(i);
+      });row.querySelector('.remove-line').onclick=()=>remove(i);
     });update();
   }
   function focusAccount(i){document.querySelector(`[data-line="${i}"] input`)?.focus();}
