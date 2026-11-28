@@ -63,3 +63,10 @@ It appends Payee to the result consumed by the application. Deploy that procedur
 books before running the updated build. Executing its CREATE OR ALTER definition directly in
 SSMS with maintenance privileges is sufficient for this procedure-only update and retains its
 runtime grants. It changes no tables or stored schema version.
+
+## US4 per-posting register
+
+Deploy the current `sprocs/ReadAccountRegister.sql` to existing books with the maintenance
+package before using the per-posting register. It returns one row per selected-account line,
+including the line ID and both version tokens used by reconciliation. Existing financial data,
+table definitions, and runtime grants already support this operation. Schema version remains 1.

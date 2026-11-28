@@ -114,8 +114,10 @@ After confirmed deletion, refresh balances and preserve any selection that is st
 
 ## Reconciliation and Securities
 
-Expose Uncleared, Reconciling, and Cleared on each line. A register summary covers only the
-selected account's lines. Mixed exposes those individual values; it is not a stored status.
+Expose Uncleared, Reconciling, and Cleared on each line. Each selected-account posting has its own register row,
+running balance, and C control. Up and Down select visible postings. Click or focused Space cycles
+status. R and C toggle their states and U sets Uncleared. Lower details show a read-only C
+column between Account and Debit using the same accessible markers.
 A status-only change preserves all amounts and other lines.
 
 Offer security opening and same-security transfer only. Show quantities at their declared scale

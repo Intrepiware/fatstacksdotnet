@@ -3,6 +3,7 @@ using FatStacks.Core.Accounts;
 using FatStacks.Core.Calendar;
 using FatStacks.Core.Connections;
 using FatStacks.Core.Register;
+using FatStacks.Core.Reconciliation;
 using FatStacks.Core.Journal;
 using FatStacks.Core.Contracts;
 using FatStacks.Infrastructure.Diagnostics;
@@ -34,6 +35,71 @@ public sealed class AccountNode(AccountRecord account, string path, decimal bala
 }
 public sealed class MainWindowViewModel : ObservableObject, IDisposable
 {
+    public IReconciliationService Reconciliation { private get; init; } = null!;
+    private bool reconciling;
+    private string reconciliationError = "";
+    public string ReconciliationError
+    {
+        get => reconciliationError;
+        private set => Set(ref reconciliationError, value);
+    }
+
+    public async Task ReconcileAsync(RegisterRow row, byte target)
+    {
+        if (!IsCurrent || reconciling || !Rows.Contains(row) || row.EntryVersion is null || row.LineVersion is null)
+            return;
+        var affectedAccount = AccountId;
+        reconciling = true;
+        ReconciliationError = "";
+        DismissSaveNotice();
+        try
+        {
+            var result = await Reconciliation.SetAsync(new(row.EntryId, row.LineId, row.EntryVersion, row.LineVersion, target));
+            if (!IsCurrent || AccountId != affectedAccount)
+                return;
+            if (!result.IsSuccess)
+            {
+                ReconciliationError = result.Message;
+                return;
+            }
+            if (searchRead is not null)
+            {
+                // A register query already in flight may have captured the pre-commit versions.
+                await ReadAsync();
+                return;
+            }
+            var saved = result.Value!;
+            updatingRegisterRows = true;
+            try
+            {
+                for (var index = 0; index < Rows.Count; index++)
+                {
+                    var current = Rows[index];
+                    if (current.EntryId != row.EntryId || current.EntryVersion is null ||
+                        !current.EntryVersion.SequenceEqual(row.EntryVersion))
+                        continue;
+                    var updated = current with { EntryVersion = saved.EntryVersion };
+                    if (current.LineId == row.LineId)
+                        updated = updated with { LineVersion = saved.LineVersion, Status = saved.Status switch { 1 => "Reconciling", 2 => "Cleared", _ => "Uncleared" } };
+                    Rows[index] = updated;
+                    if (ReferenceEquals(selected, current))
+                        Set(ref selected, updated, nameof(Selected));
+                }
+            }
+            finally { updatingRegisterRows = false; }
+
+            if (Selected?.EntryId == row.EntryId && Selected.EntryVersion?.SequenceEqual(saved.EntryVersion) == true)
+            {
+                if (detailRead is not null)
+                    await LoadDetailsAsync(Selected);
+                else
+                    for (var index = 0; index < Details.Count; index++)
+                        if (Details[index].LineId == row.LineId)
+                            Details[index] = Details[index] with { Status = saved.Status };
+            }
+        }
+        finally { reconciling = false; }
+    }
     public IJournalService Journal { private get; init; } = null!;
     public IReadOnlyList<AccountRecord> AccountRecords => accounts;
     public async Task<JournalRequest?> LoadSelectedEntryAsync()
@@ -176,6 +242,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         get => accountPath; private set => Set(ref accountPath, value);
     }
     private DateOnly? registerToday;
+    private string registerReadError = "";
     private RegisterReadState readState;
     public RegisterReadState ReadState
     {
@@ -201,7 +268,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
             return ReadState switch
             {
                 RegisterReadState.Loading => "Reading the selected account's register.",
-                RegisterReadState.Failed => "Check the connection and use Reload to try again.",
+                RegisterReadState.Failed => registerReadError,
                 _ => accountId is null ? "Choose an account in the left rail, or set up your accounts."
                     : $"No matching transactions from {today.AddDays(-89):MMM d, yyyy} through {today:MMM d, yyyy}."
             };
@@ -223,7 +290,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
             Selected = row;
     }
 
-    private void UpdateRegisterRows(IEnumerable<RegisterRow> rows, long? entryId)
+    private void UpdateRegisterRows(IEnumerable<RegisterRow> rows, long? entryId, long? lineId = null)
     {
         // The grid can report a transient selection while the collection is replaced.
         updatingRegisterRows = true;
@@ -235,7 +302,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
             foreach (var row in rows)
                 Rows.Add(row);
             if (entryId is not null)
-                Selected = Rows.FirstOrDefault(row => row.EntryId == entryId);
+                Selected = Rows.FirstOrDefault(row => row.EntryId == entryId && row.LineId == lineId) ?? Rows.FirstOrDefault(row => row.EntryId == entryId);
         }
         finally { updatingRegisterRows = false; }
     }
@@ -253,6 +320,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         if (!IsCurrent)
             return;
         using var read = NewRead(ref load);
+        ReconciliationError = "";
         Status = "Loading accounts…";
         try
         {
@@ -421,6 +489,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     private static IEnumerable<AccountNode> Flatten(IEnumerable<AccountNode> nodes) => nodes.SelectMany(x => new[] { x }.Concat(Flatten(x.Children)));
     private long? registerAccountId;
     private long? pendingEntryId;
+    private long? pendingLineId;
 
     public Task ReadAsync(long? entryId = null) => ReadRegisterAsync(entryId, "RegisterRead");
 
@@ -428,11 +497,14 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     {
         if (!IsCurrent)
             return;
+        ReconciliationError = "";
         using var read = NewRead(ref searchRead);
         detailRead?.Cancel();
         // A replacement read may start after the prior read has cleared the grid.
         var keep = entryId ?? (registerAccountId == accountId ? Selected?.EntryId ?? pendingEntryId : null);
+        var keepLine = registerAccountId == accountId ? Selected?.LineId ?? pendingLineId : null;
         registerAccountId = accountId;
+        pendingLineId = keepLine;
         pendingEntryId = keep;
         UpdateRegisterRows([], null);
         var today = new BookCalendar(Session.Book.TimeZoneId).Today;
@@ -440,7 +512,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         if (accountId is not { } id)
         {
             searchRead = null;
-            pendingEntryId = null;
+            pendingEntryId = pendingLineId = null;
             Balance = 0;
             AccountTitle = "Transaction register";
             AccountPath = "Select an account to view its transactions";
@@ -459,9 +531,16 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
             if (!IsCurrent || read.IsCancellationRequested)
                 return;
             Balance = result.CurrentBalance;
-            UpdateRegisterRows(result.Rows, keep);
+            UpdateRegisterRows(result.Rows, keep, keepLine);
             ReadState = RegisterReadState.Loaded;
             Status = $"{Rows.Count:N0} transactions shown";
+        }
+        catch (System.IO.InvalidDataException ex)
+        {
+            if (IsCurrent && !read.IsCancellationRequested)
+            {
+                SetRegisterFailure(ex.Message);
+            }
         }
         catch (OperationCanceledException) { }
         catch (Exception ex) when (ex is Microsoft.Data.SqlClient.SqlException or InvalidOperationException or ArgumentOutOfRangeException)
@@ -469,8 +548,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
             if (IsCurrent && !read.IsCancellationRequested)
             {
                 DatabaseErrors.TraceFailure(operation, ex);
-                ReadState = RegisterReadState.Failed;
-                Status = "Register could not be loaded. Check the connection and search length, then refresh.";
+                SetRegisterFailure("Register could not be loaded. Check the connection and search length, then refresh.");
             }
         }
         finally
@@ -478,10 +556,17 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
             if (ReferenceEquals(searchRead, read))
             {
                 searchRead = null;
-                pendingEntryId = null;
+                pendingEntryId = pendingLineId = null;
             }
         }
     }
+    private void SetRegisterFailure(string message)
+    {
+        registerReadError = message;
+        Status = message;
+        ReadState = RegisterReadState.Failed;
+    }
+
     public async Task LoadDetailsAsync(RegisterRow? row)
     {
         if (!IsCurrent)

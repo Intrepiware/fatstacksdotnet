@@ -123,13 +123,19 @@ public sealed class RegisterTests
         var service = new RegisterService { Database = database, Procedures = new() { Database = database } };
         var all = await service.ReadAsync(bank, new(2026, 11, 18), "");
         Assert.AreEqual(199999974.98m, all.CurrentBalance);
-        Assert.AreEqual(2, all.Rows.Count);
+        Assert.AreEqual(3, all.Rows.Count);
         Assert.AreEqual(first, all.Rows[0].EntryId);
         Assert.AreEqual(zero, all.Rows[1].EntryId);
         Assert.AreEqual(25m, all.Rows[0].Payment);
         Assert.IsNull(all.Rows[1].Payment);
-        Assert.IsNull(all.Rows[1].Deposit);
-        Assert.AreEqual("Mixed", all.Rows[1].Status);
+        Assert.AreEqual(10m, all.Rows[1].Deposit);
+        Assert.AreEqual(10m, all.Rows[2].Payment);
+        Assert.AreEqual(zero, all.Rows[2].EntryId);
+        Assert.AreNotEqual(all.Rows[1].LineId, all.Rows[2].LineId);
+        Assert.AreEqual(all.CurrentBalance + 10m, all.Rows[1].Balance);
+        Assert.AreEqual(all.CurrentBalance, all.Rows[2].Balance);
+        Assert.AreEqual("Uncleared", all.Rows[1].Status);
+        Assert.AreEqual("Reconciling", all.Rows[2].Status);
         foreach (var search in new[] { "split", "counter[%_]", "[%_]" })
         {
             var filtered = await service.ReadAsync(bank, new(2026, 11, 18), search);

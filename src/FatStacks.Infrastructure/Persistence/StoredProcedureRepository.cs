@@ -27,9 +27,11 @@ public sealed class StoredProcedureRepository : IJournalStore
         await reader.ReadAsync(ct);
         var balance = reader.GetDecimal(0);
         await reader.NextResultAsync(ct);
+        if (reader.FieldCount < 12)
+            throw new InvalidDataException("Deploy the current ReadAccountRegister procedure with grate, then refresh the register.");
         var rows = new List<RegisterRow>();
         while (await reader.ReadAsync(ct))
-            rows.Add(new(reader.GetInt64(0), DateOnly.FromDateTime(reader.GetDateTime(1)), reader.GetString(2), reader.GetString(3), reader.IsDBNull(4) ? null : reader.GetDecimal(4), reader.IsDBNull(5) ? null : reader.GetDecimal(5), reader.GetDecimal(6), reader.GetString(7), reader.FieldCount > 8 && !reader.IsDBNull(8) ? reader.GetString(8) : null));
+            rows.Add(new(reader.GetInt64(0), DateOnly.FromDateTime(reader.GetDateTime(1)), reader.GetString(2), reader.GetString(3), reader.IsDBNull(4) ? null : reader.GetDecimal(4), reader.IsDBNull(5) ? null : reader.GetDecimal(5), reader.GetDecimal(6), reader.GetString(7), reader.IsDBNull(8) ? null : reader.GetString(8), reader.GetInt64(9), reader.GetFieldValue<byte[]>(10), reader.GetFieldValue<byte[]>(11)));
         return new(balance, rows);
     }
 

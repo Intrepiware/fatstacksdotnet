@@ -3,6 +3,7 @@ using FatStacks.Core.Accounts;
 using FatStacks.Core.Connections;
 using FatStacks.Core.Contracts;
 using FatStacks.Core.Register;
+using FatStacks.Core.Reconciliation;
 using FatStacks.Desktop.ViewModels;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace FatStacks.WindowsChecks;
@@ -10,6 +11,82 @@ namespace FatStacks.WindowsChecks;
 [TestClass]
 public sealed class RegisterJourneyTests
 {
+    [TestMethod]
+    [DataRow(Outcome.Conflict)]
+    [DataRow(Outcome.Failed)]
+    public async Task RepeatedPostingSelectionSurvivesRefreshAndFailedStatusWrite(Outcome failure)
+    {
+        var (sessions, session) = await OpenAsync();
+        using var owned = session;
+        var row = new RegisterRow(10, new(2026, 11, 17), "Two postings", "", null, 10, 10, "Uncleared",
+            LineId: 12, EntryVersion: new byte[8], LineVersion: new byte[8]);
+        var other = row with
+        {
+            LineId = 13,
+            Status = "Reconciling",
+            Balance = 20
+        };
+        var reader = new Register { Result = new(20, [row, other]) };
+        var writer = new FailedReconciliation(failure);
+        using var model = new MainWindowViewModel { Accounts = new Accounts(), Register = reader, Session = session, Sessions = sessions, Reconciliation = writer };
+        await model.RefreshAsync();
+        model.SelectRegisterRow(model.Rows[1]);
+        await model.RefreshAsync();
+        Assert.AreEqual(13L, model.Selected!.LineId);
+        await model.ReconcileAsync(model.Selected, 2);
+        Assert.AreEqual(13L, writer.Request!.LineId);
+        Assert.AreEqual((byte)2, writer.Request.Status);
+        Assert.AreEqual("Refresh the register.", model.ReconciliationError);
+        Assert.AreEqual("Reconciling", model.Selected.Status);
+        Assert.AreEqual(20m, model.Selected.Balance);
+        Assert.IsFalse(model.HasSaveNotice);
+    }
+
+    [TestMethod]
+    public async Task ConfirmedReconciliationUpdatesBothPanesWithoutReloadingTheRegister()
+    {
+        var (sessions, session) = await OpenAsync();
+        using var owned = session;
+        var first = new RegisterRow(10, new(2026, 11, 17), "", "", 25, null, 975, "Uncleared",
+            LineId: 1, EntryVersion: new byte[8], LineVersion: new byte[8]);
+        var sibling = first with { LineId = 2 };
+        var reader = new Register { Result = new(975, [first, sibling]) };
+        var writer = new ConfirmedReconciliation();
+        using var model = new MainWindowViewModel { Accounts = new Accounts(), Register = reader, Session = session, Sessions = sessions, Reconciliation = writer };
+        await model.RefreshAsync();
+        model.SelectRegisterRow(first);
+        reader.Fail = true; // A second register read would clear the rows and enter the failure state.
+        await model.ReconcileAsync(first, 1);
+        Assert.AreEqual(RegisterReadState.Loaded, model.ReadState);
+        Assert.AreSame(model.Rows[0], model.Selected);
+        Assert.AreEqual("Reconciling", model.Selected!.Status);
+        Assert.AreEqual((byte)1, model.Details.Single(line => line.LineId == 1).Status);
+        Assert.AreSame(writer.Result.EntryVersion, model.Rows[1].EntryVersion);
+        Assert.AreSame(sibling.LineVersion, model.Rows[1].LineVersion);
+        Assert.AreSame(writer.Result.LineVersion, model.Rows[0].LineVersion);
+        Assert.AreEqual("Uncleared", model.Rows[1].Status);
+    }
+
+    private sealed class ConfirmedReconciliation : IReconciliationService
+    {
+        public ReconciliationResult Result { get; } = new([0, 0, 0, 0, 0, 0, 0, 2], [0, 0, 0, 0, 0, 0, 0, 1], 1);
+        public Task<OperationResult<ReconciliationResult>> SetAsync(ReconciliationRequest request) =>
+            Task.FromResult(OperationResult<ReconciliationResult>.Success(Result));
+    }
+
+    private sealed class FailedReconciliation(Outcome failure) : IReconciliationService
+    {
+        public ReconciliationRequest? Request
+        {
+            get; private set;
+        }
+        public Task<OperationResult<ReconciliationResult>> SetAsync(ReconciliationRequest request)
+        {
+            Request = request;
+            return Task.FromResult(OperationResult<ReconciliationResult>.Fail("Refresh the register.", failure));
+        }
+    }
+
     [TestMethod]
     public async Task AccountSetupInitializesOpenDateAndBlocksSaveUntilAccountsLoad()
     {
@@ -384,6 +461,10 @@ public sealed class RegisterJourneyTests
         await model.ReadAsync();
         Assert.AreEqual(RegisterReadState.Failed, model.ReadState);
         Assert.AreEqual("Unable to load transactions", model.EmptyTitle);
+        register.Fail = false;
+        register.ProcedureMismatch = true;
+        await model.ReadAsync();
+        StringAssert.Contains(model.EmptyDescription, "ReadAccountRegister");
         session.Dispose();
     }
     internal static async Task<(BookSessionCoordinator, BookSession)> OpenAsync()
@@ -432,9 +513,16 @@ public sealed class RegisterJourneyTests
     private sealed class Register : IRegisterService
     {
         public TaskCompletionSource<RegisterResult>? Pending, Delayed;
+        public RegisterResult? Result
+        {
+            get; init;
+        }
         public bool Fail;
+        public bool ProcedureMismatch;
         public Task<RegisterResult> ReadAsync(long id, DateOnly today, string search, CancellationToken ct = default)
         {
+            if (ProcedureMismatch)
+                throw new InvalidDataException("Deploy the current ReadAccountRegister procedure.");
             if (Fail)
                 throw new InvalidOperationException("Synthetic read failure");
             if (Pending is { } pending)
@@ -442,7 +530,7 @@ public sealed class RegisterJourneyTests
                 Delayed = pending;
                 return pending.Task;
             }
-            return Task.FromResult(new RegisterResult(975, [new(10, new(2026, 11, 17), "Synthetic", "Counter", 25, null, 975, "Uncleared")]));
+            return Task.FromResult(Result ?? new RegisterResult(975, [new(10, new(2026, 11, 17), "Synthetic", "Counter", 25, null, 975, "Uncleared")]));
         }
         public Task<IReadOnlyList<EntryLine>> DetailsAsync(long entry, CancellationToken ct = default) => Task.FromResult<IReadOnlyList<EntryLine>>([new(1, 1, "Bank", 0, 25, 0, null, null), new(2, 2, "Closed counter", 25, 0, 0, null, null)]);
         public Task<IReadOnlyDictionary<long, decimal>> BalancesAsync(DateOnly today, CancellationToken ct = default) => Task.FromResult<IReadOnlyDictionary<long, decimal>>(new Dictionary<long, decimal> { { 1, 975 }, { 2, 25 } });

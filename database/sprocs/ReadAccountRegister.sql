@@ -7,14 +7,12 @@ BEGIN
     SET NOCOUNT ON;
     -- Widen before SUM: individual line precision must not limit an aggregate.
     SELECT e.JournalEntryId, e.AccountingDate, e.Description, e.Payee,
-           CAST(SUM(CAST(l.Debit AS decimal(28,2))-CAST(l.Credit AS decimal(28,2))) AS decimal(28,2)) AS Movement,
-           CASE WHEN MIN(l.ReconciliationStatus)<>MAX(l.ReconciliationStatus) THEN 'Mixed'
-                WHEN MIN(l.ReconciliationStatus)=2 THEN 'Cleared'
-                WHEN MIN(l.ReconciliationStatus)=1 THEN 'Reconciling' ELSE 'Uncleared' END AS Status
+           l.JournalEntryLineId, l.LineOrder, CAST(e.Version AS binary(8)) AS EntryVersion, CAST(l.Version AS binary(8)) AS LineVersion,
+           CAST(l.Debit AS decimal(28,2))-CAST(l.Credit AS decimal(28,2)) AS Movement,
+           CASE l.ReconciliationStatus WHEN 2 THEN 'Cleared' WHEN 1 THEN 'Reconciling' ELSE 'Uncleared' END AS Status
     INTO #Movements
     FROM dbo.JournalEntry e JOIN dbo.JournalEntryLine l ON l.JournalEntryId=e.JournalEntryId
-    WHERE e.BookId=1 AND l.AccountId=@AccountId AND e.AccountingDate<=@Today
-    GROUP BY e.JournalEntryId,e.AccountingDate,e.Description,e.Payee;
+    WHERE e.BookId=1 AND l.AccountId=@AccountId AND e.AccountingDate<=@Today;
 
     SELECT CAST(COALESCE(SUM(Movement),0) AS decimal(28,2)) AS CurrentBalance FROM #Movements;
 
@@ -30,7 +28,7 @@ BEGIN
     SELECT AccountId,Name INTO #Paths FROM Paths OPTION(MAXRECURSION 0);
 
     ;WITH Running AS (
-        SELECT *,CAST(SUM(Movement) OVER(ORDER BY AccountingDate,JournalEntryId ROWS UNBOUNDED PRECEDING) AS decimal(28,2)) AS Balance
+        SELECT *,CAST(SUM(Movement) OVER(ORDER BY AccountingDate,JournalEntryId,LineOrder ROWS UNBOUNDED PRECEDING) AS decimal(28,2)) AS Balance
         FROM #Movements
     ), CounterAccounts AS (
         SELECT DISTINCT l.JournalEntryId,l.AccountId
@@ -46,11 +44,11 @@ BEGIN
     )
     SELECT r.JournalEntryId,r.AccountingDate,r.Description,COALESCE(c.Names,N'') AS CounterAccounts,
            CAST(CASE WHEN r.Movement<0 THEN -r.Movement END AS decimal(28,2)) AS Payment,
-           CAST(CASE WHEN r.Movement>0 THEN r.Movement END AS decimal(28,2)) AS Deposit,r.Balance,r.Status,r.Payee
+           CAST(CASE WHEN r.Movement>0 THEN r.Movement END AS decimal(28,2)) AS Deposit,r.Balance,r.Status,r.Payee,r.JournalEntryLineId,r.EntryVersion,r.LineVersion
     FROM Running r
     LEFT JOIN CounterLabels c ON c.JournalEntryId=r.JournalEntryId
     WHERE r.AccountingDate>=@Cutoff
       AND (@SearchText=N'' OR CHARINDEX(@SearchText,r.Description COLLATE Latin1_General_100_CI_AS)>0
            OR c.MatchesSearch=1)
-    ORDER BY r.AccountingDate,r.JournalEntryId;
+    ORDER BY r.AccountingDate,r.JournalEntryId,r.LineOrder;
 END;

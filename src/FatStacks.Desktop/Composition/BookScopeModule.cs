@@ -1,4 +1,6 @@
 using Autofac;
+using FatStacks.Core.Reconciliation;
+using FatStacks.Infrastructure.Reconciliation;
 using FatStacks.Core.Accounts;
 using FatStacks.Core.Calendar;
 using FatStacks.Core.Journal;
@@ -22,6 +24,7 @@ public sealed class BookScopeModule(BookSession session) : Module
         builder.RegisterType<JournalService>().As<IJournalService>().PropertiesAutowired();
         builder.RegisterType<JournalEditorViewModel>().PropertiesAutowired();
         builder.RegisterType<AccountService>().As<IAccountService>().PropertiesAutowired();
+        builder.RegisterType<ReconciliationService>().As<IReconciliationService>().PropertiesAutowired().InstancePerLifetimeScope();
         builder.RegisterType<RegisterService>().As<IRegisterService>().PropertiesAutowired();
         builder.RegisterType<MainWindowViewModel>().PropertiesAutowired();
         builder.RegisterType<AccountSetupViewModel>().PropertiesAutowired();

@@ -123,16 +123,16 @@ A stored procedure is unnecessary for this operation.
 ## ReadAccountRegister
 
 Inputs: AccountId, book-local Today, and SearchText. Output: current signed balance and ordered
-register rows with entry ID, accounting date, payee, description, counter-account names, Payment,
-Deposit, running balance, and selected-account reconciliation summary.
+register rows with entry and line IDs, header and line versions, accounting date, payee, description,
+counter-account names, Payment, Deposit, running balance, and the line’s reconciliation status.
 
-Group all selected-account lines by entry. Sum Debit minus Credit. Calculate cumulative totals
-over the complete history through Today, ordered by AccountingDate then JournalEntryId. Only then
+Return each selected-account posting and its Debit minus Credit movement. Calculate cumulative totals
+over the complete history through Today, ordered by AccountingDate, JournalEntryId, and LineOrder. Only then
 filter to Today minus 89 days through Today. Apply case-insensitive description/counter-account
 search after balance calculation. Escape LIKE metacharacters or use a literal substring operation.
 Do not omit zero-net rows. Use parameters for dates, account IDs, and search text.
 
 Positive net movement becomes Deposit; negative becomes positive Payment; zero leaves both blank.
-Mixed is a display result when selected-account lines have different stored states. Details use
+Each posting retains its individual status when several lines reference the same account. Details use
 an EF read to return every line, including lines for closed accounts. Tree totals batch direct
 account sums and add descendant contributions without dropping closed accounts.

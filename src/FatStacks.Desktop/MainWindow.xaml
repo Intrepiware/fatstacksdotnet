@@ -9,6 +9,31 @@
  <Window.Resources>
   <ResourceDictionary>
    <ResourceDictionary.MergedDictionaries><ResourceDictionary Source="Assets/FluentIcons.xaml"/></ResourceDictionary.MergedDictionaries>
+   <Style x:Key="StatusCell" TargetType="DataGridCell" BasedOn="{StaticResource {x:Type DataGridCell}}">
+    <Setter Property="Padding" Value="0"/>
+   </Style>
+   <Style x:Key="StatusHeader" TargetType="DataGridColumnHeader" BasedOn="{StaticResource {x:Type DataGridColumnHeader}}">
+    <Setter Property="Padding" Value="0,10"/><Setter Property="HorizontalContentAlignment" Value="Center"/>
+   </Style>
+   <DataTemplate x:Key="LineStatusBadge">
+    <Border Width="24" Height="20" HorizontalAlignment="Center" VerticalAlignment="Center" CornerRadius="3" BorderThickness="1" ToolTip="{Binding StatusName}">
+     <Border.Style><Style TargetType="Border">
+      <Setter Property="Background" Value="White"/><Setter Property="BorderBrush" Value="#CFD8E1"/>
+      <Style.Triggers>
+       <DataTrigger Binding="{Binding StatusName}" Value="Reconciling"><Setter Property="Background" Value="#FEF4D6"/><Setter Property="BorderBrush" Value="#E7C677"/></DataTrigger>
+       <DataTrigger Binding="{Binding StatusName}" Value="Cleared"><Setter Property="Background" Value="#E6F4EA"/><Setter Property="BorderBrush" Value="#A3D3B1"/></DataTrigger>
+      </Style.Triggers>
+     </Style></Border.Style>
+     <TextBlock HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="12" FontWeight="SemiBold" AutomationProperties.Name="{Binding StatusName}" ToolTip="{Binding StatusName}">
+      <TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Text" Value=""/>
+       <Style.Triggers>
+        <DataTrigger Binding="{Binding StatusName}" Value="Reconciling"><Setter Property="Text" Value="R"/><Setter Property="Foreground" Value="#945800"/></DataTrigger>
+        <DataTrigger Binding="{Binding StatusName}" Value="Cleared"><Setter Property="Text" Value="✓"/><Setter Property="Foreground" Value="#166534"/></DataTrigger>
+       </Style.Triggers>
+      </Style></TextBlock.Style>
+     </TextBlock>
+    </Border>
+   </DataTemplate>
    <DataTemplate x:Key="EntrySummaryTemplate">
     <TextBlock TextTrimming="CharacterEllipsis" VerticalAlignment="Center" ToolTip="{Binding SummaryText}" AutomationProperties.Name="{Binding SummaryText}"><Run Text="{Binding DisplayPayee,Mode=OneWay}"/><Run Text="{Binding SummarySeparator,Mode=OneWay}"/><Run Text="{Binding DisplayDescription,Mode=OneWay}" FontStyle="Italic"/></TextBlock>
    </DataTemplate>
@@ -132,8 +157,11 @@
      <Border.Style><Style TargetType="Border"><Setter Property="Visibility" Value="Collapsed"/><Style.Triggers><DataTrigger Binding="{Binding HasSaveNotice}" Value="True"><Setter Property="Visibility" Value="Visible"/></DataTrigger></Style.Triggers></Style></Border.Style>
      <DockPanel><Button DockPanel.Dock="Right" Content="Dismiss" Click="DismissSaveNoticeClicked" Margin="12,0,0,0" AutomationProperties.AutomationId="DismissSaveNotice"/><TextBlock Text="{Binding SaveNotice}" TextWrapping="Wrap" VerticalAlignment="Center" AutomationProperties.AutomationId="RegisterSaveNotice" AutomationProperties.LiveSetting="Assertive"/></DockPanel>
     </Border>
+    <TextBlock Grid.Row="2" Text="{Binding ReconciliationError}" Foreground="#B42318" TextWrapping="Wrap" AutomationProperties.AutomationId="ReconciliationError" AutomationProperties.LiveSetting="Assertive">
+     <TextBlock.Style><Style TargetType="TextBlock"><Style.Triggers><Trigger Property="Text" Value=""><Setter Property="Visibility" Value="Collapsed"/></Trigger></Style.Triggers></Style></TextBlock.Style>
+    </TextBlock>
     <Grid Grid.Row="3">
-     <DataGrid ItemsSource="{Binding Rows}" SelectedItem="{Binding Selected,Mode=OneWay}" SelectionChanged="RegisterSelectionChanged" MouseDoubleClick="RegisterDoubleClicked" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False" CanUserDeleteRows="False" CanUserReorderColumns="False" CanUserSortColumns="False"
+     <DataGrid x:Name="PostingRegister" ItemsSource="{Binding Rows}" SelectedItem="{Binding Selected,Mode=OneWay}" SelectionChanged="RegisterSelectionChanged" MouseDoubleClick="RegisterDoubleClicked" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False" CanUserDeleteRows="False" CanUserReorderColumns="False" CanUserSortColumns="False"
                SelectionMode="Single" SelectionUnit="FullRow" GridLinesVisibility="Vertical" VerticalGridLinesBrush="#E4EAF0" BorderThickness="0" RowBackground="White" AlternatingRowBackground="#F0F8FC" Background="#F0F0F0"
                HeadersVisibility="Column" RowHeight="34" EnableRowVirtualization="True" EnableColumnVirtualization="True" AutomationProperties.AutomationId="RegisterGrid">
       <DataGrid.Resources><SolidColorBrush x:Key="{x:Static SystemColors.HighlightBrushKey}" Color="#DDEBFA"/><SolidColorBrush x:Key="{x:Static SystemColors.HighlightTextBrushKey}" Color="#23384E"/><SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightBrushKey}" Color="#E8EEF5"/><SolidColorBrush x:Key="{x:Static SystemColors.InactiveSelectionHighlightTextBrushKey}" Color="#23384E"/></DataGrid.Resources>
@@ -141,7 +169,10 @@
        <DataGridTextColumn Header="Date" Binding="{Binding Date,StringFormat=yyyy-MM-dd}" Width="105"/>
        <DataGridTemplateColumn Header="Payee / Description" CellTemplate="{StaticResource EntrySummaryTemplate}" Width="2*"/>
        <DataGridTextColumn Header="Category" Binding="{Binding CounterAccounts}" Width="1.4*"/>
-       <DataGridTemplateColumn Header="C" Width="35"><DataGridTemplateColumn.CellTemplate><DataTemplate><TextBlock ToolTip="{Binding Status}" AutomationProperties.Name="{Binding Status}" HorizontalAlignment="Center"><TextBlock.Style><Style TargetType="TextBlock"><Setter Property="Text" Value=""/><Style.Triggers><DataTrigger Binding="{Binding Status}" Value="Cleared"><Setter Property="Text" Value="✓"/></DataTrigger><DataTrigger Binding="{Binding Status}" Value="Reconciling"><Setter Property="Text" Value="R"/></DataTrigger><DataTrigger Binding="{Binding Status}" Value="Mixed"><Setter Property="Text" Value="M"/></DataTrigger></Style.Triggers></Style></TextBlock.Style></TextBlock></DataTemplate></DataGridTemplateColumn.CellTemplate></DataGridTemplateColumn>
+       <DataGridTemplateColumn x:Name="RegisterStatusColumn" Header="C" Width="35" CellStyle="{StaticResource StatusCell}" HeaderStyle="{StaticResource StatusHeader}"><DataGridTemplateColumn.CellTemplate><DataTemplate>
+        <Button x:Name="LineStatusButton" GotKeyboardFocus="StatusFocused" Click="RegisterStatusClicked" Padding="0" Margin="0" BorderThickness="0" Background="Transparent" HorizontalAlignment="Center" VerticalAlignment="Center" Content="{Binding}" ContentTemplate="{StaticResource LineStatusBadge}"
+                AutomationProperties.AutomationId="{Binding LineId,StringFormat=RegisterC_{0}}" AutomationProperties.Name="{Binding StatusName}" ToolTip="{Binding StatusName}"/>
+       </DataTemplate></DataGridTemplateColumn.CellTemplate></DataGridTemplateColumn>
        <DataGridTextColumn Binding="{Binding Payment,StringFormat=N2}" Width="125" ElementStyle="{StaticResource Money}" HeaderStyle="{StaticResource NumericHeader}"><DataGridTextColumn.Header><TextBlock Text="Payment" ToolTip="Net credits to the selected account"/></DataGridTextColumn.Header></DataGridTextColumn>
        <DataGridTextColumn Binding="{Binding Deposit,StringFormat=N2}" Width="125" ElementStyle="{StaticResource Money}" HeaderStyle="{StaticResource NumericHeader}"><DataGridTextColumn.Header><TextBlock Text="Deposit" ToolTip="Net debits to the selected account"/></DataGridTextColumn.Header></DataGridTextColumn>
        <DataGridTextColumn Header="Balance" Binding="{Binding Balance,StringFormat=N2}" Width="145" ElementStyle="{StaticResource BalanceMoney}" HeaderStyle="{StaticResource NumericHeader}"/>
@@ -159,9 +190,9 @@
       <DataGrid ItemsSource="{Binding Details}" MaxHeight="180" Margin="0,6" Background="Transparent" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False" CanUserDeleteRows="False" CanUserSortColumns="False" CanUserReorderColumns="False" HeadersVisibility="Column" GridLinesVisibility="None" BorderThickness="0" RowHeight="30" EnableRowVirtualization="True" EnableColumnVirtualization="True" ScrollViewer.HorizontalScrollBarVisibility="Auto" AutomationProperties.AutomationId="EntryDetails">
        <DataGrid.Columns>
         <DataGridTemplateColumn Header="Account" Width="2*" MinWidth="180"><DataGridTemplateColumn.CellTemplate><DataTemplate><TextBlock><Hyperlink Click="DetailAccountClicked" Tag="{Binding AccountId}" ToolTip="Open this account"><Run Text="{Binding AccountName}"/></Hyperlink></TextBlock></DataTemplate></DataGridTemplateColumn.CellTemplate></DataGridTemplateColumn>
+        <DataGridTemplateColumn Header="C" Width="35" CellStyle="{StaticResource StatusCell}" HeaderStyle="{StaticResource StatusHeader}" CellTemplate="{StaticResource LineStatusBadge}"/>
         <DataGridTextColumn Header="Debit" Binding="{Binding Debit,StringFormat=N2}" Width="110" ElementStyle="{StaticResource Money}" HeaderStyle="{StaticResource NumericHeader}"/>
         <DataGridTextColumn Header="Credit" Binding="{Binding Credit,StringFormat=N2}" Width="110" ElementStyle="{StaticResource Money}" HeaderStyle="{StaticResource NumericHeader}"/>
-        <DataGridTextColumn Header="Status" Binding="{Binding StatusName}" Width="100"/>
         <DataGridTextColumn Header="Security" Binding="{Binding SecurityId}" Width="75"/>
         <DataGridTextColumn Header="Quantity" Binding="{Binding Quantity}" Width="110" ElementStyle="{StaticResource Money}"/>
        </DataGrid.Columns>

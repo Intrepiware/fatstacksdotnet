@@ -1,7 +1,8 @@
 namespace FatStacks.Core.Register;
 
-public sealed record RegisterRow(long EntryId, DateOnly Date, string Description, string CounterAccounts, decimal? Payment, decimal? Deposit, decimal Balance, string Status, string? Payee = null)
+public sealed record RegisterRow(long EntryId, DateOnly Date, string Description, string CounterAccounts, decimal? Payment, decimal? Deposit, decimal Balance, string Status, string? Payee = null, long LineId = 0, byte[]? EntryVersion = null, byte[]? LineVersion = null)
 {
+    public string StatusName => Status;
     public bool IsNegative => Balance < 0;
     public string DisplayPayee => string.IsNullOrWhiteSpace(Payee) ? "" : Payee;
     public string DisplayDescription => string.IsNullOrWhiteSpace(Description) ? "" : Description;

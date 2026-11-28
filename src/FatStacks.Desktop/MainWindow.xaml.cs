@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Input;
 using FatStacks.Core.Connections;
 using FatStacks.Core.Calendar;
+using FatStacks.Core.Register;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using FatStacks.Desktop.ViewModels;
@@ -39,6 +40,30 @@ public partial class MainWindow : Window
     }
     private async void MainWindowPreviewKeyDown(object sender, KeyEventArgs e)
     {
+        if (Keyboard.Modifiers == ModifierKeys.None && PostingRegister.IsKeyboardFocusWithin && !IsTyping())
+        {
+            if (e.Key is Key.Up or Key.Down && PostingRegister.Items.Count > 0)
+            {
+                e.Handled = true;
+                var next = Math.Clamp(PostingRegister.SelectedIndex + (e.Key == Key.Up ? -1 : 1), 0, PostingRegister.Items.Count - 1);
+                var nextRow = (RegisterRow)PostingRegister.Items[next];
+                PostingRegister.SetCurrentValue(Selector.SelectedItemProperty, nextRow);
+                FocusPosting(nextRow);
+                return;
+            }
+            if (e.Key is Key.R or Key.C or Key.U && PostingRegister.SelectedItem is RegisterRow row && register is { } model)
+            {
+                e.Handled = true;
+                byte target = e.Key switch
+                {
+                    Key.R when row.Status != "Reconciling" => 1,
+                    Key.C when row.Status != "Cleared" => 2,
+                    _ => 0
+                };
+                await ChangeStatusAsync(model, row, target);
+                return;
+            }
+        }
         if (e.Key == Key.F && Keyboard.Modifiers == ModifierKeys.Control)
         {
             e.Handled = true;
@@ -97,9 +122,59 @@ public partial class MainWindow : Window
     private void DismissSaveNoticeClicked(object sender, RoutedEventArgs e) => register?.DismissSaveNotice();
     private async void EditJournalClicked(object sender, RoutedEventArgs e) => await ShowJournalAsync(true);
     private async void DeleteJournalClicked(object sender, RoutedEventArgs e) => await DeleteJournalAsync();
+    private void StatusFocused(object sender, KeyboardFocusChangedEventArgs e)
+    {
+        if (sender is Button { DataContext: RegisterRow row })
+            PostingRegister.SetCurrentValue(Selector.SelectedItemProperty, row);
+    }
+
+    private async void RegisterStatusClicked(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button { DataContext: RegisterRow row } && register is { } model)
+        {
+            PostingRegister.SetCurrentValue(Selector.SelectedItemProperty, row);
+            byte target = row.Status switch
+            {
+                "Uncleared" => 1,
+                "Reconciling" => 2,
+                _ => 0
+            };
+            await ChangeStatusAsync(model, row, target);
+        }
+    }
+
+    private async Task ChangeStatusAsync(MainWindowViewModel model, RegisterRow row, byte target)
+    {
+        await model.ReconcileAsync(row, target);
+        if (!IsActive || model.Selected?.LineId != row.LineId ||
+            Keyboard.FocusedElement is not null && !PostingRegister.IsKeyboardFocusWithin)
+            return;
+        FocusPosting(model.Selected);
+    }
+
+    private void FocusPosting(RegisterRow row)
+    {
+        PostingRegister.ScrollIntoView(row);
+        PostingRegister.UpdateLayout();
+        if (PostingRegister.ItemContainerGenerator.ContainerFromItem(row) is DataGridRow container)
+        {
+            if (RegisterStatusColumn.GetCellContent(container) is ContentPresenter presenter)
+            {
+                presenter.ApplyTemplate();
+                if (presenter.ContentTemplate?.FindName("LineStatusButton", presenter) is Button button)
+                {
+                    button.Focus();
+                    return;
+                }
+            }
+            container.Focus();
+        }
+    }
+
     private async void RegisterDoubleClicked(object sender, MouseButtonEventArgs e)
     {
-        if (e.OriginalSource is DependencyObject source && ItemsControl.ContainerFromElement((ItemsControl)sender, source) is DataGridRow)
+        if (e.OriginalSource is DependencyObject source && ItemsControl.ContainerFromElement((ItemsControl)sender, source) is DataGridRow row &&
+            RegisterStatusColumn.GetCellContent(row)?.IsMouseOver != true)
             await ShowJournalAsync(true);
     }
     private async void LoadedAsync(object sender, RoutedEventArgs e)
